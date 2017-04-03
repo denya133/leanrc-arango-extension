@@ -7,7 +7,7 @@ class ArangoExtension extends RC::Module
   @inheritProtected()
   # Utils: {}
   # Scripts: {}
-  Constants:    require('./Constants') ArangoExtension
+  require('./Constants') ArangoExtension
 
 
   require('./interfaces/mixins/ArangoCursorInterface') ArangoExtension
