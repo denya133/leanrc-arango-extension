@@ -15,7 +15,7 @@ class ArangoExtension extends RC::Module
   require('./mixins/AISCRouteMixin') ArangoExtension
   require('./mixins/ArangoCollectionMixin') ArangoExtension
   require('./mixins/ArangoCursor') ArangoExtension
-  require('./mixins/ArangoRouteMixin') ArangoExtension
+  require('./mixins/ArangoSwitchMixin') ArangoExtension
 
 
 module.exports = ArangoExtension.initialize()
