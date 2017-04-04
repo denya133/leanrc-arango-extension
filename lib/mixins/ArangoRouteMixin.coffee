@@ -165,7 +165,15 @@ module.exports = (ArangoExtension)->
             @sendResponse req, res, voData, {method, path, resource, action}
           try
             if method is 'get'
-              @sendNotification resourceName, {req, res, reverse}, action
+              voMessage = {
+                queryParams
+                pathPatams
+                currentUserId
+                headers
+                body
+                reverse
+              }
+              @sendNotification resourceName, voMessage, action
             else
               {read, write} = @getLocks()
               self = @
