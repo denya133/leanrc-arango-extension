@@ -60,8 +60,6 @@ module.exports = (ArangoExtension)->
         return read: vlCollectionNames, write: vlCollectionNames
 
     @public handler: Function,
-      args: []
-      return: RC::Constants.NILL
       default: (resourceName, {req, res, reverse}, {method, path, resource, action})->
         try
           voMessage = {
@@ -105,8 +103,6 @@ module.exports = (ArangoExtension)->
         return
 
     @public createNativeRoute: Function,
-      args: [Object]
-      return: RC::Constants.NILL
       default: ({method, path, resource, action})->
         voRouter = FoxxRouter()
         resourceName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Stock"
