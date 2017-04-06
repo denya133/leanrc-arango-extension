@@ -229,21 +229,6 @@ module.exports = (ArangoExtension)->
         else if (voRecord = aoQuery.$insert)?
           do =>
             if aoQuery.$into?
-              if aoQuery.$forIn?
-                for own asItemRef, asCollectionFullName of aoQuery.$forIn
-                  voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
-                    .in asCollectionFullName
-                if (voJoin = aoQuery.$join?.$and)?
-                  vlJoinFilters = voJoin.map (asItemRef, {$eq:asRelValue})->
-                    voItemRef = qb.ref asItemRef.replace '@', ''
-                    voRelValue = qb.ref asRelValue.replace '@', ''
-                    qb.eq voItemRef, voRelValue
-                  voQuery = voQuery.filter qb.and vlJoinFilters...
-                if (voFilter = aoQuery.$filter)?
-                  voQuery = voQuery.filter @parseFilter Parser.parse voFilter
-                if (voLet = aoQuery.$let)?
-                  for own asRef, aoValue of voLet
-                    voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
               vhObjectForInsert = @serializer.serialize voRecord
               voQuery = (voQuery ? qb).insert vhObjectForInsert
                 .into aoQuery.$into
