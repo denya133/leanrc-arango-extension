@@ -54,6 +54,13 @@ module.exports = (ArangoExtension)->
           .return '@doc'
         return @query voQuery
 
+    @public takeAll: Function,
+      default: ->
+        voQuery = LeanRC::Query.new()
+          .forIn '@doc': @collectionFullName()
+          .return '@doc'
+        return @query voQuery
+
     @public override: Function,
       default: (id, aoRecord)->
         voQuery = LeanRC::Query.new()
