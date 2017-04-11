@@ -10,10 +10,6 @@ Parser        = require 'mongo-parse' #mongo-parse@2.0.2
 moment        = require 'moment'
 RC            = require 'RC'
 
-# здесь же будем использовать ArangoCursor
-
-# TODO: надо применить RC::Utils.co для возвращяемых функциями значений
-
 
 module.exports = (ArangoExtension)->
   class ArangoExtension::ArangoCollectionMixin extends RC::Mixin
@@ -22,80 +18,80 @@ module.exports = (ArangoExtension)->
 
     @Module: ArangoExtension
 
-    @public push: Function,
+    @public @async push: Function,
       default: (aoRecord)->
         voQuery = LeanRC::Query.new()
           .insert aoRecord
           .into @collectionFullName()
-        @query voQuery
+        yield @query voQuery
         return yes
 
-    @public remove: Function,
+    @public @async remove: Function,
       default: (id)->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .filter '@doc._key': {$eq: id}
           .remove()
-        @query voQuery
+        yield @query voQuery
         return yes
 
-    @public take: Function,
+    @public @async take: Function,
       default: (id)->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .filter '@doc._key': {$eq: id}
           .return '@doc'
-        return @query voQuery
-          .first()
+        cursor = yield @query voQuery
+        cursor.first()
 
-    @public takeMany: Function,
+    @public @async takeMany: Function,
       default: (ids)->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .filter '@doc._key': {$in: ids}
           .return '@doc'
-        return @query voQuery
+        yield @query voQuery
 
-    @public takeAll: Function,
+    @public @async takeAll: Function,
       default: ->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .return '@doc'
-        return @query voQuery
+        yield @query voQuery
 
-    @public override: Function,
+    @public @async override: Function,
       default: (id, aoRecord)->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .filter '@doc._key': {$eq: id}
           .replace aoRecord
-        return @query voQuery
+        yield @query voQuery
 
-    @public patch: Function,
+    @public @async patch: Function,
       default: (id, aoRecord)->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .filter '@doc._key': {$eq: id}
           .update aoRecord
-        return @query voQuery
+        yield @query voQuery
 
-    @public includes: Function,
+    @public @async includes: Function,
       default: (id)->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .filter '@doc._key': {$eq: id}
           .limit 1
           .return '@doc'
-        return @query voQuery
-          .hasNext()
+        cursor = yield @query voQuery
+        cursor.hasNext()
 
-    @public length: Function,
+    @public @async length: Function,
       default: ->
         voQuery = LeanRC::Query.new()
           .forIn '@doc': @collectionFullName()
           .count()
-        return @query voQuery
-          .first()
+        cursor = yield @query voQuery
+        cursor.first()
 
     wrapReference = (value)->
       if _.isString(value) and /^[@]/.test value
@@ -328,7 +324,7 @@ module.exports = (ArangoExtension)->
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
                     voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
-              vhObjectForUpdate = @serializer.serialize voRecord
+              vhObjectForUpdate = _.omit @serializer.serialize(voRecord), ['id', '_key']
               voQuery = (voQuery ? qb).update qb.ref 'doc'
                 .with vhObjectForUpdate
                 .into aoQuery.$into
@@ -350,7 +346,7 @@ module.exports = (ArangoExtension)->
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
                     voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
-              vhObjectForReplace = @serializer.serialize voRecord
+              vhObjectForReplace = _.omit @serializer.serialize(voRecord), ['id', '_key']
               voQuery = (voQuery ? qb).replace qb.ref 'doc'
                 .with vhObjectForReplace
                 .into aoQuery.$into
@@ -444,9 +440,9 @@ module.exports = (ArangoExtension)->
 
         return vsQuery
 
-    @public executeQuery: Function,
+    @public @async executeQuery: Function,
       default: (asQuery, options)->
-        voNativeCursor = db._query asQuery
+        voNativeCursor = yield db._query asQuery
         voCursor = ArangoExtension::ArangoCursor.new @delegate, voNativeCursor
         return voCursor
 
