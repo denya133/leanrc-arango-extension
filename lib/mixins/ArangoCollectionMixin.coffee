@@ -12,6 +12,8 @@ RC            = require 'RC'
 
 # здесь же будем использовать ArangoCursor
 
+# TODO: надо применить RC::Utils.co для возвращяемых функциями значений
+
 
 module.exports = (ArangoExtension)->
   class ArangoExtension::ArangoCollectionMixin extends RC::Mixin
