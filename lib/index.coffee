@@ -10,11 +10,12 @@ class ArangoExtension extends RC::Module
   require('./Constants') ArangoExtension
 
 
-  require('./interfaces/mixins/ArangoCursorInterface') ArangoExtension
+  require('./interfaces/iterator/ArangoCursorInterface') ArangoExtension
+
+  require('./iterator/ArangoCursor') ArangoExtension
 
   require('./mixins/AISCRouteMixin') ArangoExtension
   require('./mixins/ArangoCollectionMixin') ArangoExtension
-  require('./mixins/ArangoCursor') ArangoExtension
   require('./mixins/ArangoSwitchMixin') ArangoExtension
 
 

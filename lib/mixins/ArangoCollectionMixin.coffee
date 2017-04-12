@@ -387,8 +387,9 @@ module.exports = (ArangoExtension)->
             if (voHaving = aoQuery.$having)?
               voQuery = voQuery.filter @parseFilter Parser.parse voHaving
             if (voSort = aoQuery.$sort)?
-              for own asRef, asSortDirect of aoQuery.$sort
-                voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
+              for {asRef, asSortDirect} in aoQuery.$sort
+                do (asRef, asSortDirect)->
+                  voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
 
             if (vnLimit = aoQuery.$limit)?
               if (vnOffset = aoQuery.$offset)?
@@ -412,8 +413,8 @@ module.exports = (ArangoExtension)->
                 .limit 1
                 .return qb.ref(vsMax.replace '@', '')
             else if (vsAvg = aoQuery.$avg)?
-              finAggUsed = "RETURN {{COLLECT AGGREGATE result = AVG\\(TO_NUMBER\\(#{vsSum.replace '@', ''}\\)\\) RETURN result}}"
-              finAggPartial = "COLLECT AGGREGATE result = AVG(TO_NUMBER(#{vsSum.replace '@', ''})) RETURN result"
+              finAggUsed = "RETURN {{COLLECT AGGREGATE result = AVG\\(TO_NUMBER\\(#{vsAvg.replace '@', ''}\\)\\) RETURN result}}"
+              finAggPartial = "COLLECT AGGREGATE result = AVG(TO_NUMBER(#{vsAvg.replace '@', ''})) RETURN result"
               voQuery = voQuery.return qb.expr "{{#{finAggPartial}}}"
             else
               if aoQuery.$return?
