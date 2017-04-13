@@ -279,7 +279,7 @@ module.exports = (ArangoExtension)->
     @public parseQuery: Function,
       default: (aoQuery)->
         voQuery = null
-        aggUsed = aggPartial = intoUsed = intoPartial = finAggUsed = finAggPartial = null
+        intoUsed = intoPartial = finAggUsed = finAggPartial = null
         if aoQuery.$remove?
           do =>
             if aoQuery.$forIn?
@@ -369,17 +369,6 @@ module.exports = (ArangoExtension)->
             if (voCollect = aoQuery.$collect)?
               for own asRef, aoValue of voCollect
                 voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
-            if (voAggregate = aoQuery.$aggregate)?
-              vsAggregate = (for own asRef, aoValue of voAggregate
-                do (asRef, aoValue)->
-                  "#{asRef.replace '@', ''} = #{aoValue}"
-              ).join ', '
-              aggUsed = _.escapeRegExp "FILTER {{AGGREGATE #{vsAggregate}}}"
-              if aoQuery.$collect?
-                aggPartial = "AGGREGATE #{vsAggregate}"
-              else
-                aggPartial = "COLLECT AGGREGATE #{vsAggregate}"
-              voQuery = voQuery.filter qb.expr "{{AGGREGATE #{vsAggregate}}}"
             if (vsInto = aoQuery.$into)?
               intoUsed = _.escapeRegExp "FILTER {{INTO #{vsInto}}}"
               intoPartial = "INTO #{vsInto}"
@@ -432,8 +421,6 @@ module.exports = (ArangoExtension)->
                   voQuery = voQuery.return voReturn
         vsQuery = voQuery.toAQL()
 
-        if aggUsed and new RegExp(aggUsed).test vsQuery
-          vsQuery = vsQuery.replace new RegExp(aggUsed), aggPartial
         if intoUsed and new RegExp(intoUsed).test vsQuery
           vsQuery = vsQuery.replace new RegExp(intoUsed), intoPartial
         if finAggUsed and new RegExp(finAggUsed).test vsQuery
