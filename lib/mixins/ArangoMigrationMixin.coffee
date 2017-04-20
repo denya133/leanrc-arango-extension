@@ -16,7 +16,7 @@ module.exports = (Module)->
     @inheritProtected()
     @include Module::ArangoMigrationMixin # в этом миксине должны быть реализованы платформозависимые методы, которые будут посылать нативные запросы к реальной базе данных
 
-    @Module: Module
+    @module Module
 
     @up ->
       yield @createCollection 'users'
@@ -42,7 +42,7 @@ module.exports = (Module)->
     @inheritProtected()
     @include Module::ArangoMigrationMixin # в этом миксине должны быть реализованы платформозависимые методы, которые будут посылать нативные запросы к реальной базе данных
 
-    @Module: Module
+    @module Module
 
     @change ->
       @createCollection 'users'
@@ -64,7 +64,7 @@ module.exports = (Module)->
   class ArangoMigrationMixin extends LeanRC::Mixin
     @inheritProtected()
 
-    @Module: Module
+    @module Module
 
     @public @async createCollection: Function,
       args: [String, Object]

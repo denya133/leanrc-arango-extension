@@ -16,7 +16,7 @@ module.exports = (Module)->
     @inheritProtected()
     @implements LeanRC::QueryableMixinInterface
 
-    @Module: Module
+    @module Module
 
     @public @async push: Function,
       default: (aoRecord)->

@@ -7,7 +7,7 @@ module.exports = (Module)->
     @inheritProtected()
     @implements LeanRC::CursorInterface
 
-    @Module: Module
+    @module Module
 
     ipoCursor = @private cursor: LeanRC::ANY
     ipcRecord = @private Record: LeanRC::Class

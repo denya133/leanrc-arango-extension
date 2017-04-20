@@ -11,7 +11,7 @@ module.exports = (Module)->
   class AISCRouteMixin extends LeanRC::Mixin
     @inheritProtected()
 
-    @Module: Module
+    @module Module
 
 
   AISCRouteMixin.initialize()

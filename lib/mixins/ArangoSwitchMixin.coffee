@@ -26,7 +26,7 @@ module.exports = (Module)->
     @inheritProtected()
     @include Module::ArangoSwitchMixin
 
-    @Module: Module
+    @module Module
 
     @public routerName: String,
       default: 'ApplicationRouter'
@@ -41,7 +41,7 @@ module.exports = (Module)->
   class ArangoSwitchMixin extends LeanRC::Mixin
     @inheritProtected()
 
-    @Module: Module
+    @module Module
 
     @public getLocks: Function,
       args: []
