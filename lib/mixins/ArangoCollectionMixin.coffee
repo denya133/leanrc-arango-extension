@@ -8,15 +8,15 @@ _             = require 'lodash'
 qb            = require 'aqb'
 Parser        = require 'mongo-parse' #mongo-parse@2.0.2
 moment        = require 'moment'
-RC            = require 'RC'
+LeanRC        = require 'LeanRC'
 
 
-module.exports = (ArangoExtension)->
-  class ArangoExtension::ArangoCollectionMixin extends RC::Mixin
+module.exports = (Module)->
+  class ArangoCollectionMixin extends LeanRC::Mixin
     @inheritProtected()
     @implements LeanRC::QueryableMixinInterface
 
-    @Module: ArangoExtension
+    @Module: Module
 
     @public @async push: Function,
       default: (aoRecord)->
@@ -260,7 +260,7 @@ module.exports = (ArangoExtension)->
 
     @public parseFilter: Function,
       args: [Object]
-      return: RC::Constants.ANY
+      return: LeanRC::Constants.ANY
       default: ({field, parts, operator, operand, implicitField})->
         if field? and operator isnt '$elemMatch' and parts.length is 0
           @operatorsMap[operator] field, operand
@@ -431,8 +431,8 @@ module.exports = (ArangoExtension)->
     @public @async executeQuery: Function,
       default: (asQuery, options)->
         voNativeCursor = yield db._query asQuery
-        voCursor = ArangoExtension::ArangoCursor.new @delegate, voNativeCursor
+        voCursor = Module::ArangoCursor.new @delegate, voNativeCursor
         return voCursor
 
 
-  return ArangoExtension::ArangoCollectionMixin.initialize()
+  ArangoCollectionMixin.initialize()

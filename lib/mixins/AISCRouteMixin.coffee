@@ -4,15 +4,14 @@
 # а с этой стороны модуля за взаимодействие будет отвечать этот медиатор
 # по сути он просто будет врапить хендлеры (экшены) которые объявляются в Stock классах, или делать что-то эквивалентное.
 
-RC            = require 'RC'
 LeanRC        = require 'LeanRC'
 
 
-module.exports = (ArangoExtension)->
-  class ArangoExtension::AISCRouteMixin extends RC::Mixin
+module.exports = (Module)->
+  class AISCRouteMixin extends LeanRC::Mixin
     @inheritProtected()
 
-    @Module: ArangoExtension
+    @Module: Module
 
 
-  return ArangoExtension::AISCRouteMixin.initialize()
+  AISCRouteMixin.initialize()

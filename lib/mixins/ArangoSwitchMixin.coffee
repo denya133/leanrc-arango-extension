@@ -9,7 +9,6 @@ queues        = require '@arangodb/foxx/queues'
 crypto        = require '@arangodb/crypto'
 status        = require 'statuses'
 { errors }    = require '@arangodb'
-RC            = require 'RC'
 LeanRC        = require 'LeanRC'
 
 ARANGO_NOT_FOUND  = errors.ERROR_ARANGO_DOCUMENT_NOT_FOUND.code
@@ -22,30 +21,27 @@ UNAUTHORIZED      = status 'unauthorized'
 # здесь (наверху) надо привести пример использования в приложении
 ###
 ```coffee
-LeanRC = require 'LeanRC'
-ArangoExtension = require 'leanrc-arango-extension'
-
-module.exports = (App)->
-  class App::HttpSwitch extends LeanRC::Switch
+module.exports = (Module)->
+  class HttpSwitch extends Module::Switch
     @inheritProtected()
-    @include ArangoExtension::ArangoSwitchMixin
+    @include Module::ArangoSwitchMixin
 
-    @Module: App
+    @Module: Module
 
     @public routerName: String,
       default: 'ApplicationRouter'
     @public jsonRendererName: String,
       default: 'JsonRenderer'  # or 'ApplicationRenderer'
-  return App::HttpSwitch.initialize()
+  HttpSwitch.initialize()
 ```
 ###
 
 
-module.exports = (ArangoExtension)->
-  class ArangoExtension::ArangoSwitchMixin extends RC::Mixin
+module.exports = (Module)->
+  class ArangoSwitchMixin extends LeanRC::Mixin
     @inheritProtected()
 
-    @Module: ArangoExtension
+    @Module: Module
 
     @public getLocks: Function,
       args: []
@@ -119,4 +115,4 @@ module.exports = (ArangoExtension)->
         return
 
 
-  return ArangoExtension::ArangoSwitchMixin.initialize()
+  ArangoSwitchMixin.initialize()

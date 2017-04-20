@@ -1,20 +1,19 @@
 _  = require 'lodash'
-RC = require 'RC'
 LeanRC = require 'LeanRC'
 
 
-module.exports = (ArangoExtension)->
-  class ArangoExtension::ArangoCursor extends RC::CoreObject
+module.exports = (Module)->
+  class ArangoCursor extends LeanRC::CoreObject
     @inheritProtected()
     @implements LeanRC::CursorInterface
 
-    @Module: ArangoExtension
+    @Module: Module
 
-    ipoCursor = @private cursor: RC::Constants.ANY
-    ipcRecord = @private Record: RC::Class
+    ipoCursor = @private cursor: LeanRC::ANY
+    ipcRecord = @private Record: LeanRC::Class
 
     @public setCursor: Function,
-      args: [RC::Constants.ANY]
+      args: [LeanRC::ANY]
       return: LeanRC::CursorInterface
       default: (aoCursor)->
         @[ipoCursor] = aoCursor
@@ -140,10 +139,12 @@ module.exports = (ArangoExtension)->
           yield @close()
           throw err
 
-    constructor: (acRecord, aoCursor = null)->
-      super arguments...
-      @[ipcRecord] = acRecord
-      @[ipoCursor] = aoCursor
+    @public init: Function,
+      default: (acRecord, aoCursor = null)->
+        @super arguments...
+        @[ipcRecord] = acRecord
+        @[ipoCursor] = aoCursor
+        return
 
 
-  return ArangoExtension::ArangoCursor.initialize()
+  ArangoCursor.initialize()
