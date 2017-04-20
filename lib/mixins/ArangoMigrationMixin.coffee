@@ -67,27 +67,32 @@ module.exports = (Module)->
     @module Module
 
     @public @async createCollection: Function,
-      args: [String, Object]
-      return: NILL
-      default: ()->
+      default: (name, options)->
+        qualifiedName = @collection.collectionFullName name
+        unless db._collection qualifiedName
+          db._createDocumentCollection qualifiedName, options
         yield return
 
     @public @async createEdgeCollection: Function,
-      args: [String, String, Object]
-      return: NILL
-      default: ()->
+      default: (collection_1, collection_2, options)->
+        qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
+        unless db._collection qualifiedName
+          db._createEdgeCollection qualifiedName, options
         yield return
 
     @public @async addField: Function,
-      args: [String, String, Object]
-      return: NILL
-      default: ()->
+      default: (collection_name, field_name, options)->
         yield return
 
     @public @async addIndex: Function,
       args: [String, Array, Object]
       return: NILL
-      default: ()->
+      default: (collection_name, field_names, options)->
+        qualifiedName = @collection.collectionFullName collection_name
+        db._collection(qualifiedName).ensureIndex
+          type: options.type
+          fields: field_names
+          unique: options.unique
         yield return
 
     @public @async addTimestamps: Function,
