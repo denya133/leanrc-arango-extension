@@ -44,6 +44,7 @@ class ArangoExtension extends LeanRC::Mixin
   require('./mixins/ArangoCollectionMixin') ArangoExtension
   require('./mixins/ArangoSwitchMixin') ArangoExtension
   require('./mixins/ArangoMigrationMixin') ArangoExtension
+  require('./mixins/ArangoConfigurationMixin') ArangoExtension
 
 
 module.exports = ArangoExtension.initialize()
