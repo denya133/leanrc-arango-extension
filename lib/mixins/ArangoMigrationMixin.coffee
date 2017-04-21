@@ -1,10 +1,7 @@
 
 
 _             = require 'lodash'
-inflect       = do require 'i'
 { db }        = require '@arangodb'
-queues        = require '@arangodb/foxx/queues'
-crypto        = require '@arangodb/crypto'
 LeanRC        = require 'LeanRC'
 
 
@@ -82,83 +79,162 @@ module.exports = (Module)->
 
     @public @async addField: Function,
       default: (collection_name, field_name, options)->
+        qualifiedName = @collection.collectionFullName collection_name
+        if options.default?
+          if _.isNumber(options.default) or _.isBoolean(options.default)
+            initial = options.default
+          else if _.isDate options.default
+            initial = options.default.toISOString()
+          else if _.isString options.default
+            initial = "'#{options.default}'"
+          else
+            initial = 'null'
+        else
+          initial = 'null'
+        db._query "
+          FOR doc IN #{qualifiedName}
+            UPDATE doc._key WITH {#{field_name}: #{initial}} IN #{qualifiedName}
+        "
         yield return
 
     @public @async addIndex: Function,
-      args: [String, Array, Object]
-      return: NILL
       default: (collection_name, field_names, options)->
         qualifiedName = @collection.collectionFullName collection_name
         db._collection(qualifiedName).ensureIndex
           type: options.type
           fields: field_names
           unique: options.unique
+          sparse: options.sparse
         yield return
 
     @public @async addTimestamps: Function,
-      args: [String, Object]
-      return: NILL
-      default: ()->
+      default: (collection_name, options)->
+        qualifiedName = @collection.collectionFullName collection_name
+        db._query "
+          FOR doc IN #{qualifiedName}
+            UPDATE doc._key
+              WITH {createdAt: null, updatedAt: null, deletedAt: null}
+            IN #{qualifiedName}
+        "
         yield return
 
     @public @async changeCollection: Function,
-      args: [String, Object]
-      return: NILL
-      default: ()->
+      default: (name, options)->
+        qualifiedName = @collection.collectionFullName collection_name
+        db._collection(qualifiedName).properties options
         yield return
 
     @public @async changeField: Function,
-      args: [String, String, Object]
-      return: NILL
-      default: ()->
+      default: (collection_name, field_name, options)->
+        {
+          json
+          binary
+          boolean
+          date
+          datetime
+          decimal
+          float
+          integer
+          primary_key
+          string
+          text
+          time
+          timestamp
+          array
+          hash
+        } = LeanRC::Migration::SUPPORTED_TYPES
+        typeCast = switch options.type
+          when boolean
+            "TO_BOOL(doc.#{field_name})"
+          when decimal, float, integer
+            "TO_NUMBER(doc.#{field_name})"
+          when string, text, primary_key, binary
+            "TO_STRING(JSON_STRINGIFY(doc.#{field_name}))"
+          when array
+            "TO_ARRAY(doc.#{field_name})"
+          when json, hash
+            "JSON_PARSE(TO_STRING(doc.#{field_name}))"
+          when date, datetime
+            "DATE_ISO8601(doc.#{field_name})"
+          when time, timestamp
+            "DATE_TIMESTAMP(doc.#{field_name})"
+        qualifiedName = @collection.collectionFullName collection_name
+        db._query "
+          FOR doc IN #{qualifiedName}
+            UPDATE doc._key
+              WITH {#{field_name}: #{typeCast}}
+            IN #{qualifiedName}
+        "
         yield return
 
     @public @async renameField: Function,
-      args: [String, String, String]
-      return: NILL
-      default: ()->
+      default: (collection_name, field_name, new_field_name)->
+        qualifiedName = @collection.collectionFullName collection_name
+        db._query "
+          FOR doc IN #{qualifiedName}
+            LET doc_with_n_field = MERGE(doc, {#{new_field_name}: doc.#{field_name}})
+            LET doc_without_o_field = UNSET(doc_with_new_field, '#{field_name}')
+            REPLACE doc._key
+              WITH doc_without_o_field
+            IN #{qualifiedName}
+        "
         yield return
 
     @public @async renameIndex: Function,
-      args: [String, String, String]
-      return: NILL
-      default: ()->
+      default: (collection_name, old_name, new_name)->
+        # not supported in ArangoDB because index has not name
         yield return
 
     @public @async renameCollection: Function,
-      args: [String, String, String]
-      return: NILL
-      default: ()->
+      default: (collection_name, old_name, new_name)->
+        qualifiedName = @collection.collectionFullName collection_name
+        newQualifiedName = @collection.collectionFullName new_name
+        db._collection(qualifiedName).rename newQualifiedName
         yield return
 
     @public @async dropCollection: Function,
-      args: [String]
-      return: NILL
-      default: ()->
+      default: (name)->
+        qualifiedName = @collection.collectionFullName name
+        unless db._collection qualifiedName
+          db._drop qualifiedName
         yield return
 
     @public @async dropEdgeCollection: Function,
-      args: [String, String]
-      return: NILL
-      default: ()->
+      default: (collection_1, collection_2)->
+        qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
+        unless db._collection qualifiedName
+          db._drop qualifiedName
         yield return
 
     @public @async removeField: Function,
-      args: [String, String]
-      return: NILL
-      default: ()->
+      default: (collection_name, field_name)->
+        qualifiedName = @collection.collectionFullName collection_name
+        db._query "
+          FOR doc IN #{qualifiedName}
+            LET doc_without_f = UNSET(doc, '#{field_name}')
+            REPLACE doc._key WITH doc_without_f IN #{qualifiedName}
+        "
         yield return
 
     @public @async removeIndex: Function,
-      args: [String, Array, Object]
-      return: NILL
-      default: ()->
+      default: (collection_name, field_names, options)->
+        qualifiedName = @collection.collectionFullName collection_name
+        index = db._collection(qualifiedName).ensureIndex
+          type: options.type
+          fields: field_names
+          unique: options.unique
+          sparse: options.sparse
+        db._collection(qualifiedName).dropIndex index
         yield return
 
     @public @async removeTimestamps: Function,
-      args: [String, Object]
-      return: NILL
-      default: ()->
+      default: (collection_name, options)->
+        qualifiedName = @collection.collectionFullName collection_name
+        db._query "
+          FOR doc IN #{qualifiedName}
+            LET new_doc = UNSET(doc, 'createdAt', 'updatedAt', 'deletedAt')
+            REPLACE doc._key WITH new_doc IN #{qualifiedName}
+        "
         yield return
 
 
