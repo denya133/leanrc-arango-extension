@@ -40,15 +40,13 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
+  Module.defineMixin (BaseClass) ->
+    class ArangoConfigurationMixin extends BaseClass
+      @inheritProtected()
 
-  class ArangoConfigurationMixin extends LeanRC::Mixin
-    @inheritProtected()
-
-    @module Module
-
-    @public configs: Object,
-      get: ->
-        module.context.configuration
+      @public configs: Object,
+        get: ->
+          module.context.configuration
 
 
-  ArangoConfigurationMixin.initialize()
+    ArangoConfigurationMixin.initializeMixin()

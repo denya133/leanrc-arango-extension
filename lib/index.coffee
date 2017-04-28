@@ -34,18 +34,23 @@ module.exports = TestApp.initialize().freeze()
 ```
 ###
 
+Extension = (BaseClass) ->
+  class ArangoExtension extends BaseClass
+    @inheritProtected()
 
-class ArangoExtension extends LeanRC::Mixin
-  @inheritProtected()
+    require('./iterator/ArangoCursor') @Module
 
-  require('./iterator/ArangoCursor') ArangoExtension
+    require('./mixins/AISCRouteMixin') @Module
+    require('./mixins/ArangoCollectionMixin') @Module
+    require('./mixins/ArangoSwitchMixin') @Module
+    require('./mixins/ArangoMigrationMixin') @Module
+    require('./mixins/ArangoConfigurationMixin') @Module
+    require('./mixins/ArangoResqueMixin') @Module
+  ArangoExtension.initializeMixin()
 
-  require('./mixins/AISCRouteMixin') ArangoExtension
-  require('./mixins/ArangoCollectionMixin') ArangoExtension
-  require('./mixins/ArangoSwitchMixin') ArangoExtension
-  require('./mixins/ArangoMigrationMixin') ArangoExtension
-  require('./mixins/ArangoConfigurationMixin') ArangoExtension
-  require('./mixins/ArangoResqueMixin') ArangoExtension
+sample = Extension RC::Module
+Reflect.defineProperty Extension, 'reification',
+  value: sample
 
 
-module.exports = ArangoExtension.initialize()
+module.exports = Extension

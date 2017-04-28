@@ -8,10 +8,9 @@ LeanRC        = require 'LeanRC'
 
 
 module.exports = (Module)->
-  class AISCRouteMixin extends LeanRC::Mixin
-    @inheritProtected()
+  Module.defineMixin (BaseClass) ->
+    class AISCRouteMixin extends BaseClass
+      @inheritProtected()
 
-    @module Module
 
-
-  AISCRouteMixin.initialize()
+    AISCRouteMixin.initializeMixin()

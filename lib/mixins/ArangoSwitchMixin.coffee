@@ -38,81 +38,80 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
-  class ArangoSwitchMixin extends LeanRC::Mixin
-    @inheritProtected()
+  Module.defineMixin (BaseClass) ->
+    class ArangoSwitchMixin extends BaseClass
+      @inheritProtected()
 
-    @module Module
+      @public getLocks: Function,
+        args: []
+        return: Object
+        default: ->
+          vrCollectionPrefix = new RegExp "^#{module.collectionPrefix}"
+          vlCollectionNames = db._collections().reduce (aoCollection, alResults)->
+            if vrCollectionPrefix.test aoCollection.name
+              alResults.push aoCollection.name
+            alResults
+          , []
+          return read: vlCollectionNames, write: vlCollectionNames
 
-    @public getLocks: Function,
-      args: []
-      return: Object
-      default: ->
-        vrCollectionPrefix = new RegExp "^#{module.collectionPrefix}"
-        vlCollectionNames = db._collections().reduce (aoCollection, alResults)->
-          if vrCollectionPrefix.test aoCollection.name
-            alResults.push aoCollection.name
-          alResults
-        , []
-        return read: vlCollectionNames, write: vlCollectionNames
+      @public handler: Function,
+        default: (resourceName, {req, res, reverse}, {method, path, resource, action})->
+          try
+            voMessage = {
+              queryParams: req.queryParams
+              pathPatams: req.pathPatams
+              currentUserId: req.session.uid
+              headers: req.headers
+              body: req.body
+              reverse
+            }
+            if method is 'get'
+              @sendNotification resourceName, voMessage, action
+            else
+              {read, write} = @getLocks()
+              self = @
+              db._executeTransaction
+                waitForSync: yes
+                collections:
+                  read: read
+                  write: write
+                  allowImplicit: yes
+                action: (params)->
+                  params.self.sendNotification params.resourceName, params.message, params.action
+                params: {resourceName, action, message: voMessage, self}
+            queues._updateQueueDelay()
+          catch err
+            console.log '???????????????????!!', JSON.stringify err
+            if err.isArangoError and err.errorNum is ARANGO_NOT_FOUND
+              res.throw HTTP_NOT_FOUND, err.message
+              return
+            if err.isArangoError and err.errorNum is ARANGO_CONFLICT
+              res.throw HTTP_CONFLICT, err.message
+              return
+            else if err.statusCode?
+              console.error err.message, err.stack
+              res.throw err.statusCode, err.message
+            else
+              console.error 'kkkkkkkk', err.message, err.stack
+              res.throw 500, err.message, err.stack
+              return
+          return
 
-    @public handler: Function,
-      default: (resourceName, {req, res, reverse}, {method, path, resource, action})->
-        try
-          voMessage = {
-            queryParams: req.queryParams
-            pathPatams: req.pathPatams
-            currentUserId: req.session.uid
-            headers: req.headers
-            body: req.body
-            reverse
-          }
-          if method is 'get'
-            @sendNotification resourceName, voMessage, action
-          else
-            {read, write} = @getLocks()
-            self = @
-            db._executeTransaction
-              waitForSync: yes
-              collections:
-                read: read
-                write: write
-                allowImplicit: yes
-              action: (params)->
-                params.self.sendNotification params.resourceName, params.message, params.action
-              params: {resourceName, action, message: voMessage, self}
-          queues._updateQueueDelay()
-        catch err
-          console.log '???????????????????!!', JSON.stringify err
-          if err.isArangoError and err.errorNum is ARANGO_NOT_FOUND
-            res.throw HTTP_NOT_FOUND, err.message
-            return
-          if err.isArangoError and err.errorNum is ARANGO_CONFLICT
-            res.throw HTTP_CONFLICT, err.message
-            return
-          else if err.statusCode?
-            console.error err.message, err.stack
-            res.throw err.statusCode, err.message
-          else
-            console.error 'kkkkkkkk', err.message, err.stack
-            res.throw 500, err.message, err.stack
-            return
-        return
+      @public createNativeRoute: Function,
+        default: ({method, path, resource, action})->
+          voRouter = FoxxRouter()
+          resourceName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Stock"
 
-    @public createNativeRoute: Function,
-      default: ({method, path, resource, action})->
-        voRouter = FoxxRouter()
-        resourceName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Stock"
+          voEndpoint = voRouter[method]? [path, (req, res)=>
+            reverse = crypto.genRandomAlphaNumbers 32
+            @getViewComponent().once reverse, (voData)=>
+              @sendHttpResponse req, res, voData, {method, path, resource, action}
+            @handler resourceName, {req, res, reverse}, {method, path, resource, action}
+          , action]...
+          @defineSwaggerEndpoint voEndpoint
 
-        voEndpoint = voRouter[method]? [path, (req, res)=>
-          reverse = crypto.genRandomAlphaNumbers 32
-          @getViewComponent().once reverse, (voData)=>
-            @sendHttpResponse req, res, voData, {method, path, resource, action}
-          @handler resourceName, {req, res, reverse}, {method, path, resource, action}
-        , action]...
-        @defineSwaggerEndpoint voEndpoint
-
-        module.context.use voRouter
-        return
+          module.context.use voRouter
+          return
 
 
-  ArangoSwitchMixin.initialize()
+    ArangoSwitchMixin.initializeMixin()
