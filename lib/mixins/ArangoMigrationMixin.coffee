@@ -2,7 +2,6 @@
 
 _             = require 'lodash'
 { db }        = require '@arangodb'
-LeanRC        = require 'LeanRC'
 
 
 
@@ -141,7 +140,7 @@ module.exports = (Module)->
             timestamp
             array
             hash
-          } = LeanRC::Migration::SUPPORTED_TYPES
+          } = Module::Migration::SUPPORTED_TYPES
           typeCast = switch options.type
             when boolean
               "TO_BOOL(doc.#{field_name})"

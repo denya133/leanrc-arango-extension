@@ -8,18 +8,17 @@ _             = require 'lodash'
 qb            = require 'aqb'
 Parser        = require 'mongo-parse' #mongo-parse@2.0.2
 moment        = require 'moment'
-LeanRC        = require 'LeanRC'
 
 
 module.exports = (Module)->
   Module.defineMixin (BaseClass) ->
     class ArangoCollectionMixin extends BaseClass
       @inheritProtected()
-      @implements LeanRC::QueryableMixinInterface
+      @implements Module::QueryableMixinInterface
 
       @public @async push: Function,
         default: (aoRecord)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .insert aoRecord
             .into @collectionFullName()
           yield @query voQuery
@@ -27,7 +26,7 @@ module.exports = (Module)->
 
       @public @async remove: Function,
         default: (id)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .remove()
@@ -36,7 +35,7 @@ module.exports = (Module)->
 
       @public @async take: Function,
         default: (id)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .return '@doc'
@@ -45,7 +44,7 @@ module.exports = (Module)->
 
       @public @async takeMany: Function,
         default: (ids)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$in: ids}
             .return '@doc'
@@ -53,14 +52,14 @@ module.exports = (Module)->
 
       @public @async takeAll: Function,
         default: ->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .return '@doc'
           yield @query voQuery
 
       @public @async override: Function,
         default: (id, aoRecord)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .replace aoRecord
@@ -68,7 +67,7 @@ module.exports = (Module)->
 
       @public @async patch: Function,
         default: (id, aoRecord)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .update aoRecord
@@ -76,7 +75,7 @@ module.exports = (Module)->
 
       @public @async includes: Function,
         default: (id)->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .limit 1
@@ -86,7 +85,7 @@ module.exports = (Module)->
 
       @public @async length: Function,
         default: ->
-          voQuery = LeanRC::Query.new()
+          voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .count()
           cursor = yield @query voQuery
@@ -259,7 +258,7 @@ module.exports = (Module)->
 
       @public parseFilter: Function,
         args: [Object]
-        return: LeanRC::Constants.ANY
+        return: Module::ANY
         default: ({field, parts, operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
             @operatorsMap[operator] field, operand
@@ -295,7 +294,7 @@ module.exports = (Module)->
                   voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
-                    voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
+                    voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 voQuery = (voQuery ? qb).remove aoQuery.$remove
                 if aoQuery.$into?
                   voQuery = voQuery.into aoQuery.$into
@@ -322,7 +321,7 @@ module.exports = (Module)->
                     voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                   if (voLet = aoQuery.$let)?
                     for own asRef, aoValue of voLet
-                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
+                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 vhObjectForUpdate = _.omit @serializer.serialize(voRecord), ['id', '_key']
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
                   .with vhObjectForUpdate
@@ -344,7 +343,7 @@ module.exports = (Module)->
                     voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                   if (voLet = aoQuery.$let)?
                     for own asRef, aoValue of voLet
-                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
+                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 vhObjectForReplace = _.omit @serializer.serialize(voRecord), ['id', '_key']
                 voQuery = (voQuery ? qb).replace qb.ref 'doc'
                   .with vhObjectForReplace
@@ -364,10 +363,10 @@ module.exports = (Module)->
                 voQuery = voQuery.filter @parseFilter Parser.parse voFilter
               if (voLet = aoQuery.$let)?
                 for own asRef, aoValue of voLet
-                  voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
+                  voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
               if (voCollect = aoQuery.$collect)?
                 for own asRef, aoValue of voCollect
-                  voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery LeanRC::Query.new aoValue
+                  voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
               if (vsInto = aoQuery.$into)?
                 intoUsed = _.escapeRegExp "FILTER {{INTO #{vsInto}}}"
                 intoPartial = "INTO #{vsInto}"

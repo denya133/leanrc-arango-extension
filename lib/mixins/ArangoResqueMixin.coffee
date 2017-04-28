@@ -1,7 +1,6 @@
 
 
 _             = require 'lodash'
-LeanRC        = require 'LeanRC'
 { db }        = require '@arangodb'
 Queues        = require '@arangodb/foxx/queues'
 
