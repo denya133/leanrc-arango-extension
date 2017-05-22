@@ -40,7 +40,7 @@ Extension = (BaseClass) ->
 
     require('./iterator/ArangoCursor') @Module # needs testing
 
-    require('./mixins/AISCRouteMixin') @Module # needs testing
+    require('./mixins/AISCRouteMixin') @Module # needs testing # empty
     require('./mixins/ArangoCollectionMixin') @Module # needs testing
     require('./mixins/ArangoSwitchMixin') @Module # needs testing
     require('./mixins/ArangoMigrationMixin') @Module # needs testing
@@ -48,7 +48,7 @@ Extension = (BaseClass) ->
     require('./mixins/ArangoResqueMixin') @Module # needs testing
   ArangoExtension.initializeMixin()
 
-sample = Extension LeanRC::Module
+sample = Extension LeanRC
 Reflect.defineProperty Extension, 'reification',
   value: sample
 

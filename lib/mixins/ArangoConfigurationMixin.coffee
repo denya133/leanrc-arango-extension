@@ -47,6 +47,7 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
+  { NILL } = Module
   Module.defineMixin (BaseClass) ->
     class ArangoConfigurationMixin extends BaseClass
       @inheritProtected()

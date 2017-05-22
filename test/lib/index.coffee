@@ -1,1 +1,1 @@
-lib = require.main.require 'lib'
+lib = require '../..'
