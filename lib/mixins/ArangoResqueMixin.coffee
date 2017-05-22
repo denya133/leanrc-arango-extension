@@ -49,15 +49,16 @@ module.exports = (Module)->
 
       @public @async allQueues: Function,
         default: ->
-          yield return for {_key:name, maxWorkers:concurrency} in db._queues.toArray()
+          queues = for {_key:name, maxWorkers:concurrency} in db._queues.toArray()
             {name, concurrency}
+          yield return queues
 
       @public @async pushJob: Function,
-        default: (queueName, scriptName:name, data, delayUntil)->
+        default: (queueName, scriptName, data, delayUntil)->
           queueName = @fullQueueName queueName
           queue = @getQueue queueName
           {mount} = module.context
-          jobID = queue.push {name, mount}, data, {delayUntil}
+          jobID = queue.push {name: scriptName, mount}, data, {delayUntil}
           yield return jobID
 
       @public @async getJob: Function,
