@@ -216,8 +216,19 @@ describe 'ArangoCursor', ->
         '''
         assert.equal (yield cursor.count()), 4, 'Count works incorrectly'
         return
-  ###
   describe '#forEach', ->
+    before ->
+      collection = db._create 'test_thames_travel'
+      date = new Date()
+      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_thames_travel'
     it 'should call lambda in each record in cursor', ->
       co ->
         class Test extends LeanRC
@@ -230,8 +241,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         spyLambda = sinon.spy -> yield return
         yield cursor.forEach spyLambda
         assert.isTrue spyLambda.called, 'Lambda never called'
@@ -241,6 +253,7 @@ describe 'ArangoCursor', ->
         assert.equal spyLambda.args[2][0].data, 'in', 'Lambda 3rd call is not match'
         assert.equal spyLambda.args[3][0].data, 'a boat', 'Lambda 4th call is not match'
         return
+  ###
   describe '#map', ->
     it 'should map records using lambda', ->
       co ->
