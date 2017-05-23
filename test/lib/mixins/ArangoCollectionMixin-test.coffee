@@ -1,9 +1,15 @@
-{ expect, assert } = require 'chai'
-sinon = require 'sinon'
-_ = require 'lodash'
-LeanRC = require 'LeanRC'
+{ db }  = require '@arangodb'
+qb      = require 'aqb'
+
+{ expect, assert }  = require 'chai'
+sinon               = require 'sinon'
+_                   = require 'lodash'
+moment              = require 'moment'
+
+LeanRC              = require 'LeanRC'
+
 ArangoExtension = require '../../..'
-{ co } = LeanRC::Utils
+{ co }          = LeanRC::Utils
 
 ###
 commonServerInitializer = require.main.require 'test/common/server'
@@ -11,6 +17,18 @@ server = commonServerInitializer fixture: 'ArangoCollectionMixin'
 ###
 
 describe 'ArangoCollectionMixin', ->
+  before ->
+    collection = db._create 'test_samples'
+    date = new Date()
+    collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
+    date = new Date()
+    collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
+    date = new Date()
+    collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
+    date = new Date()
+    collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
+  after ->
+    db._drop 'test_samples'
   describe '.new', ->
     it 'should create ArangoDB collection instance', ->
       co ->
@@ -19,14 +37,221 @@ describe 'ArangoCollectionMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::HttpCollection extends Test::Collection
+        class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
-        assert.instanceOf collection, Test::HttpCollection
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        assert.instanceOf collection, ArangoCollection
+        yield return
+  describe '#operatorsMap', ->
+    it 'should get full operators map', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        { operatorsMap } = collection
+
+        assert.isFunction operatorsMap['$and']
+        assert.isFunction operatorsMap['$or']
+        assert.isFunction operatorsMap['$not']
+        assert.isFunction operatorsMap['$nor']
+
+        assert.isFunction operatorsMap['$eq']
+        assert.isFunction operatorsMap['$ne']
+        assert.isFunction operatorsMap['$lt']
+        assert.isFunction operatorsMap['$lte']
+        assert.isFunction operatorsMap['$gt']
+        assert.isFunction operatorsMap['$gte']
+        assert.isFunction operatorsMap['$in']
+        assert.isFunction operatorsMap['$nin']
+
+        assert.isFunction operatorsMap['$all']
+        assert.isFunction operatorsMap['$elemMatch']
+        assert.isFunction operatorsMap['$size']
+
+        assert.isFunction operatorsMap['$exists']
+        assert.isFunction operatorsMap['$type']
+
+        assert.isFunction operatorsMap['$mod']
+        assert.isFunction operatorsMap['$regex']
+
+        assert.isFunction operatorsMap['$td']
+        assert.isFunction operatorsMap['$ld']
+        assert.isFunction operatorsMap['$tw']
+        assert.isFunction operatorsMap['$lw']
+        assert.isFunction operatorsMap['$tm']
+        assert.isFunction operatorsMap['$lm']
+        assert.isFunction operatorsMap['$ty']
+        assert.isFunction operatorsMap['$ly']
+
+        logicalOperator = operatorsMap['$and'] 'a', 'b', 'c'
+        assert.deepEqual logicalOperator, qb.and 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$or'] 'a', 'b', 'c'
+        assert.deepEqual logicalOperator, qb.or 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$not'] 'a', 'b', 'c'
+        assert.deepEqual logicalOperator, qb.not 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$nor'] 'a', 'b', 'c'
+        assert.deepEqual logicalOperator, qb.not qb.or 'a', 'b', 'c'
+
+        compOperator = operatorsMap['$eq'] 'a', 'b'
+        assert.deepEqual compOperator, qb.eq qb('a'), qb('b')
+        compOperator = operatorsMap['$eq'] 'a', '@b'
+        assert.deepEqual compOperator, qb.eq qb('a'), qb.ref('b')
+        compOperator = operatorsMap['$ne'] 'a', 'b'
+        assert.deepEqual compOperator, qb.neq qb('a'), qb('b')
+        compOperator = operatorsMap['$ne'] 'a', '@b'
+        assert.deepEqual compOperator, qb.neq qb('a'), qb.ref('b')
+        compOperator = operatorsMap['$lt'] 'a', 'b'
+        assert.deepEqual compOperator, qb.lt qb('a'), qb('b')
+        compOperator = operatorsMap['$lt'] 'a', '@b'
+        assert.deepEqual compOperator, qb.lt qb('a'), qb.ref('b')
+        compOperator = operatorsMap['$lte'] 'a', 'b'
+        assert.deepEqual compOperator, qb.lte qb('a'), qb('b')
+        compOperator = operatorsMap['$lte'] 'a', '@b'
+        assert.deepEqual compOperator, qb.lte qb('a'), qb.ref('b')
+        compOperator = operatorsMap['$gt'] 'a', 'b'
+        assert.deepEqual compOperator, qb.gt qb('a'), qb('b')
+        compOperator = operatorsMap['$gt'] 'a', '@b'
+        assert.deepEqual compOperator, qb.gt qb('a'), qb.ref('b')
+        compOperator = operatorsMap['$gte'] 'a', 'b'
+        assert.deepEqual compOperator, qb.gte qb('a'), qb('b')
+        compOperator = operatorsMap['$gte'] 'a', '@b'
+        assert.deepEqual compOperator, qb.gte qb('a'), qb.ref('b')
+        compOperator = operatorsMap['$in'] 'a', 'b'
+        assert.deepEqual compOperator, qb.in qb('a'), qb('b')
+        compOperator = operatorsMap['$in'] '@a', 'b'
+        assert.deepEqual compOperator, qb.in qb.ref('a'), qb('b')
+        compOperator = operatorsMap['$nin'] 'a', 'b'
+        assert.deepEqual compOperator, qb.notIn qb('a'), qb('b')
+        compOperator = operatorsMap['$nin'] '@a', 'b'
+        assert.deepEqual compOperator, qb.notIn qb.ref('a'), qb('b')
+
+        queryOperator = operatorsMap['$all'] 'a', ['b', 'c', 'd']
+        assert.deepEqual queryOperator, qb.and [
+          qb.in qb('b'), qb('a')
+          qb.in qb('c'), qb('a')
+          qb.in qb('d'), qb('a')
+        ]
+        queryOperator = operatorsMap['$elemMatch'] '@a', ['b', 'c', 'd']
+        assert.deepEqual queryOperator
+        , qb.gt qb.expr('LENGTH(a[* FILTER b && c && d])'), qb 0
+        queryOperator = operatorsMap['$size'] '@a', 'b'
+        assert.deepEqual queryOperator, qb.eq qb.expr('LENGTH(a)'), qb('b')
+        queryOperator = operatorsMap['$size'] '@a', '@b'
+        assert.deepEqual queryOperator, qb.eq qb.expr('LENGTH(a)'), qb.ref('b')
+
+        queryOperator = operatorsMap['$exists'] '@a', 'b'
+        assert.deepEqual queryOperator, qb.eq qb.expr('HAS(a)'), qb('b')
+        queryOperator = operatorsMap['$exists'] '@a', '@b'
+        assert.deepEqual queryOperator, qb.eq qb.expr('HAS(a)'), qb.ref('b')
+        queryOperator = operatorsMap['$type'] '@a', 'b'
+        assert.deepEqual queryOperator, qb.eq qb.expr('TYPENAME(a)'), qb('b')
+        queryOperator = operatorsMap['$type'] '@a', '@b'
+        assert.deepEqual queryOperator, qb.eq qb.expr('TYPENAME(a)'), qb.ref('b')
+
+        queryOperator = operatorsMap['$mod'] '@a', ['b', 'c']
+        assert.deepEqual queryOperator, qb.eq qb.mod(qb.ref('a'), qb('b')), qb 'c'
+        queryOperator = operatorsMap['$mod'] 'a', ['b', 'c']
+        assert.deepEqual queryOperator, qb.eq qb.mod(qb('a'), qb('b')), qb 'c'
+        queryOperator = operatorsMap['$regex'] '@a', 'b'
+        assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "b")'
+        queryOperator = operatorsMap['$regex'] 'a', 'b'
+        assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "b")'
+
+        date = new Date()
+
+        todayStart = moment().startOf('day').toISOString()
+        todayEnd = moment().endOf('day').toISOString()
+        queryOperator = operatorsMap['$td'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb todayStart), qb.lt(qb(date), qb todayEnd)
+        queryOperator = operatorsMap['$td'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb todayStart), qb.lt(qb(date), qb todayEnd)
+
+        yesterdayStart = moment().subtract(1, 'days').startOf('day').toISOString()
+        yesterdayEnd = moment().subtract(1, 'days').endOf('day').toISOString()
+        queryOperator = operatorsMap['$ld'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb yesterdayStart), qb.lt(qb(date), qb yesterdayEnd)
+        queryOperator = operatorsMap['$ld'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb yesterdayStart), qb.lt(qb(date), qb yesterdayEnd)
+
+        weekStart = moment().startOf('week').toISOString()
+        weekEnd = moment().endOf('week').toISOString()
+        queryOperator = operatorsMap['$tw'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+        queryOperator = operatorsMap['$tw'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+
+        weekStart = moment().subtract(1, 'weeks').startOf 'week'
+        weekEnd = weekStart.clone().endOf('week').toISOString()
+        weekStart = weekStart.toISOString()
+        queryOperator = operatorsMap['$lw'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+        queryOperator = operatorsMap['$lw'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+
+        firstDayStart = moment().startOf('month').toISOString()
+        lastDayEnd = moment().endOf('month').toISOString()
+        queryOperator = operatorsMap['$tm'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        queryOperator = operatorsMap['$tm'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+
+        firstDayStart = moment().subtract(1, 'months').startOf 'month'
+        lastDayEnd = firstDayStart.clone().endOf('month').toISOString()
+        firstDayStart = firstDayStart.toISOString()
+        queryOperator = operatorsMap['$lm'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        queryOperator = operatorsMap['$lm'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+
+        firstDayStart = moment().startOf('year').toISOString()
+        lastDayEnd = moment().endOf('year').toISOString()
+        queryOperator = operatorsMap['$ty'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        queryOperator = operatorsMap['$ty'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+
+        firstDayStart = moment().subtract(1, 'years').startOf 'year'
+        lastDayEnd = firstDayStart.clone().endOf('year').toISOString()
+        firstDayStart = firstDayStart.toISOString()
+        queryOperator = operatorsMap['$ly'] date, yes
+        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        queryOperator = operatorsMap['$ly'] date, no
+        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
         yield return
   ###
   describe '#~sendRequest', ->
@@ -50,17 +275,17 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public delegate: RC::Class,
             default: Test::TestRecord
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         data = yield collection[Symbol.for '~sendRequest']
           method: 'GET'
           url: 'http://localhost:8000'
@@ -89,17 +314,17 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public delegate: RC::Class,
             default: Test::TestRecord
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         hash = collection[Symbol.for '~requestToHash']
           method: 'GET'
           url: 'http://localhost:8000'
@@ -118,13 +343,13 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         method = collection.methodForRequest requestType: 'find'
         assert.equal method, 'GET', 'Find method is incorrect'
         method = collection.methodForRequest requestType: 'insert'
@@ -144,15 +369,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection[Symbol.for '~urlPrefix'] 'Test', 'Tests'
         assert.equal url, 'Tests/Test'
         url = collection[Symbol.for '~urlPrefix'] '/Test'
@@ -166,15 +391,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.pathForType 'Type'
         assert.equal url, 'types'
         url = collection.pathForType 'TestRecord'
@@ -188,15 +413,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection[Symbol.for '~buildURL'] 'Test', {}
         assert.equal url, 'http://localhost:8000/v1/tests/bulk'
         url = collection[Symbol.for '~buildURL'] 'Test', {}, no
@@ -208,15 +433,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.urlForFind 'Test', {}
         assert.equal url, 'http://localhost:8000/v1/tests'
         url = collection.urlForFind 'TestRecord', {}
@@ -228,15 +453,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.urlForInsert 'Test', {}
         assert.equal url, 'http://localhost:8000/v1/tests'
         url = collection.urlForInsert 'TestRecord', {}
@@ -248,15 +473,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.urlForUpdate 'Test', {}
         assert.equal url, 'http://localhost:8000/v1/tests/bulk'
         url = collection.urlForUpdate 'TestRecord', {}
@@ -268,15 +493,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.urlForReplace 'Test', {}
         assert.equal url, 'http://localhost:8000/v1/tests/bulk'
         url = collection.urlForReplace 'TestRecord', {}
@@ -288,15 +513,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.urlForRemove 'Test', {}
         assert.equal url, 'http://localhost:8000/v1/tests/bulk'
         url = collection.urlForRemove 'TestRecord', {}
@@ -308,7 +533,7 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
@@ -318,8 +543,8 @@ describe 'ArangoCollectionMixin', ->
           @public urlForTest: Function,
             default: (recordName, snapshot, requestType, query) ->
               "TEST_#{recordName ? 'RECORD_NAME'}_#{snapshot ? 'SNAPSHOT'}_#{requestType ? 'REQUEST_TYPE'}_#{query ? 'QUERY'}"
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.buildURL 'Test', {}, 'find', {}
         assert.equal url, 'http://localhost:8000/v1/tests'
         url = collection.buildURL 'Test', {}, 'insert', {}
@@ -339,7 +564,7 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
@@ -349,8 +574,8 @@ describe 'ArangoCollectionMixin', ->
           @public urlForTest: Function,
             default: (recordName, snapshot, requestType, query) ->
               "TEST_#{recordName ? 'RECORD_NAME'}_#{snapshot ? 'SNAPSHOT'}_#{requestType ? 'REQUEST_TYPE'}_#{query ? 'QUERY'}"
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         url = collection.urlForRequest
           recordName: 'Test'
           snapshot: {}
@@ -394,15 +619,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         headers = collection.headersForRequest()
         assert.deepEqual headers, {}
         collection.headers = 'Allow': 'GET'
@@ -415,15 +640,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         data = collection.dataForRequest snapshot: test: 'test1'
         assert.deepEqual data, { test: 'test1' }
         data = collection.dataForRequest snapshot: test: 'test2'
@@ -435,15 +660,15 @@ describe 'ArangoCollectionMixin', ->
         class Test extends LeanRC::Module
           @inheritProtected()
         Test.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        collection = Test::HttpCollection.new()
+        ArangoCollection.initialize()
+        collection = ArangoCollection.new()
         sampleData = test: 'test'
         request = collection[Symbol.for '~requestFor']
           recordName: 'TestRecord'
@@ -522,21 +747,21 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
         spyPush = sinon.spy collection, 'push'
         spyQuery = sinon.spy collection, 'query'
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         assert.equal record, spyPush.args[0][0]
         assert.equal spyQuery.args[0][0].$insert, record
@@ -563,19 +788,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         spyQuery = sinon.spy collection, 'query'
         yield record.destroy()
@@ -604,19 +829,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         recordDuplicate = yield collection.take record.id
         assert.notEqual record, recordDuplicate
@@ -644,19 +869,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         originalRecords = []
         for i in [ 1 .. 5 ]
           originalRecords.push yield collection.create test: 'test1'
@@ -689,19 +914,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         originalRecords = []
         for i in [ 1 .. 5 ]
           originalRecords.push yield collection.create test: 'test1'
@@ -734,19 +959,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         updatedRecord = yield collection.override record.id, collection.build test: 'test2'
         assert.isDefined updatedRecord
@@ -775,19 +1000,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         updatedRecord = yield collection.patch record.id, collection.build test: 'test2'
         assert.isDefined updatedRecord
@@ -816,19 +1041,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         assert.isDefined record
         includes = yield collection.includes record.id
@@ -855,19 +1080,19 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::TestRecord'
         Test::TestRecord.initialize()
-        class Test::HttpCollection extends LeanRC::Collection
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::QueryableMixin
           @include LeanRC::ArangoCollectionMixin
           @module Test
           @public host: String, { default: 'http://localhost:8000' }
           @public namespace: String, { default: 'v1' }
-        Test::HttpCollection.initialize()
-        facade.registerProxy Test::HttpCollection.new KEY,
+        ArangoCollection.initialize()
+        facade.registerProxy ArangoCollection.new KEY,
           delegate: Test::TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy KEY
-        assert.instanceOf collection, Test::HttpCollection
+        assert.instanceOf collection, ArangoCollection
         count = 11
         for i in [ 1 .. count ]
           yield collection.create test: 'test1'
