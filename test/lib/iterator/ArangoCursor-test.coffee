@@ -9,12 +9,17 @@ ArangoExtension = require '../../..'
 
 describe 'ArangoCursor', ->
   before ->
-    collection = db._create 'testCollection'
-    for i in [ 1 .. 5 ]
-      date = new Date()
-      collection.save id: i, createdAt: date, updatedAt: date
+    collection = db._create 'test_thames_travel'
+    date = new Date()
+    collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
+    date = new Date()
+    collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
+    date = new Date()
+    collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
+    date = new Date()
+    collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
   after ->
-    db._drop 'testCollection'
+    db._drop 'test_thames_travel'
   describe '.new', ->
     it 'should create cursor instance', ->
       expect ->
@@ -27,7 +32,7 @@ describe 'ArangoCursor', ->
           @inheritProtected()
           @module Test
         TestRecord.initialize()
-        collection = db.testCollection
+        collection = db.test_thames_travel
         cursor = Test::ArangoCursor.new TestRecord, collection.all()
       .to.not.throw Error
   describe '#setRecord', ->
@@ -57,23 +62,11 @@ describe 'ArangoCursor', ->
           @inheritProtected()
           @module Test
         TestRecord.initialize()
-        collection = db.testCollection
+        collection = db.test_thames_travel
         cursor = Test::ArangoCursor.new TestRecord
         cursor.setCursor collection.all()
       .to.not.throw Error
   describe '#next', ->
-    before ->
-      collection = db._create 'test_thames_travel'
-      date = new Date()
-      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
-    after ->
-      db._drop 'test_thames_travel'
     it 'should get next values one by one', ->
       co ->
         class Test extends LeanRC
@@ -96,11 +89,11 @@ describe 'ArangoCursor', ->
         assert.isUndefined (yield cursor.next()), 'Unexpected item is present'
   describe '#hasNext', ->
     before ->
-      collection = db._create 'test_thames_travel'
+      collection = db._create 'test_collection'
       date = new Date()
       collection.save id: 1, data: 'data', createdAt: date, updatedAt: date
     after ->
-      db._drop 'test_thames_travel'
+      db._drop 'test_collection'
     it 'should check if next value is present', ->
       co ->
         class Test extends LeanRC
@@ -113,24 +106,12 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        collection = db.test_thames_travel
+        collection = db.test_collection
         cursor = Test::ArangoCursor.new TestRecord, collection.all()
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         data = yield cursor.next()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
   describe '#toArray', ->
-    before ->
-      collection = db._create 'test_thames_travel'
-      date = new Date()
-      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
-    after ->
-      db._drop 'test_thames_travel'
     it 'should get array from cursor', ->
       co ->
         class Test extends LeanRC
@@ -155,18 +136,6 @@ describe 'ArangoCursor', ->
           assert.equal record.data, array[index].data, "Record #{index} `data` is incorrect"
         return
   describe '#close', ->
-    before ->
-      collection = db._create 'test_thames_travel'
-      date = new Date()
-      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
-    after ->
-      db._drop 'test_thames_travel'
     it 'should remove records from cursor', ->
       co ->
         class Test extends LeanRC
@@ -187,18 +156,6 @@ describe 'ArangoCursor', ->
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
         return
   describe '#count', ->
-    before ->
-      collection = db._create 'test_thames_travel'
-      date = new Date()
-      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
-    after ->
-      db._drop 'test_thames_travel'
     it 'should count records in cursor', ->
       co ->
         class Test extends LeanRC
@@ -217,18 +174,6 @@ describe 'ArangoCursor', ->
         assert.equal (yield cursor.count()), 4, 'Count works incorrectly'
         return
   describe '#forEach', ->
-    before ->
-      collection = db._create 'test_thames_travel'
-      date = new Date()
-      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
-      date = new Date()
-      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
-    after ->
-      db._drop 'test_thames_travel'
     it 'should call lambda in each record in cursor', ->
       co ->
         class Test extends LeanRC
@@ -253,7 +198,6 @@ describe 'ArangoCursor', ->
         assert.equal spyLambda.args[2][0].data, 'in', 'Lambda 3rd call is not match'
         assert.equal spyLambda.args[3][0].data, 'a boat', 'Lambda 4th call is not match'
         return
-  ###
   describe '#map', ->
     it 'should map records using lambda', ->
       co ->
@@ -267,17 +211,19 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         records = yield cursor.map (record) ->
           record.data = '+' + record.data + '+'
-          yield RC::Promise.resolve record
+          yield Test::Promise.resolve record
         assert.lengthOf records, 4, 'Records count is not match'
         assert.equal records[0].data, '+three+', '1st record is not match'
         assert.equal records[1].data, '+men+', '2nd record is not match'
         assert.equal records[2].data, '+in+', '3rd record is not match'
         assert.equal records[3].data, '+a boat+', '4th record is not match'
         return
+  ###
   describe '#filter', ->
     it 'should filter records using lambda', ->
       co ->
