@@ -307,7 +307,6 @@ describe 'ArangoCursor', ->
         assert.equal records[0].data, 'men', '1st record is not match'
         assert.equal records[1].data, 'a boat', '2nd record is not match'
         return
-  ###
   describe '#reduce', ->
     it 'should reduce records using lambda', ->
       co ->
@@ -321,8 +320,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         records = yield cursor.reduce (accumulator, item) ->
           accumulator[item.data] = item
           yield Test::Promise.resolve accumulator
@@ -332,6 +332,7 @@ describe 'ArangoCursor', ->
         assert.equal records['in'].data, 'in', '3rd record is not match'
         assert.equal records['a boat'].data, 'a boat', '4th record is not match'
         return
+  ###
   describe '#first', ->
     it 'should get first record from cursor', ->
       co ->
