@@ -1,3 +1,4 @@
+{ db } = require '@arangodb'
 { expect, assert } = require 'chai'
 sinon = require 'sinon'
 _ = require 'lodash'
@@ -7,6 +8,13 @@ ArangoExtension = require '../../..'
 
 
 describe 'ArangoCursor', ->
+  before ->
+    collection = db._create 'testCollection'
+    for i in [ 1 .. 5 ]
+      date = new Date()
+      collection.save id: i, createdAt: date, updatedAt: date
+  after ->
+    db._drop 'testCollection'
   describe '.new', ->
     it 'should create cursor instance', ->
       expect ->
@@ -15,21 +23,12 @@ describe 'ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class TestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::MemoryCollectionMixin
-          @module Test
-        TestCollection.initialize()
         class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
         TestRecord.initialize()
-        array = [ {}, {}, {} ]
-        collection = TestCollection.new
-          delegate: TestRecord
-          serializer: Test::Serializer
-        simpleCursor = Test::Cursor.new collection, array
-        cursor = Test::ArangoCursor.new TestRecord, simpleCursor
+        collection = db.testCollection
+        cursor = Test::ArangoCursor.new TestRecord, collection.all()
       .to.not.throw Error
   describe '#setRecord', ->
     it 'should setup record', ->
@@ -45,6 +44,22 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         cursor = Test::ArangoCursor.new()
         cursor.setRecord TestRecord
+      .to.not.throw Error
+  describe '#setCursor', ->
+    it 'should setup cursor', ->
+      expect ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class TestRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+        TestRecord.initialize()
+        collection = db.testCollection
+        cursor = Test::ArangoCursor.new TestRecord
+        cursor.setCursor collection.all()
       .to.not.throw Error
   ###
   describe '#next', ->
