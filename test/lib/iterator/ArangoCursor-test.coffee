@@ -94,8 +94,13 @@ describe 'ArangoCursor', ->
         assert.equal (yield cursor.next()).data, 'in', 'Third item is incorrect'
         assert.equal (yield cursor.next()).data, 'a boat', 'Fourth item is incorrect'
         assert.isUndefined (yield cursor.next()), 'Unexpected item is present'
-  ###
   describe '#hasNext', ->
+    before ->
+      collection = db._create 'test_thames_travel'
+      date = new Date()
+      collection.save id: 1, data: 'data', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_thames_travel'
     it 'should check if next value is present', ->
       co ->
         class Test extends LeanRC
@@ -108,11 +113,12 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'data' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        collection = db.test_thames_travel
+        cursor = Test::ArangoCursor.new TestRecord, collection.all()
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         data = yield cursor.next()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
+  ###
   describe '#toArray', ->
     it 'should get array from cursor', ->
       co ->
