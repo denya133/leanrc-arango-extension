@@ -118,8 +118,19 @@ describe 'ArangoCursor', ->
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         data = yield cursor.next()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
-  ###
   describe '#toArray', ->
+    before ->
+      collection = db._create 'test_thames_travel'
+      date = new Date()
+      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_thames_travel'
     it 'should get array from cursor', ->
       co ->
         class Test extends LeanRC
@@ -132,14 +143,18 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        array = db._query 'FOR item IN test_thames_travel SORT item._key RETURN item'
+        .toArray()
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         records = yield cursor.toArray()
         assert.equal records.length, array.length, 'Counts of input and output data are different'
         for record, index in records
           assert.instanceOf record, TestRecord, "Record #{index} is incorrect"
           assert.equal record.data, array[index].data, "Record #{index} `data` is incorrect"
         return
+  ###
   describe '#close', ->
     it 'should remove records from cursor', ->
       co ->
