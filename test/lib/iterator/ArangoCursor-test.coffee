@@ -6,7 +6,7 @@ ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 
 
-describe 'Test::ArangoCursor', ->
+describe 'ArangoCursor', ->
   describe '.new', ->
     it 'should create cursor instance', ->
       expect ->
@@ -15,14 +15,22 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::MemoryCollectionMixin
+          @module Test
+        TestCollection.initialize()
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ {}, {}, {} ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        collection = TestCollection.new
+          delegate: TestRecord
+          serializer: Test::Serializer
+        simpleCursor = Test::Cursor.new collection, array
+        cursor = Test::ArangoCursor.new TestRecord, simpleCursor
       .to.not.throw Error
-  ###
   describe '#setRecord', ->
     it 'should setup record', ->
       expect ->
@@ -31,13 +39,14 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         cursor = Test::ArangoCursor.new()
-        cursor.setRecord Test::TestRecord
+        cursor.setRecord TestRecord
       .to.not.throw Error
+  ###
   describe '#next', ->
     it 'should get next values one by one', ->
       co ->
@@ -46,13 +55,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         assert.equal (yield cursor.next()).data, 'three', 'First item is incorrect'
         assert.equal (yield cursor.next()).data, 'men', 'Second item is incorrect'
         assert.equal (yield cursor.next()).data, 'in', 'Third item is incorrect'
@@ -66,13 +75,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'data' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         data = yield cursor.next()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
@@ -84,17 +93,17 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         records = yield cursor.toArray()
         assert.equal records.length, array.length, 'Counts of input and output data are different'
         for record, index in records
-          assert.instanceOf record, Test::TestRecord, "Record #{index} is incorrect"
+          assert.instanceOf record, TestRecord, "Record #{index} is incorrect"
           assert.equal record.data, array[index].data, "Record #{index} `data` is incorrect"
         return
   describe '#close', ->
@@ -105,13 +114,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         yield cursor.close()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
@@ -124,13 +133,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         assert.equal (yield cursor.count()), 4, 'Count works incorrectly'
         return
   describe '#forEach', ->
@@ -141,13 +150,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         spyLambda = sinon.spy -> yield return
         yield cursor.forEach spyLambda
         assert.isTrue spyLambda.called, 'Lambda never called'
@@ -165,13 +174,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         records = yield cursor.map (record) ->
           record.data = '+' + record.data + '+'
           yield RC::Promise.resolve record
@@ -189,13 +198,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         records = yield cursor.filter (record) ->
           yield RC::Promise.resolve record.data.length > 3
         assert.lengthOf records, 2, 'Records count is not match'
@@ -210,13 +219,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute name: String, { default: 'Unknown' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { name: 'Jerome' }, { name: 'George' }, { name: 'Harris' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         record = yield cursor.find (record) ->
           yield RC::Promise.resolve record.name is 'George'
         assert.equal record.name, 'George', 'Record is not match'
@@ -229,13 +238,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ null, { data: 'men' }, undefined, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         records = yield cursor.compact()
         assert.lengthOf records, 2, 'Records count not match'
         assert.equal records[0].data, 'men', '1st record is not match'
@@ -249,13 +258,13 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         records = yield cursor.reduce (accumulator, item) ->
           accumulator[item.data] = item
           yield RC::Promise.resolve accumulator
@@ -273,17 +282,17 @@ describe 'Test::ArangoCursor', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends Test::Record
+        class TestRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute data: String, { default: '' }
-        Test::TestRecord.initialize()
+        TestRecord.initialize()
         array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         record = yield cursor.first()
         assert.equal record.data, 'three', '1st record is not match'
         array = [ { data: 'Jerome' }, { data: 'George' }, { data: 'Harris' } ]
-        cursor = Test::ArangoCursor.new delegate: Test::TestRecord, array
+        cursor = Test::ArangoCursor.new delegate: TestRecord, array
         record = yield cursor.first()
         assert.equal record.data, 'Jerome', 'Another 1st record is not match'
         return
