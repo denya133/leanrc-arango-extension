@@ -38,7 +38,7 @@ Extension = (BaseClass) ->
   class ArangoExtension extends BaseClass
     @inheritProtected()
 
-    require('./iterator/ArangoCursor') @Module # needs testing
+    require('./iterator/ArangoCursor') @Module
 
     require('./mixins/AISCRouteMixin') @Module # needs testing # empty
     require('./mixins/ArangoCollectionMixin') @Module # needs testing

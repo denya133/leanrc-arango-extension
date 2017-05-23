@@ -332,8 +332,17 @@ describe 'ArangoCursor', ->
         assert.equal records['in'].data, 'in', '3rd record is not match'
         assert.equal records['a boat'].data, 'a boat', '4th record is not match'
         return
-  ###
   describe '#first', ->
+    before ->
+      collection = db._create 'test_collection'
+      date = new Date()
+      collection.save id: 1, data: 'Jerome', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 1, data: 'George', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 1, data: 'Harris', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_collection'
     it 'should get first record from cursor', ->
       co ->
         class Test extends LeanRC
@@ -346,13 +355,14 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         record = yield cursor.first()
         assert.equal record.data, 'three', '1st record is not match'
-        array = [ { data: 'Jerome' }, { data: 'George' }, { data: 'Harris' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_collection SORT item._key RETURN item
+        '''
         record = yield cursor.first()
         assert.equal record.data, 'Jerome', 'Another 1st record is not match'
         return
-  ###
