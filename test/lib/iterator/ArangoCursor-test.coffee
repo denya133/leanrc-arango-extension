@@ -245,8 +245,17 @@ describe 'ArangoCursor', ->
         assert.equal records[0].data, 'three', '1st record is not match'
         assert.equal records[1].data, 'a boat', '2nd record is not match'
         return
-  ###
   describe '#find', ->
+    before ->
+      collection = db._create 'test_collection'
+      date = new Date()
+      collection.save id: 1, name: 'Jerome', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 1, name: 'George', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 1, name: 'Harris', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_collection'
     it 'should find record using lambda', ->
       co ->
         class Test extends LeanRC
@@ -259,12 +268,15 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute name: String, { default: 'Unknown' }
         TestRecord.initialize()
-        array = [ { name: 'Jerome' }, { name: 'George' }, { name: 'Harris' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db.test_collection.all()
         record = yield cursor.find (record) ->
           yield Test::Promise.resolve record.name is 'George'
         assert.equal record.name, 'George', 'Record is not match'
+        record = yield cursor.find (record) ->
+          yield Test::Promise.resolve record.name is 'Marvel'
+        assert.isNull record
         return
+  ###
   describe '#compact', ->
     it 'should get non-empty records from cursor', ->
       co ->
