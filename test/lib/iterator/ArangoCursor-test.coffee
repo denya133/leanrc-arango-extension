@@ -276,8 +276,17 @@ describe 'ArangoCursor', ->
           yield Test::Promise.resolve record.name is 'Marvel'
         assert.isNull record
         return
-  ###
   describe '#compact', ->
+    before ->
+      collection = db._create 'test_collection'
+      date = new Date()
+      collection.save id: 1, data: 'men', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 1, data: null, createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 1, data: 'a boat', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_collection'
     it 'should get non-empty records from cursor', ->
       co ->
         class Test extends LeanRC
@@ -290,13 +299,15 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ null, { data: 'men' }, undefined, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_collection SORT item._key RETURN item.data ? item : null
+        '''
         records = yield cursor.compact()
         assert.lengthOf records, 2, 'Records count not match'
         assert.equal records[0].data, 'men', '1st record is not match'
         assert.equal records[1].data, 'a boat', '2nd record is not match'
         return
+  ###
   describe '#reduce', ->
     it 'should reduce records using lambda', ->
       co ->

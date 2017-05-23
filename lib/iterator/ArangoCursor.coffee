@@ -107,7 +107,7 @@ module.exports = (Module)->
         records = []
         try
           while yield @hasNext()
-            rawRecord = yield @[ipoCursor].next()
+            rawRecord = yield LeanRC::Promise.resolve @[ipoCursor].next()
             unless _.isEmpty rawRecord
               record = acRecord.new rawRecord
               records.push record
