@@ -12,7 +12,7 @@ server = commonServerInitializer fixture: 'ArangoCollectionMixin'
 
 describe 'ArangoCollectionMixin', ->
   describe '.new', ->
-    it 'should create HTTP collection instance', ->
+    it 'should create ArangoDB collection instance', ->
       co ->
         class Test extends LeanRC
           @inheritProtected()
