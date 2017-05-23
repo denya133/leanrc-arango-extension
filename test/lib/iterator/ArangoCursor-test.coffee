@@ -223,7 +223,6 @@ describe 'ArangoCursor', ->
         assert.equal records[2].data, '+in+', '3rd record is not match'
         assert.equal records[3].data, '+a boat+', '4th record is not match'
         return
-  ###
   describe '#filter', ->
     it 'should filter records using lambda', ->
       co ->
@@ -237,14 +236,16 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         records = yield cursor.filter (record) ->
-          yield RC::Promise.resolve record.data.length > 3
+          yield Test::Promise.resolve record.data.length > 3
         assert.lengthOf records, 2, 'Records count is not match'
         assert.equal records[0].data, 'three', '1st record is not match'
         assert.equal records[1].data, 'a boat', '2nd record is not match'
         return
+  ###
   describe '#find', ->
     it 'should find record using lambda', ->
       co ->
@@ -261,7 +262,7 @@ describe 'ArangoCursor', ->
         array = [ { name: 'Jerome' }, { name: 'George' }, { name: 'Harris' } ]
         cursor = Test::ArangoCursor.new delegate: TestRecord, array
         record = yield cursor.find (record) ->
-          yield RC::Promise.resolve record.name is 'George'
+          yield Test::Promise.resolve record.name is 'George'
         assert.equal record.name, 'George', 'Record is not match'
         return
   describe '#compact', ->
@@ -301,7 +302,7 @@ describe 'ArangoCursor', ->
         cursor = Test::ArangoCursor.new delegate: TestRecord, array
         records = yield cursor.reduce (accumulator, item) ->
           accumulator[item.data] = item
-          yield RC::Promise.resolve accumulator
+          yield Test::Promise.resolve accumulator
         , {}
         assert.equal records['three'].data, 'three', '1st record is not match'
         assert.equal records['men'].data, 'men', '2nd record is not match'
