@@ -32,7 +32,7 @@ module.exports = (Module)->
     @public @async next: Function,
       default: (acRecord = null)->
         acRecord ?= @[ipcRecord]
-        data = yield @[ipoCursor].next()
+        data = yield LeanRC::Promise.resolve @[ipoCursor].next()
         if acRecord?
           if data?
             acRecord.new data
@@ -42,13 +42,13 @@ module.exports = (Module)->
           data
 
     @public @async hasNext: Function,
-      default: -> yield @[ipoCursor].hasNext()
+      default: -> yield LeanRC::Promise.resolve @[ipoCursor].hasNext()
 
     @public @async close: Function,
-      default: -> yield @[ipoCursor].dispose()
+      default: -> yield LeanRC::Promise.resolve @[ipoCursor].dispose()
 
     @public @async count: Function,
-      default: -> yield @[ipoCursor].count arguments...
+      default: -> yield LeanRC::Promise.resolve @[ipoCursor].count arguments...
 
     @public @async forEach: Function,
       default: (lambda, acRecord = null)->

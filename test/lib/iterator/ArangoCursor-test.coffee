@@ -61,8 +61,19 @@ describe 'ArangoCursor', ->
         cursor = Test::ArangoCursor.new TestRecord
         cursor.setCursor collection.all()
       .to.not.throw Error
-  ###
   describe '#next', ->
+    before ->
+      collection = db._create 'test_thames_travel'
+      date = new Date()
+      collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 2, data: 'men', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 3, data: 'in', createdAt: date, updatedAt: date
+      date = new Date()
+      collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
+    after ->
+      db._drop 'test_thames_travel'
     it 'should get next values one by one', ->
       co ->
         class Test extends LeanRC
@@ -75,13 +86,15 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        array = [ { data: 'three' }, { data: 'men' }, { data: 'in' }, { data: 'a boat' } ]
-        cursor = Test::ArangoCursor.new delegate: TestRecord, array
+        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+          FOR item IN test_thames_travel SORT item._key RETURN item
+        '''
         assert.equal (yield cursor.next()).data, 'three', 'First item is incorrect'
         assert.equal (yield cursor.next()).data, 'men', 'Second item is incorrect'
         assert.equal (yield cursor.next()).data, 'in', 'Third item is incorrect'
         assert.equal (yield cursor.next()).data, 'a boat', 'Fourth item is incorrect'
         assert.isUndefined (yield cursor.next()), 'Unexpected item is present'
+  ###
   describe '#hasNext', ->
     it 'should check if next value is present', ->
       co ->
