@@ -253,6 +253,64 @@ describe 'ArangoCollectionMixin', ->
         queryOperator = operatorsMap['$ly'] date, no
         assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
         yield return
+  describe '#parseFilter', ->
+    it 'should get parse filter', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        result = collection.parseFilter
+          field: 'a'
+          operator: '$eq'
+          operand: 'b'
+          implicitField: yes
+        assert.deepEqual result, qb.eq qb('a'), qb('b')
+        result = collection.parseFilter
+          parts: [
+            field: 'c'
+            operand: 'b'
+            operator: '$or'
+          ,
+            field: 'd'
+            operand: 'b'
+            operator: '$nor'
+          ]
+          operator: '$and'
+          implicitField: yes
+        assert.deepEqual result, qb.and [
+          qb.or qb.ref('c'), qb.ref('b')
+          qb.not qb.or qb.ref('d'), qb.ref('b')
+        ]
+        result = collection.parseFilter
+          operator: '$elemMatch'
+          field: '@a'
+          parts: [
+            field: 'b'
+            operand: 'c'
+            operator: '$or'
+          ]
+        assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (@CURRENT.b || c)])'), qb 0
+        yield return
   ###
   describe '#~sendRequest', ->
     before ->

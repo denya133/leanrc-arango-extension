@@ -259,7 +259,7 @@ module.exports = (Module)->
       @public parseFilter: Function,
         args: [Object]
         return: Module::ANY
-        default: ({field, parts, operator, operand, implicitField})->
+        default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
             @operatorsMap[operator] field, operand
           else if field? and operator is '$elemMatch'
