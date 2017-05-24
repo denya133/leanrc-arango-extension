@@ -389,7 +389,25 @@ describe 'ArangoCollectionMixin', ->
             ,
               '@tomato.active': '$eq': yes
             ]
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
+          '$filter':
+            parts: [
+              field: 'c'
+              operand: 'b'
+              operator: '$or'
+            ,
+              field: 'd'
+              operand: 'b'
+              operator: '$nor'
+            ]
+            operator: '$and'
+          '$let':
+            k:
+              '$forIn':
+                'doc1': 'test_samples'
+              '$filter':
+                '@doc1.test': 'test'
+              '$return': 'doc1'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER ([("parts" == [{"field": "c", "operand": "b", "operator": "$or"}, {"field": "d", "operand": "b", "operator": "$nor"}]), ("operator" == "$and")]) LET k = FOR doc1 IN test_samples FILTER ([(doc1.test == "test")]) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
         yield return
   ###
   describe '#~sendRequest', ->
