@@ -302,7 +302,7 @@ module.exports = (Module)->
             do =>
               if aoQuery.$into?
                 vhObjectForInsert = @serializer.serialize voRecord
-                voQuery = (voQuery ? qb).insert vhObjectForInsert
+                voQuery = (voQuery ? qb).insert qb vhObjectForInsert
                   .into aoQuery.$into
           else if (voRecord = aoQuery.$update)?
             do =>
@@ -312,9 +312,11 @@ module.exports = (Module)->
                     voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                       .in asCollectionFullName
                   if (voJoin = aoQuery.$join?.$and)?
-                    vlJoinFilters = voJoin.map (asItemRef, {$eq:asRelValue})->
-                      voItemRef = qb.ref asItemRef.replace '@', ''
-                      voRelValue = qb.ref asRelValue.replace '@', ''
+                    vlJoinFilters = voJoin.map (mongoFilter)->
+                      asItemRef = Object.keys(mongoFilter)[0]
+                      {$eq:asRelValue} = mongoFilter[asItemRef]
+                      voItemRef = wrapReference asItemRef
+                      voRelValue = wrapReference asRelValue
                       qb.eq voItemRef, voRelValue
                     voQuery = voQuery.filter qb.and vlJoinFilters...
                   if (voFilter = aoQuery.$filter)?
@@ -324,7 +326,7 @@ module.exports = (Module)->
                       voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 vhObjectForUpdate = _.omit @serializer.serialize(voRecord), ['id', '_key']
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
-                  .with vhObjectForUpdate
+                  .with qb vhObjectForUpdate
                   .into aoQuery.$into
           else if (voRecord = aoQuery.$replace)?
             do =>
@@ -417,7 +419,7 @@ module.exports = (Module)->
                     voQuery = voQuery.returnDistinct voReturn
                   else
                     voQuery = voQuery.return voReturn
-          vsQuery = voQuery.toAQL()
+          vsQuery = voQuery?.toAQL()
 
           if intoUsed and new RegExp(intoUsed).test vsQuery
             vsQuery = vsQuery.replace new RegExp(intoUsed), intoPartial

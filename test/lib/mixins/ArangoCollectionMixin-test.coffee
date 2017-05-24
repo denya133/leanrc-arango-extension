@@ -311,6 +311,86 @@ describe 'ArangoCollectionMixin', ->
           ]
         assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (@CURRENT.b || c)])'), qb 0
         yield return
+  describe '#parseQuery', ->
+    it 'should get parse query for `insert`', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$insert': SampleRecord.new
+            id: '1'
+            createdAt: date
+            updatedAt: date
+            test: 'test'
+          , collection
+          '$into': 'test_samples'
+        assert.equal result, 'INSERT {"id": "1", "rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} INTO test_samples'
+        yield return
+    it 'should get parse query for `update`', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$forIn':
+            'doc': 'test_samples'
+          '$into': 'test_samples'
+          '$update': SampleRecord.new
+            createdAt: date
+            updatedAt: date
+            test: 'test'
+          , collection
+          '$join':
+            '$and': [
+              '@doc.tomatoId': '$eq': '@tomato._key'
+            ,
+              '@tomato.active': '$eq': yes
+            ]
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
+        yield return
   ###
   describe '#~sendRequest', ->
     before ->
