@@ -284,10 +284,12 @@ module.exports = (Module)->
                 for own asItemRef, asCollectionFullName of aoQuery.$forIn
                   voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                     .in asCollectionFullName
-                if (voJoin = aoQuery.$join)?
-                  vlJoinFilters = voJoin.$and.map (asItemRef, {$eq:asRelValue})->
-                    voItemRef = qb.ref asItemRef.replace '@', ''
-                    voRelValue = qb.ref asRelValue.replace '@', ''
+                if (voJoin = aoQuery.$join?.$and)?
+                  vlJoinFilters = voJoin.map (mongoFilter)->
+                    asItemRef = Object.keys(mongoFilter)[0]
+                    {$eq:asRelValue} = mongoFilter[asItemRef]
+                    voItemRef = wrapReference asItemRef
+                    voRelValue = wrapReference asRelValue
                     qb.eq voItemRef, voRelValue
                   voQuery = voQuery.filter qb.and vlJoinFilters...
                 if (voFilter = aoQuery.$filter)?
