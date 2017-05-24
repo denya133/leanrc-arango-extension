@@ -336,9 +336,11 @@ module.exports = (Module)->
                     voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                       .in asCollectionFullName
                   if (voJoin = aoQuery.$join?.$and)?
-                    vlJoinFilters = voJoin.map (asItemRef, {$eq:asRelValue})->
-                      voItemRef = qb.ref asItemRef.replace '@', ''
-                      voRelValue = qb.ref asRelValue.replace '@', ''
+                    vlJoinFilters = voJoin.map (mongoFilter)->
+                      asItemRef = Object.keys(mongoFilter)[0]
+                      {$eq:asRelValue} = mongoFilter[asItemRef]
+                      voItemRef = wrapReference asItemRef
+                      voRelValue = wrapReference asRelValue
                       qb.eq voItemRef, voRelValue
                     voQuery = voQuery.filter qb.and vlJoinFilters...
                   if (voFilter = aoQuery.$filter)?
@@ -348,7 +350,7 @@ module.exports = (Module)->
                       voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 vhObjectForReplace = _.omit @serializer.serialize(voRecord), ['id', '_key']
                 voQuery = (voQuery ? qb).replace qb.ref 'doc'
-                  .with vhObjectForReplace
+                  .with qb vhObjectForReplace
                   .into aoQuery.$into
           else if aoQuery.$forIn?
             do =>

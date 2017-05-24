@@ -409,6 +409,67 @@ describe 'ArangoCollectionMixin', ->
               '$return': 'doc1'
         assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER ([("parts" == [{"field": "c", "operand": "b", "operator": "$or"}, {"field": "d", "operand": "b", "operator": "$nor"}]), ("operator" == "$and")]) LET k = FOR doc1 IN test_samples FILTER ([(doc1.test == "test")]) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
         yield return
+    it 'should get parse query for `replace`', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$forIn':
+            'doc': 'test_samples'
+          '$into': 'test_samples'
+          '$replace': SampleRecord.new
+            createdAt: date
+            updatedAt: date
+            test: 'test'
+          , collection
+          '$join':
+            '$and': [
+              '@doc.tomatoId': '$eq': '@tomato._key'
+            ,
+              '@tomato.active': '$eq': yes
+            ]
+          '$filter':
+            parts: [
+              field: 'c'
+              operand: 'b'
+              operator: '$or'
+            ,
+              field: 'd'
+              operand: 'b'
+              operator: '$nor'
+            ]
+            operator: '$and'
+          '$let':
+            k:
+              '$forIn':
+                'doc1': 'test_samples'
+              '$filter':
+                '@doc1.test': 'test'
+              '$return': 'doc1'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER ([("parts" == [{"field": "c", "operand": "b", "operator": "$or"}, {"field": "d", "operand": "b", "operator": "$nor"}]), ("operator" == "$and")]) LET k = FOR doc1 IN test_samples FILTER ([(doc1.test == "test")]) RETURN doc1 REPLACE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
+        yield return
   ###
   describe '#~sendRequest', ->
     before ->
