@@ -554,7 +554,7 @@ describe 'ArangoCollectionMixin', ->
               '$return': 'doc1'
         assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 REMOVE {id: 1} IN test_samples'
         yield return
-    it 'should get parse query for other', ->
+    it 'should get parse query for other with distinct return', ->
       co ->
         class Test extends LeanRC
           @inheritProtected()
@@ -634,6 +634,56 @@ describe 'ArangoCollectionMixin', ->
           '$distinct': yes
           '$return': '@doc'
         assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 COLLECT l = FOR doc2 IN test_samples FILTER ((doc2.test == "test")) RETURN doc2 INTO test_samples FILTER (((((("f" == "1")) || ((doc.g == "2")))) && (!(doc.h == "2")))) SORT doc.field1 ASC SORT doc.field2 DESC LIMIT 50, 100 RETURN DISTINCT doc'
+        yield return
+    it 'should get parse query for other with count', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$forIn':
+            'doc': 'test_samples'
+          '$into': 'test_samples'
+          '$join':
+            '$and': [
+              '@doc.tomatoId': '$eq': '@tomato._key'
+            ,
+              '@tomato.active': '$eq': yes
+            ]
+          '$filter':
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
+            ,
+              '@doc.b':
+                '$not': '$eq': '2'
+            ]
+          '$count': yes
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples COLLECT WITH COUNT INTO counter RETURN (counter ? counter : 0)'
         yield return
   ###
   describe '#~sendRequest', ->
