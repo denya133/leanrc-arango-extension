@@ -685,6 +685,106 @@ describe 'ArangoCollectionMixin', ->
           '$count': yes
         assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples COLLECT WITH COUNT INTO counter RETURN (counter ? counter : 0)'
         yield return
+    it 'should get parse query for other with sum', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$forIn':
+            'doc': 'test_samples'
+          '$into': 'test_samples'
+          '$join':
+            '$and': [
+              '@doc.tomatoId': '$eq': '@tomato._key'
+            ,
+              '@tomato.active': '$eq': yes
+            ]
+          '$filter':
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
+            ,
+              '@doc.b':
+                '$not': '$eq': '2'
+            ]
+          '$sum': '@doc.test'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples COLLECT AGGREGATE result = SUM(TO_NUMBER(doc.test)) RETURN result'
+        yield return
+    it 'should get parse query for other with min', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$forIn':
+            'doc': 'test_samples'
+          '$into': 'test_samples'
+          '$join':
+            '$and': [
+              '@doc.tomatoId': '$eq': '@tomato._key'
+            ,
+              '@tomato.active': '$eq': yes
+            ]
+          '$filter':
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
+            ,
+              '@doc.b':
+                '$not': '$eq': '2'
+            ]
+          '$min': '@doc.test'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples SORT doc.test LIMIT 1 RETURN doc.test'
+        yield return
   ###
   describe '#~sendRequest', ->
     before ->
