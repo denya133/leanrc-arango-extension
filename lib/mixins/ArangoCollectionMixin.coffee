@@ -422,7 +422,7 @@ module.exports = (Module)->
                     vhObj = {}
                     for own key, value of aoQuery.$return
                       do (key, value)->
-                        vhObj[key] = qb.ref value.replace '@', ''
+                        vhObj[key] = wrapReference value
                     vhObj
                   if aoQuery.$distinct
                     voQuery = voQuery.returnDistinct voReturn
