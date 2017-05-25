@@ -90,6 +90,8 @@ describe 'ArangoCollectionMixin', ->
         assert.isFunction operatorsMap['$not']
         assert.isFunction operatorsMap['$nor']
 
+        assert.isFunction operatorsMap['$where']
+
         assert.isFunction operatorsMap['$eq']
         assert.isFunction operatorsMap['$ne']
         assert.isFunction operatorsMap['$lt']
@@ -118,14 +120,17 @@ describe 'ArangoCollectionMixin', ->
         assert.isFunction operatorsMap['$ty']
         assert.isFunction operatorsMap['$ly']
 
-        logicalOperator = operatorsMap['$and'] 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$and'] ['a', 'b', 'c']
         assert.deepEqual logicalOperator, qb.and 'a', 'b', 'c'
-        logicalOperator = operatorsMap['$or'] 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$or'] ['a', 'b', 'c']
         assert.deepEqual logicalOperator, qb.or 'a', 'b', 'c'
-        logicalOperator = operatorsMap['$not'] 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$not'] ['a', 'b', 'c']
         assert.deepEqual logicalOperator, qb.not 'a', 'b', 'c'
-        logicalOperator = operatorsMap['$nor'] 'a', 'b', 'c'
+        logicalOperator = operatorsMap['$nor'] ['a', 'b', 'c']
         assert.deepEqual logicalOperator, qb.not qb.or 'a', 'b', 'c'
+
+        assert.throws -> operatorsMap['$where'] ['a', 'b', 'c']
+        , Error
 
         compOperator = operatorsMap['$eq'] 'a', 'b'
         assert.deepEqual compOperator, qb.eq qb('a'), qb('b')
@@ -283,33 +288,55 @@ describe 'ArangoCollectionMixin', ->
           field: 'a'
           operator: '$eq'
           operand: 'b'
-          implicitField: yes
         assert.deepEqual result, qb.eq qb('a'), qb('b')
         result = collection.parseFilter
           parts: [
-            field: 'c'
-            operand: 'b'
             operator: '$or'
+            parts: [
+              field: '@c'
+              operand: '1'
+              operator: '$eq'
+            ,
+              field: '@b'
+              operand: '2'
+              operator: '$eq'
+            ]
           ,
-            field: 'd'
-            operand: 'b'
             operator: '$nor'
+            parts: [
+              field: '@d'
+              operand: '1'
+              operator: '$eq'
+            ,
+              field: '@b'
+              operand: '2'
+              operator: '$eq'
+            ]
           ]
           operator: '$and'
-          implicitField: yes
         assert.deepEqual result, qb.and [
-          qb.or qb.ref('c'), qb.ref('b')
-          qb.not qb.or qb.ref('d'), qb.ref('b')
-        ]
+          qb.or qb.eq(qb.ref('c'), qb('1')), qb.eq(qb.ref('b'), qb('2'))
+          qb.not qb.or qb.eq(qb.ref('d'), qb('1')), qb.eq(qb.ref('b'), qb('2'))
+        ]...
+        result = collection.parseFilter
+          operator: '$elemMatch'
+          field: '@a'
+          parts: [
+            field: '@b'
+            operand: 'c'
+            operator: '$eq'
+          ]
+          implicitField: yes
+        assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (CURRENT == "c")])'), qb 0
         result = collection.parseFilter
           operator: '$elemMatch'
           field: '@a'
           parts: [
             field: 'b'
             operand: 'c'
-            operator: '$or'
+            operator: '$eq'
           ]
-        assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (@CURRENT.b || c)])'), qb 0
+        assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (CURRENT.b == "c")])'), qb 0
         yield return
   describe '#parseQuery', ->
     it 'should get parse query for `insert`', ->
@@ -390,16 +417,16 @@ describe 'ArangoCollectionMixin', ->
               '@tomato.active': '$eq': yes
             ]
           '$filter':
-            parts: [
-              field: 'c'
-              operand: 'b'
-              operator: '$or'
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
             ,
-              field: 'd'
-              operand: 'b'
-              operator: '$nor'
+              '@doc.b':
+                '$not': '$eq': '2'
             ]
-            operator: '$and'
           '$let':
             k:
               '$forIn':
@@ -407,7 +434,7 @@ describe 'ArangoCollectionMixin', ->
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER ([("parts" == [{"field": "c", "operand": "b", "operator": "$or"}, {"field": "d", "operand": "b", "operator": "$nor"}]), ("operator" == "$and")]) LET k = FOR doc1 IN test_samples FILTER ([(doc1.test == "test")]) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
         yield return
     it 'should get parse query for `replace`', ->
       co ->
@@ -451,16 +478,16 @@ describe 'ArangoCollectionMixin', ->
               '@tomato.active': '$eq': yes
             ]
           '$filter':
-            parts: [
-              field: 'c'
-              operand: 'b'
-              operator: '$or'
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
             ,
-              field: 'd'
-              operand: 'b'
-              operator: '$nor'
+              '@doc.b':
+                '$not': '$eq': '2'
             ]
-            operator: '$and'
           '$let':
             k:
               '$forIn':
@@ -468,7 +495,7 @@ describe 'ArangoCollectionMixin', ->
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER ([("parts" == [{"field": "c", "operand": "b", "operator": "$or"}, {"field": "d", "operand": "b", "operator": "$nor"}]), ("operator" == "$and")]) LET k = FOR doc1 IN test_samples FILTER ([(doc1.test == "test")]) RETURN doc1 REPLACE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 REPLACE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
         yield return
     it 'should get parse query for `remove`', ->
       co ->
@@ -508,16 +535,16 @@ describe 'ArangoCollectionMixin', ->
               '@tomato.active': '$eq': yes
             ]
           '$filter':
-            parts: [
-              field: 'c'
-              operand: 'b'
-              operator: '$or'
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
             ,
-              field: 'd'
-              operand: 'b'
-              operator: '$nor'
+              '@doc.b':
+                '$not': '$eq': '2'
             ]
-            operator: '$and'
           '$let':
             k:
               '$forIn':
@@ -525,7 +552,88 @@ describe 'ArangoCollectionMixin', ->
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER ([("parts" == [{"field": "c", "operand": "b", "operator": "$or"}, {"field": "d", "operand": "b", "operator": "$nor"}]), ("operator" == "$and")]) LET k = FOR doc1 IN test_samples FILTER ([(doc1.test == "test")]) RETURN doc1 REMOVE {id: 1} IN test_samples'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 REMOVE {id: 1} IN test_samples'
+        yield return
+    it 'should get parse query for other', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute test: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        date = new Date
+        result = collection.parseQuery
+          '$forIn':
+            'doc': 'test_samples'
+          '$into': 'test_samples'
+          '$join':
+            '$and': [
+              '@doc.tomatoId': '$eq': '@tomato._key'
+            ,
+              '@tomato.active': '$eq': yes
+            ]
+          '$filter':
+            '$and': [
+              '$or': [
+                'c': '$eq': '1'
+              ,
+                '@doc.b': '$eq': '2'
+              ]
+            ,
+              '@doc.b':
+                '$not': '$eq': '2'
+            ]
+          '$let':
+            k:
+              '$forIn':
+                'doc1': 'test_samples'
+              '$filter':
+                '@doc1.test': 'test'
+              '$return': 'doc1'
+          '$collect':
+            l:
+              '$forIn':
+                'doc2': 'test_samples'
+              '$filter':
+                '@doc2.test': 'test'
+              '$return': 'doc2'
+          '$having':
+            '$and': [
+              '$or': [
+                'f': '$eq': '1'
+              ,
+                '@doc.g': '$eq': '2'
+              ]
+            ,
+              '@doc.h':
+                '$not': '$eq': '2'
+            ]
+          '$sort':
+            '@doc.field1': 'ASC'
+            '@doc.field2': 'DESC'
+          '$limit': 100
+          '$offset': 50
+          '$distinct': yes
+          '$return': '@doc'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 COLLECT l = FOR doc2 IN test_samples FILTER ((doc2.test == "test")) RETURN doc2 INTO test_samples FILTER (((((("f" == "1")) || ((doc.g == "2")))) && (!(doc.h == "2")))) SORT doc.field1 ASC SORT doc.field2 DESC LIMIT 50, 100 RETURN DISTINCT doc'
         yield return
   ###
   describe '#~sendRequest', ->

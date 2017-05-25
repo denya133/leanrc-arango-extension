@@ -100,10 +100,12 @@ module.exports = (Module)->
       @public operatorsMap: Object,
         default:
           # Logical Query Operators
-          $and: (args...)-> qb.and args...
-          $or: (args...)-> qb.or args...
-          $not: (args...)-> qb.not args...
-          $nor: (args...)-> qb.not qb.or args... # not or # !(a||b) === !a && !b
+          $and: (items)-> qb.and _.castArray(items)...
+          $or: (items)-> qb.or _.castArray(items)...
+          $not: (items)-> qb.not _.castArray(items)...
+          $nor: (items)-> qb.not qb.or _.castArray(items)... # not or # !(a||b) === !a && !b
+
+          $where: (args...)-> throw new Error 'Not supported'
 
           # Comparison Query Operators (aoSecond is NOT sub-query)
           $eq: (aoFirst, aoSecond)->
@@ -261,6 +263,7 @@ module.exports = (Module)->
         return: Module::ANY
         default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
+            throw new Error '`$not` must be defined in field operand'  if field is '$not'
             @operatorsMap[operator] field, operand
           else if field? and operator is '$elemMatch'
             if implicitField is yes
@@ -359,10 +362,12 @@ module.exports = (Module)->
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
                 voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                   .in asCollectionFullName
-              if (voJoin = aoQuery.$join)?
-                vlJoinFilters = voJoin.$and.map (asItemRef, {$eq:asRelValue})->
-                  voItemRef = qb.ref asItemRef.replace '@', ''
-                  voRelValue = qb.ref asRelValue.replace '@', ''
+              if (voJoin = aoQuery.$join?.$and)?
+                vlJoinFilters = voJoin.map (mongoFilter)->
+                  asItemRef = Object.keys(mongoFilter)[0]
+                  {$eq:asRelValue} = mongoFilter[asItemRef]
+                  voItemRef = wrapReference asItemRef
+                  voRelValue = wrapReference asRelValue
                   qb.eq voItemRef, voRelValue
                 voQuery = voQuery.filter qb.and vlJoinFilters...
               if (voFilter = aoQuery.$filter)?
@@ -376,11 +381,11 @@ module.exports = (Module)->
               if (vsInto = aoQuery.$into)?
                 intoUsed = _.escapeRegExp "FILTER {{INTO #{vsInto}}}"
                 intoPartial = "INTO #{vsInto}"
-                query = query.filter qb.expr "{{INTO #{vsInto}}}"
+                voQuery = voQuery.filter qb.expr "{{INTO #{vsInto}}}"
               if (voHaving = aoQuery.$having)?
                 voQuery = voQuery.filter @parseFilter Parser.parse voHaving
               if (voSort = aoQuery.$sort)?
-                for {asRef, asSortDirect} in aoQuery.$sort
+                for own asRef, asSortDirect of aoQuery.$sort
                   do (asRef, asSortDirect)->
                     voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
 
