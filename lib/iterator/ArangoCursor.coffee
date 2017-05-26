@@ -11,6 +11,7 @@ module.exports = (Module)->
 
     ipoCursor = @private cursor: LeanRC::ANY
     ipcRecord = @private Record: LeanRC::Class
+    ipoCollection = @private collection: Module::Collection
 
     @public setCursor: Function,
       args: [LeanRC::ANY]
@@ -24,20 +25,26 @@ module.exports = (Module)->
         @[ipcRecord] = acRecord
         return @
 
+    @public setCollection: Function,
+      default: (aoCollection)->
+        @[ipoCollection] = aoCollection
+        return @
+
     @public @async toArray: Function,
       default: (acRecord = null)->
         while yield @hasNext()
-          yield @next acRecord
+          yield @next acRecord ? @[ipoCollection]?.delegate
 
     @public @async next: Function,
       default: (acRecord = null)->
         acRecord ?= @[ipcRecord]
         data = yield LeanRC::Promise.resolve @[ipoCursor].next()
-        if acRecord?
-          if data?
-            acRecord.new data
-          else
-            data
+        if data?
+          switch
+            when acRecord?
+              acRecord.new data
+            when @[ipoCollection]?
+              @[ipoCollection].normalize data
         else
           data
 
@@ -109,7 +116,11 @@ module.exports = (Module)->
           while yield @hasNext()
             rawRecord = yield LeanRC::Promise.resolve @[ipoCursor].next()
             unless _.isEmpty rawRecord
-              record = acRecord.new rawRecord
+              switch
+                when acRecord?
+                  record = acRecord.new rawRecord
+                when @[ipoCollection]?
+                  record = @[ipoCollection].normalize rawRecord
               records.push record
           records
         catch err
@@ -140,10 +151,11 @@ module.exports = (Module)->
           throw err
 
     @public init: Function,
-      default: (acRecord, aoCursor = null)->
+      default: (acRecord, aoCursor = null, aoCollection = null)->
         @super arguments...
         @[ipcRecord] = acRecord
         @[ipoCursor] = aoCursor
+        @[ipoCollection] = aoCollection
         return
 
 

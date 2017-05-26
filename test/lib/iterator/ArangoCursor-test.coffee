@@ -50,6 +50,25 @@ describe 'ArangoCursor', ->
         cursor = Test::ArangoCursor.new()
         cursor.setRecord TestRecord
       .to.not.throw Error
+  describe '#setCollection', ->
+    it 'should setup collection', ->
+      expect ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class TestRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+        TestRecord.initialize()
+        class TestCollection extends Test::Collection
+          @inheritProtected()
+          @module Test
+        TestCollection.initialize()
+        cursor = Test::ArangoCursor.new()
+        cursor.setCollection TestCollection.new()
+      .to.not.throw Error
   describe '#setCursor', ->
     it 'should setup cursor', ->
       expect ->

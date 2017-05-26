@@ -68,7 +68,8 @@ module.exports = (Module)->
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .replace aoRecord
-          yield @query voQuery
+            .into @collectionFullName()
+          yield (yield @query voQuery).first()
 
       @public @async patch: Function,
         default: (id, aoRecord)->
@@ -76,7 +77,7 @@ module.exports = (Module)->
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .update aoRecord
-          yield @query voQuery
+          yield (yield @query voQuery).first()
 
       @public @async includes: Function,
         default: (id)->
@@ -362,6 +363,7 @@ module.exports = (Module)->
                 voQuery = (voQuery ? qb).replace qb.ref 'doc'
                   .with qb vhObjectForReplace
                   .into aoQuery.$into
+                voQuery = voQuery.returnNew 'new_doc'
           else if aoQuery.$forIn?
             do =>
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
@@ -445,7 +447,7 @@ module.exports = (Module)->
       @public @async executeQuery: Function,
         default: (asQuery, options)->
           voNativeCursor = yield db._query asQuery
-          voCursor = Module::ArangoCursor.new @delegate, voNativeCursor
+          voCursor = Module::ArangoCursor.new null, voNativeCursor, @
           return voCursor
 
 
