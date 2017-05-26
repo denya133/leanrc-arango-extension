@@ -52,7 +52,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         assert.instanceOf collection, ArangoCollection
@@ -80,7 +80,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         { operatorsMap } = collection
@@ -281,7 +281,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         result = collection.parseFilter
@@ -361,7 +361,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -397,7 +397,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -458,7 +458,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -519,7 +519,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -576,7 +576,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -657,7 +657,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -707,7 +707,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -757,7 +757,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -807,7 +807,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -857,7 +857,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -907,7 +907,7 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
-        collection = ArangoCollection.new
+        collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
@@ -935,6 +935,49 @@ describe 'ArangoCollectionMixin', ->
           '$return':
             'doc': '@doc'
         assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples RETURN {doc: doc}'
+        yield return
+  describe '#executeQuery', ->
+    it 'should send query to ArangoDB', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+        Test.initialize()
+        class ArangoCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoCollection.initialize()
+        class SampleRecord extends Test::Record
+          @inheritProtected()
+          @module Test
+          @attribute data: String
+          @public init: Function,
+            default: ->
+              @super arguments...
+              @type = 'Test::SampleRecord'
+        SampleRecord.initialize()
+        collection = ArangoCollection.new 'TEST_COLLECTION',
+          delegate: SampleRecord
+          serializer: Test::Serializer
+        samples = yield collection.executeQuery '
+          FOR doc IN test_samples
+          SORT doc._key
+          RETURN doc
+        '
+        items = yield samples.toArray()
+        assert.lengthOf items, 4
+        for item in items
+          assert.instanceOf item, SampleRecord
+        items = yield collection.executeQuery '
+          FOR doc IN test_samples
+          FILTER doc.data == "a boat"
+          RETURN doc
+        '
+        item = yield items.first()
+        assert.equal item.data, 'a boat'
         yield return
   ###
   describe '#~sendRequest', ->
