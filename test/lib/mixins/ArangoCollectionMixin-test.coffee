@@ -1068,7 +1068,6 @@ describe 'ArangoCollectionMixin', ->
         assert.deepEqual spyQuery.args[1][0].$filter, { '@doc._key': { '$eq': record.id } }
         assert.deepEqual spyQuery.args[1][0].$remove, _key: 'doc._key'
         yield return
-  ###
   describe '#take', ->
     it 'should get data item by id from collection', ->
       co ->
@@ -1094,17 +1093,33 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         recordDuplicate = yield collection.take record.id
         assert.notEqual record, recordDuplicate
-        for attribute in Test::TestRecord.attributes
+        for attribute in SampleRecord.attributes
           assert.equal record[attribute], recordDuplicate[attribute]
         yield return
+  ###
   describe '#takeMany', ->
     it 'should get data items by id list from collection', ->
       co ->
@@ -1130,9 +1145,24 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         originalRecords = []
@@ -1143,7 +1173,7 @@ describe 'ArangoCollectionMixin', ->
         assert.equal originalRecords.length, recordDuplicates.length
         count = originalRecords.length
         for i in [ 1 .. count ]
-          for attribute in Test::TestRecord.attributes
+          for attribute in SampleRecord.attributes
             assert.equal originalRecords[i][attribute], recordDuplicates[i][attribute]
         yield return
   describe '#takeAll', ->
@@ -1171,9 +1201,24 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         originalRecords = []
@@ -1184,7 +1229,7 @@ describe 'ArangoCollectionMixin', ->
         assert.equal originalRecords.length, recordDuplicates.length
         count = originalRecords.length
         for i in [ 1 .. count ]
-          for attribute in Test::TestRecord.attributes
+          for attribute in SampleRecord.attributes
             assert.equal originalRecords[i][attribute], recordDuplicates[i][attribute]
         yield return
   describe '#override', ->
@@ -1212,9 +1257,24 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
@@ -1249,9 +1309,24 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
@@ -1286,9 +1361,24 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
@@ -1321,9 +1411,24 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         count = 11
