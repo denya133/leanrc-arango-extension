@@ -1175,8 +1175,11 @@ describe 'ArangoCollectionMixin', ->
           for attribute in SampleRecord.attributes
             assert.equal originalRecords[i][attribute], recordDuplicates[i][attribute]
         yield return
-  ###
   describe '#takeAll', ->
+    before ->
+      db._create 'test_items'
+    after ->
+      db._drop 'test_items'
     it 'should get all data items from collection', ->
       co ->
         KEY = 'FACADE_TEST_ARANGO_COLLECTION_006'
@@ -1192,15 +1195,15 @@ describe 'ArangoCollectionMixin', ->
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+        class ItemRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute test: String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
+              @type = 'Test::ItemRecord'
+        ItemRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @module Test
@@ -1217,7 +1220,7 @@ describe 'ArangoCollectionMixin', ->
               result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
+          delegate: ItemRecord
           serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
@@ -1229,9 +1232,10 @@ describe 'ArangoCollectionMixin', ->
         assert.equal originalRecords.length, recordDuplicates.length
         count = originalRecords.length
         for i in [ 1 .. count ]
-          for attribute in SampleRecord.attributes
+          for attribute in ItemRecord.attributes
             assert.equal originalRecords[i][attribute], recordDuplicates[i][attribute]
         yield return
+  ###
   describe '#override', ->
     it 'should replace data item by id in collection', ->
       co ->
