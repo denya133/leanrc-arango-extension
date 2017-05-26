@@ -16,6 +16,10 @@ module.exports = (Module)->
       @inheritProtected()
       @implements Module::QueryableMixinInterface
 
+      @public generateId: Function,
+        default: ->
+          Module::Utils.uuid.v4()
+
       @public @async push: Function,
         default: (aoRecord)->
           voQuery = Module::Query.new()
