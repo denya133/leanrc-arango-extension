@@ -1016,7 +1016,6 @@ describe 'ArangoCollectionMixin', ->
         assert.equal spyQuery.args[1][0].$insert, record
         assert.equal spyQuery.args[1][0].$into, collection.collectionFullName()
         yield return
-  ###
   describe '#remove', ->
     it 'should remove data from collection', ->
       co ->
@@ -1042,18 +1041,34 @@ describe 'ArangoCollectionMixin', ->
               @super arguments...
               @type = 'Test::SampleRecord'
         SampleRecord.initialize()
+        class SampleSerializer extends Test::Serializer
+          @inheritProtected()
+          @module Test
+          @public normalize: Function,
+            default: (acRecord, ahPayload) ->
+              result = @super acRecord, ahPayload
+              result.id = ahPayload._key
+              result
+          @public serialize: Function,
+            default: (aoRecord, options = null) ->
+              result = @super aoRecord, options
+              result = _.omit result, [ 'id' ]
+              result._key = aoRecord.id
+              result
+        SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
-          serializer: Test::Serializer
+          serializer: SampleSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         spyQuery = sinon.spy collection, 'query'
         yield record.destroy()
-        assert.deepEqual spyQuery.args[1][0].$forIn, { '@doc': 'test_tests' }
+        assert.deepEqual spyQuery.args[1][0].$forIn, { '@doc': 'test_samples' }
         assert.deepEqual spyQuery.args[1][0].$filter, { '@doc._key': { '$eq': record.id } }
-        assert.isTrue spyQuery.args[1][0].$remove
+        assert.deepEqual spyQuery.args[1][0].$remove, _key: 'doc._key'
         yield return
+  ###
   describe '#take', ->
     it 'should get data item by id from collection', ->
       co ->

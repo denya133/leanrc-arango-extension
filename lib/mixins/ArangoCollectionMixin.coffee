@@ -33,7 +33,8 @@ module.exports = (Module)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
-            .remove()
+            .remove '_key': 'doc._key'
+            .into @collectionFullName()
           yield @query voQuery
           return yes
 
