@@ -271,12 +271,17 @@ describe 'ArangoMigrationMixin', ->
         assert.isTrue spyChangeCollection.calledWith 'tests', options
         assert.propertyVal db._collection('test_tests').properties(), 'waitForSync', yes
         yield return
-  ###
   describe '#changeField', ->
+    before ->
+      db._createDocumentCollection 'test_tests'
+      collection = db._collection 'test_tests'
+      collection.save test: '42'
+      collection.save test: '42'
+      collection.save test: '42'
+    after ->
+      db._drop 'test_tests'
     it 'should apply step to change field in collection', ->
       co ->
-        KEY = 'TEST_ARANGO_MIGRATION_MIXIN_003'
-        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
@@ -295,41 +300,22 @@ describe 'ArangoMigrationMixin', ->
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @changeField 'tests', 'test', type: LeanRC::Migration::SUPPORTED_TYPES.integer
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @changeField 'Test', 'test', type: LeanRC::Migration::SUPPORTED_TYPES.integer
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: TestRecord
-          serializer: LeanRC::Serializer
-        collection = facade.retrieveProxy 'TestCollection'
-        yield collection.create test: '42'
-        yield collection.create test: '42'
-        yield collection.create test: '42'
-        migration = BaseMigration.new {}, collection
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        for own id, doc of collection[Symbol.for '~collection']
+        for doc in db._collection('test_tests').all().toArray()
           assert.propertyVal doc, 'test', 42
         yield return
+  ###
   describe '#renameField', ->
     it 'should apply step to rename field in collection', ->
       co ->
