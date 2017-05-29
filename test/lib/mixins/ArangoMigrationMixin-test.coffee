@@ -1,3 +1,5 @@
+{ db }  = require '@arangodb'
+
 { expect, assert } = require 'chai'
 sinon = require 'sinon'
 
@@ -23,8 +25,9 @@ describe 'ArangoMigrationMixin', ->
         Test::BaseMigration.initialize()
         migration = Test::BaseMigration.new()
         yield return
-  ###
   describe '#createCollection', ->
+    after ->
+      db._drop 'test_TestCollection'
     it 'should apply step for create collection', ->
       co ->
         class Test extends LeanRC
@@ -32,17 +35,27 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
+        class ArangoMigrationCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoMigrationCollection.initialize()
         class Test::BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
           @createCollection 'TestCollection'
         Test::BaseMigration.initialize()
-        migration = Test::BaseMigration.new()
+        collection = ArangoMigrationCollection.new 'MIGRATIONS'
+        migration = Test::BaseMigration.new {}, collection
         spyCreateCollection = sinon.spy migration, 'createCollection'
         yield migration.up()
         assert.isTrue spyCreateCollection.calledWith 'TestCollection'
+        collectionFullName = collection.collectionFullName 'TestCollection'
+        assert.isNotNull db._collection collectionFullName
         yield return
+  ###
   describe '#createEdgeCollection', ->
     it 'should apply step for create edge collection', ->
       co ->

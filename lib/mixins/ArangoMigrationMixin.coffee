@@ -62,7 +62,7 @@ module.exports = (Module)->
       @inheritProtected()
 
       @public @async createCollection: Function,
-        default: (name, options)->
+        default: (name, options = {})->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
             db._createDocumentCollection qualifiedName, options
