@@ -1389,8 +1389,11 @@ describe 'ArangoCollectionMixin', ->
         includes = yield collection.includes record.id
         assert.isTrue includes
         yield return
-  ###
   describe '#length', ->
+    before ->
+      db._create 'test_items'
+    after ->
+      db._drop 'test_items'
     it 'should count items in the collection', ->
       co ->
         KEY = 'FACADE_TEST_ARANGO_COLLECTION_010'
@@ -1406,16 +1409,16 @@ describe 'ArangoCollectionMixin', ->
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+        class ItemRecord extends Test::Record
           @inheritProtected()
           @module Test
           @attribute test: String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        class SampleSerializer extends Test::Serializer
+              @type = 'Test::ItemRecord'
+        ItemRecord.initialize()
+        class ItemSerializer extends Test::Serializer
           @inheritProtected()
           @module Test
           @public normalize: Function,
@@ -1429,10 +1432,10 @@ describe 'ArangoCollectionMixin', ->
               result = _.omit result, [ 'id' ]
               result._key = aoRecord.id
               result
-        SampleSerializer.initialize()
+        ItemSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
+          delegate: ItemRecord
+          serializer: ItemSerializer
         collection = facade.retrieveProxy KEY
         assert.instanceOf collection, ArangoCollection
         count = 11
@@ -1441,4 +1444,3 @@ describe 'ArangoCollectionMixin', ->
         length = yield collection.length()
         assert.equal count, length
         yield return
-  ###

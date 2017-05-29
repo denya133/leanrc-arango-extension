@@ -95,8 +95,8 @@ module.exports = (Module)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .count()
-          cursor = yield @query voQuery
-          cursor.first()
+          cursor = db._query @parseQuery voQuery
+          yield return cursor.next()
 
       wrapReference = (value)->
         if _.isString(value) and /^[@]/.test value
