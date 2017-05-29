@@ -118,7 +118,7 @@ module.exports = (Module)->
 
       @public @async changeCollection: Function,
         default: (name, options)->
-          qualifiedName = @collection.collectionFullName collection_name
+          qualifiedName = @collection.collectionFullName name
           db._collection(qualifiedName).properties options
           yield return
 

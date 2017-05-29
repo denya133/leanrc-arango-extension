@@ -235,8 +235,12 @@ describe 'ArangoMigrationMixin', ->
           assert.property doc, 'updatedAt'
           assert.property doc, 'updatedAt'
         yield return
-  ###
   describe '#changeCollection', ->
+    before ->
+      db._createDocumentCollection 'test_tests',
+        waitForSync: no
+    after ->
+      db._drop 'test_tests'
     it 'should apply step to change collection', ->
       co ->
         class Test extends LeanRC
@@ -244,38 +248,30 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
+        options =
+          waitForSync: yes
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @changeCollection 'tests', options
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @changeCollection 'ARG_1', 'ARG_2', 'ARG_3'
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        migration = BaseMigration.new()
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         spyChangeCollection = sinon.spy migration, 'changeCollection'
+        assert.propertyVal db._collection('test_tests').properties(), 'waitForSync', no
         yield migration.up()
-        assert.isTrue spyChangeCollection.calledWith 'ARG_1', 'ARG_2', 'ARG_3'
+        assert.isTrue spyChangeCollection.calledWith 'tests', options
+        assert.propertyVal db._collection('test_tests').properties(), 'waitForSync', yes
         yield return
+  ###
   describe '#changeField', ->
     it 'should apply step to change field in collection', ->
       co ->
