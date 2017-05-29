@@ -99,10 +99,10 @@ module.exports = (Module)->
         default: (collection_name, field_names, options)->
           qualifiedName = @collection.collectionFullName collection_name
           db._collection(qualifiedName).ensureIndex
-            type: options.type
-            fields: field_names
-            unique: options.unique
-            sparse: options.sparse
+            type: options.type ? 'hash'
+            fields: field_names ? []
+            unique: options.unique ? no
+            sparse: options.sparse ? no
           yield return
 
       @public @async addTimestamps: Function,
