@@ -342,7 +342,6 @@ describe 'ArangoMigrationMixin', ->
           assert.notProperty doc, 'test'
           assert.property doc, 'test1'
         yield return
-  ###
   describe '#renameIndex', ->
     it 'should apply step to rename index in collection', ->
       co ->
@@ -355,34 +354,22 @@ describe 'ArangoMigrationMixin', ->
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-        BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
           @renameIndex 'ARG_1', 'ARG_2', 'ARG_3'
-        Migration2.initialize()
+        BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        migration = BaseMigration.new()
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         spyRenameIndex = sinon.spy migration, 'renameIndex'
         yield migration.up()
         assert.isTrue spyRenameIndex.calledWith 'ARG_1', 'ARG_2', 'ARG_3'
         yield return
+  ###
   describe '#renameCollection', ->
     it 'should apply step to rename collection', ->
       co ->
