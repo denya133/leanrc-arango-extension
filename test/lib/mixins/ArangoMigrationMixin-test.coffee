@@ -511,8 +511,13 @@ describe 'ArangoMigrationMixin', ->
         for doc in db._collection('test_tests').all().toArray()
           assert.notProperty doc, 'test'
         yield return
-  ###
   describe '#removeIndex', ->
+    before ->
+      db._createDocumentCollection 'test_tests'
+      collection = db._collection 'test_tests'
+      collection.ensureIndex type: 'hash', fields: [ 'test' ], unique: yes,  sparse: yes
+    after ->
+      db._drop 'test_tests'
     it 'should apply step to remove index in collection', ->
       co ->
         class Test extends LeanRC
@@ -520,38 +525,34 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
+        fields = [ 'test' ]
+        options = type: 'hash', unique: yes,  sparse: yes
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @removeIndex 'tests', fields, options
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @removeIndex 'ARG_1', 'ARG_2', 'ARG_3'
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        migration = BaseMigration.new()
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         spyRemoveIndex = sinon.spy migration, 'removeIndex'
+        indexes = db.test_tests.getIndexes()
+        assert.isTrue indexes.some ({ type, fields, unique, sparse }) ->
+          type is 'hash' and 'test' in fields and unique and sparse
         yield migration.up()
-        assert.isTrue spyRemoveIndex.calledWith 'ARG_1', 'ARG_2', 'ARG_3'
+        assert.isTrue spyRemoveIndex.calledWith 'tests', fields, options
+        indexes = db.test_tests.getIndexes()
+        assert.isFalse indexes.some ({ type, fields, unique, sparse }) ->
+          type is 'hash' and 'test' in fields and unique and sparse
         yield return
+  ###
   describe '#removeTimestamps', ->
     it 'should apply step to remove timestamps in collection', ->
       co ->
