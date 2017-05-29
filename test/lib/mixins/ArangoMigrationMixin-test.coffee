@@ -369,8 +369,11 @@ describe 'ArangoMigrationMixin', ->
         yield migration.up()
         assert.isTrue spyRenameIndex.calledWith 'ARG_1', 'ARG_2', 'ARG_3'
         yield return
-  ###
   describe '#renameCollection', ->
+    before ->
+      db._createDocumentCollection 'test_tests'
+    after ->
+      db._drop 'test_new_tests'
     it 'should apply step to rename collection', ->
       co ->
         class Test extends LeanRC
@@ -382,34 +385,25 @@ describe 'ArangoMigrationMixin', ->
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @renameCollection 'tests', 'tests', 'new_tests'
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @renameCollection 'ARG_1', 'ARG_2', 'ARG_3'
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        migration = BaseMigration.new()
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         spyRenameCollection = sinon.spy migration, 'renameCollection'
+        assert.isNotNull db._collection 'test_tests'
         yield migration.up()
-        assert.isTrue spyRenameCollection.calledWith 'ARG_1', 'ARG_2', 'ARG_3'
+        assert.isTrue spyRenameCollection.calledWith 'tests', 'tests', 'new_tests'
+        assert.isNull db._collection 'test_tests'
+        assert.isNotNull db._collection 'test_new_tests'
         yield return
+  ###
   describe '#dropCollection', ->
     it 'should apply step to drop collection', ->
       co ->
