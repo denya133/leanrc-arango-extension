@@ -1339,7 +1339,6 @@ describe 'ArangoCollectionMixin', ->
         assert.propertyVal record, 'test', 'test1'
         assert.propertyVal updatedRecord, 'test', 'test2'
         yield return
-  ###
   describe '#includes', ->
     it 'should test if item is included in the collection', ->
       co ->
@@ -1390,6 +1389,7 @@ describe 'ArangoCollectionMixin', ->
         includes = yield collection.includes record.id
         assert.isTrue includes
         yield return
+  ###
   describe '#length', ->
     it 'should count items in the collection', ->
       co ->
