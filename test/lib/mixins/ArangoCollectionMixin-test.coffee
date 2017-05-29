@@ -434,7 +434,7 @@ describe 'ArangoCollectionMixin', ->
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples'
+        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples LET new_doc = `NEW` RETURN new_doc'
         yield return
     it 'should get parse query for `replace`', ->
       co ->
@@ -1287,7 +1287,6 @@ describe 'ArangoCollectionMixin', ->
         assert.propertyVal record, 'test', 'test1'
         assert.propertyVal updatedRecord, 'test', 'test2'
         yield return
-  ###
   describe '#patch', ->
     it 'should update data item by id in collection', ->
       co ->
@@ -1340,6 +1339,7 @@ describe 'ArangoCollectionMixin', ->
         assert.propertyVal record, 'test', 'test1'
         assert.propertyVal updatedRecord, 'test', 'test2'
         yield return
+  ###
   describe '#includes', ->
     it 'should test if item is included in the collection', ->
       co ->

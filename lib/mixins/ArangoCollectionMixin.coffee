@@ -77,6 +77,7 @@ module.exports = (Module)->
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .update aoRecord
+            .into @collectionFullName()
           yield (yield @query voQuery).first()
 
       @public @async includes: Function,
@@ -339,6 +340,7 @@ module.exports = (Module)->
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
                   .with qb vhObjectForUpdate
                   .into aoQuery.$into
+                voQuery = voQuery.returnNew 'new_doc'
           else if (voRecord = aoQuery.$replace)?
             do =>
               if aoQuery.$into?
