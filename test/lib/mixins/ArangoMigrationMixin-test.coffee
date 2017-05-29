@@ -41,22 +41,24 @@ describe 'ArangoMigrationMixin', ->
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class Test::BaseMigration extends LeanRC::Migration
+        class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
           @createCollection 'TestCollection'
-        Test::BaseMigration.initialize()
-        collection = ArangoMigrationCollection.new 'MIGRATIONS'
-        migration = Test::BaseMigration.new {}, collection
+        BaseMigration.initialize()
+        collection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = collection.build {}
         spyCreateCollection = sinon.spy migration, 'createCollection'
         yield migration.up()
         assert.isTrue spyCreateCollection.calledWith 'TestCollection'
         collectionFullName = collection.collectionFullName 'TestCollection'
         assert.isNotNull db._collection collectionFullName
         yield return
-  ###
   describe '#createEdgeCollection', ->
+    after ->
+      db._drop 'test_TestCollection1_TestCollection2'
     it 'should apply step for create edge collection', ->
       co ->
         class Test extends LeanRC
@@ -64,17 +66,28 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::BaseMigration extends LeanRC::Migration
+        class ArangoMigrationCollection extends Test::Collection
+          @inheritProtected()
+          @include Test::QueryableMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+        ArangoMigrationCollection.initialize()
+        class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @createEdgeCollection 'TestEdgeCollection'
-        Test::BaseMigration.initialize()
-        migration = Test::BaseMigration.new()
+          @createEdgeCollection 'TestCollection1', 'TestCollection2'
+        BaseMigration.initialize()
+        collection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = collection.build {}
         spyCreateCollection = sinon.spy migration, 'createEdgeCollection'
         yield migration.up()
-        assert.isTrue spyCreateCollection.calledWith 'TestEdgeCollection'
+        assert.isTrue spyCreateCollection.calledWith 'TestCollection1', 'TestCollection2'
+        collectionFullName = collection.collectionFullName 'TestCollection1_TestCollection2'
+        assert.isNotNull db._collection collectionFullName
         yield return
+  ###
   describe '#addField', ->
     it 'should apply step to add field in record at collection', ->
       co ->
@@ -85,15 +98,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
@@ -107,7 +120,7 @@ describe 'ArangoMigrationMixin', ->
           @module Test
         Test::MemoryCollection.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         yield collection.create id: 1
@@ -147,15 +160,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -168,7 +181,7 @@ describe 'ArangoMigrationMixin', ->
           @addTimestamps 'Test'
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         yield collection.create id: 1
@@ -210,15 +223,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -231,7 +244,7 @@ describe 'ArangoMigrationMixin', ->
           @changeField 'Test', 'test', type: LeanRC::Migration::SUPPORTED_TYPES.integer
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         yield collection.create test: '42'
@@ -252,15 +265,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -273,7 +286,7 @@ describe 'ArangoMigrationMixin', ->
           @renameField 'Test', 'test', 'test1'
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         yield collection.create test: '42'
@@ -333,15 +346,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -354,7 +367,7 @@ describe 'ArangoMigrationMixin', ->
           @dropCollection 'Test'
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         yield collection.create test: '42'
@@ -374,15 +387,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -395,7 +408,7 @@ describe 'ArangoMigrationMixin', ->
           @dropEdgeCollection 'Test', 'Test'
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestTestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestTestCollection'
         yield collection.create test: '42'
@@ -415,15 +428,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -436,7 +449,7 @@ describe 'ArangoMigrationMixin', ->
           @removeField 'Test', 'test'
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         yield collection.create test: '42'
@@ -476,15 +489,15 @@ describe 'ArangoMigrationMixin', ->
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class Test::TestRecord extends LeanRC::Record
+        class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attr 'test': String
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'Test::TestRecord'
-        Test::TestRecord.initialize()
+              @type = 'TestRecord'
+        TestRecord.initialize()
         class Test::MemoryCollection extends LeanRC::Collection
           @inheritProtected()
           @include LeanRC::MemoryCollectionMixin
@@ -497,7 +510,7 @@ describe 'ArangoMigrationMixin', ->
           @removeTimestamps 'Test'
         Test::BaseMigration.initialize()
         facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: Test::TestRecord
+          delegate: TestRecord
           serializer: LeanRC::Serializer
         collection = facade.retrieveProxy 'TestCollection'
         DATE = new Date()

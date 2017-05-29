@@ -69,7 +69,7 @@ module.exports = (Module)->
           yield return
 
       @public @async createEdgeCollection: Function,
-        default: (collection_1, collection_2, options)->
+        default: (collection_1, collection_2, options = {})->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           unless db._collection qualifiedName
             db._createEdgeCollection qualifiedName, options
