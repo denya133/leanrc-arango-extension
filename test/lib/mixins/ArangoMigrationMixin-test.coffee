@@ -552,70 +552,45 @@ describe 'ArangoMigrationMixin', ->
         assert.isFalse indexes.some ({ type, fields, unique, sparse }) ->
           type is 'hash' and 'test' in fields and unique and sparse
         yield return
-  ###
   describe '#removeTimestamps', ->
+    before ->
+      db._createDocumentCollection 'test_tests'
+      collection = db._collection 'test_tests'
+      DATE = new Date()
+      collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
+      collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
+      collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
+    after ->
+      db._drop 'test_tests'
     it 'should apply step to remove timestamps in collection', ->
       co ->
-        KEY = 'TEST_ARANGO_MIGRATION_MIXIN_008'
-        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class TestRecord extends LeanRC::Record
-          @inheritProtected()
-          @module Test
-          @attr 'test': String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'TestRecord'
-        TestRecord.initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @removeTimestamps 'tests'
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @removeTimestamps 'Test'
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: TestRecord
-          serializer: LeanRC::Serializer
-        collection = facade.retrieveProxy 'TestCollection'
-        DATE = new Date()
-        yield collection.create test: '42', createdAt: DATE
-        yield collection.create test: '42', createdAt: DATE
-        yield collection.create test: '42', createdAt: DATE
-        migration = BaseMigration.new {}, collection
-        for own id, doc of collection[Symbol.for '~collection']
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
+        for doc in db._collection('test_tests').all().toArray()
           assert.property doc, 'createdAt'
           assert.property doc, 'updatedAt'
           assert.property doc, 'deletedAt'
         yield migration.up()
-        for own id, doc of collection[Symbol.for '~collection']
+        for doc in db._collection('test_tests').all().toArray()
           assert.notProperty doc, 'createdAt'
           assert.notProperty doc, 'updatedAt'
           assert.notProperty doc, 'deletedAt'
         yield return
-  ###
