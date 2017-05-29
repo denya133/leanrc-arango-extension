@@ -403,64 +403,39 @@ describe 'ArangoMigrationMixin', ->
         assert.isNull db._collection 'test_tests'
         assert.isNotNull db._collection 'test_new_tests'
         yield return
-  ###
   describe '#dropCollection', ->
+    before ->
+      db._createDocumentCollection 'test_tests'
+      collection = db._collection 'test_tests'
+      collection.save test: '42'
+      collection.save test: '42'
+      collection.save test: '42'
     it 'should apply step to drop collection', ->
       co ->
-        KEY = 'TEST_ARANGO_MIGRATION_MIXIN_005'
-        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class TestRecord extends LeanRC::Record
-          @inheritProtected()
-          @module Test
-          @attr 'test': String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'TestRecord'
-        TestRecord.initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @dropCollection 'tests'
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @dropCollection 'Test'
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        facade.registerProxy Test::MemoryCollection.new 'TestCollection',
-          delegate: TestRecord
-          serializer: LeanRC::Serializer
-        collection = facade.retrieveProxy 'TestCollection'
-        yield collection.create test: '42'
-        yield collection.create test: '42'
-        yield collection.create test: '42'
-        migration = BaseMigration.new {}, collection
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        assert.deepEqual collection[Symbol.for '~collection'], {}
+        assert.isNull db._collection 'test_tests'
         yield return
+  ###
   describe '#dropEdgeCollection', ->
     it 'should apply step to drop edge collection', ->
       co ->

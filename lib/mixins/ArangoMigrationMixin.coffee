@@ -193,7 +193,7 @@ module.exports = (Module)->
       @public @async dropCollection: Function,
         default: (name)->
           qualifiedName = @collection.collectionFullName name
-          unless db._collection qualifiedName
+          if db._collection(qualifiedName)?
             db._drop qualifiedName
           yield return
 
