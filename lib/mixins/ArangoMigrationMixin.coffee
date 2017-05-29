@@ -200,7 +200,7 @@ module.exports = (Module)->
       @public @async dropEdgeCollection: Function,
         default: (collection_1, collection_2)->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
-          unless db._collection qualifiedName
+          if db._collection(qualifiedName)?
             db._drop qualifiedName
           yield return
 

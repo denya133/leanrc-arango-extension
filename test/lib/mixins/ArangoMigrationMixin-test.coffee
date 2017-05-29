@@ -410,6 +410,8 @@ describe 'ArangoMigrationMixin', ->
       collection.save test: '42'
       collection.save test: '42'
       collection.save test: '42'
+    after ->
+      db._drop 'test_tests'
     it 'should apply step to drop collection', ->
       co ->
         class Test extends LeanRC
@@ -435,64 +437,37 @@ describe 'ArangoMigrationMixin', ->
         yield migration.up()
         assert.isNull db._collection 'test_tests'
         yield return
-  ###
   describe '#dropEdgeCollection', ->
+    before ->
+      db._createEdgeCollection 'test_tests_tests'
+    after ->
+      db._drop 'test_tests_tests'
     it 'should apply step to drop edge collection', ->
       co ->
-        KEY = 'TEST_ARANGO_MIGRATION_MIXIN_006'
-        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
         Test.initialize()
-        class TestRecord extends LeanRC::Record
-          @inheritProtected()
-          @module Test
-          @attr 'test': String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'TestRecord'
-        TestRecord.initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
+          @dropEdgeCollection 'tests', 'tests'
         BaseMigration.initialize()
-        class Migration1 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
-        class Migration2 extends BaseMigration
-          @inheritProtected()
-          @module Test
-          @dropEdgeCollection 'Test', 'Test'
-        Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoTestCollection.initialize()
-        facade.registerProxy Test::MemoryCollection.new 'TestTestCollection',
-          delegate: TestRecord
-          serializer: LeanRC::Serializer
-        collection = facade.retrieveProxy 'TestTestCollection'
-        yield collection.create test: '42'
-        yield collection.create test: '42'
-        yield collection.create test: '42'
-        migration = BaseMigration.new {}, collection
+        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
+          delegate: BaseMigration
+        migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        assert.deepEqual collection[Symbol.for '~collection'], {}
+        assert.isNull db._collection 'test_tests_tests'
         yield return
+  ###
   describe '#removeField', ->
     it 'should apply step to remove field in collection', ->
       co ->
