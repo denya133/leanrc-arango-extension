@@ -171,7 +171,7 @@ module.exports = (Module)->
           db._query "
             FOR doc IN #{qualifiedName}
               LET doc_with_n_field = MERGE(doc, {#{new_field_name}: doc.#{field_name}})
-              LET doc_without_o_field = UNSET(doc_with_new_field, '#{field_name}')
+              LET doc_without_o_field = UNSET(doc_with_n_field, '#{field_name}')
               REPLACE doc._key
                 WITH doc_without_o_field
               IN #{qualifiedName}
