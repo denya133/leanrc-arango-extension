@@ -1,0 +1,58 @@
+{
+  "name": "leanrc-arango-extension",
+  "version": "1.0.0-rc.1",
+  "license": "AGPL-3.0",
+  "description": "LeanRC extension for creating application based on ArangoDB platform",
+  "author": "Denis Trayzhon",
+  "thumbnail": "assets/basis.png",
+
+  "engines": {
+    "arangodb": "^3.0.0"
+  },
+
+  "main": "index.js",
+  "defaultDocument": "index.html",
+
+  "contributors": [
+    { "name": "Evgeni Biryukov" },
+    { "name": "Igor Kostyakov" },
+    { "name": "Sergey Zagorodnykh" }
+  ],
+
+  "keywords": [
+    "ArangoDB",
+    "Foxx",
+    "API",
+    "FoxxMC",
+    "auth",
+    "users",
+    "uploads",
+    "roles",
+    "permitions",
+    "companies"
+  ],
+
+  "scripts": {
+    "setup": "scripts/setup.js",
+    "teardown": "scripts/teardown.js"
+  },
+
+  "dependencies": {
+  },
+
+  "configuration": {
+  },
+
+  "files": {
+    "/": "public"
+  },
+
+  "lib": "dist",
+
+  "tests": [
+    "test/lib/*.js",
+    "test/lib/iterator/*.js",
+    "test/lib/mixins/*.js",
+    "test/*.js"
+  ]
+}

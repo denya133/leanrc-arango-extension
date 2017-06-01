@@ -62,14 +62,14 @@ module.exports = (Module)->
       @inheritProtected()
 
       @public @async createCollection: Function,
-        default: (name, options)->
+        default: (name, options = {})->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
             db._createDocumentCollection qualifiedName, options
           yield return
 
       @public @async createEdgeCollection: Function,
-        default: (collection_1, collection_2, options)->
+        default: (collection_1, collection_2, options = {})->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           unless db._collection qualifiedName
             db._createEdgeCollection qualifiedName, options
@@ -99,10 +99,10 @@ module.exports = (Module)->
         default: (collection_name, field_names, options)->
           qualifiedName = @collection.collectionFullName collection_name
           db._collection(qualifiedName).ensureIndex
-            type: options.type
-            fields: field_names
-            unique: options.unique
-            sparse: options.sparse
+            type: options.type ? 'hash'
+            fields: field_names ? []
+            unique: options.unique ? no
+            sparse: options.sparse ? no
           yield return
 
       @public @async addTimestamps: Function,
@@ -118,7 +118,7 @@ module.exports = (Module)->
 
       @public @async changeCollection: Function,
         default: (name, options)->
-          qualifiedName = @collection.collectionFullName collection_name
+          qualifiedName = @collection.collectionFullName name
           db._collection(qualifiedName).properties options
           yield return
 
@@ -171,7 +171,7 @@ module.exports = (Module)->
           db._query "
             FOR doc IN #{qualifiedName}
               LET doc_with_n_field = MERGE(doc, {#{new_field_name}: doc.#{field_name}})
-              LET doc_without_o_field = UNSET(doc_with_new_field, '#{field_name}')
+              LET doc_without_o_field = UNSET(doc_with_n_field, '#{field_name}')
               REPLACE doc._key
                 WITH doc_without_o_field
               IN #{qualifiedName}
@@ -193,14 +193,14 @@ module.exports = (Module)->
       @public @async dropCollection: Function,
         default: (name)->
           qualifiedName = @collection.collectionFullName name
-          unless db._collection qualifiedName
+          if db._collection(qualifiedName)?
             db._drop qualifiedName
           yield return
 
       @public @async dropEdgeCollection: Function,
         default: (collection_1, collection_2)->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
-          unless db._collection qualifiedName
+          if db._collection(qualifiedName)?
             db._drop qualifiedName
           yield return
 

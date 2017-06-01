@@ -16,6 +16,10 @@ module.exports = (Module)->
       @inheritProtected()
       @implements Module::QueryableMixinInterface
 
+      @public generateId: Function,
+        default: ->
+          Module::Utils.uuid.v4()
+
       @public @async push: Function,
         default: (aoRecord)->
           voQuery = Module::Query.new()
@@ -29,7 +33,8 @@ module.exports = (Module)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
-            .remove()
+            .remove '_key': 'doc._key'
+            .into @collectionFullName()
           yield @query voQuery
           return yes
 
@@ -63,7 +68,8 @@ module.exports = (Module)->
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .replace aoRecord
-          yield @query voQuery
+            .into @collectionFullName()
+          yield (yield @query voQuery).first()
 
       @public @async patch: Function,
         default: (id, aoRecord)->
@@ -71,7 +77,8 @@ module.exports = (Module)->
             .forIn '@doc': @collectionFullName()
             .filter '@doc._key': {$eq: id}
             .update aoRecord
-          yield @query voQuery
+            .into @collectionFullName()
+          yield (yield @query voQuery).first()
 
       @public @async includes: Function,
         default: (id)->
@@ -88,8 +95,8 @@ module.exports = (Module)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .count()
-          cursor = yield @query voQuery
-          cursor.first()
+          cursor = db._query @parseQuery voQuery
+          yield return cursor.next()
 
       wrapReference = (value)->
         if _.isString(value) and /^[@]/.test value
@@ -100,10 +107,12 @@ module.exports = (Module)->
       @public operatorsMap: Object,
         default:
           # Logical Query Operators
-          $and: (args...)-> qb.and args...
-          $or: (args...)-> qb.or args...
-          $not: (args...)-> qb.not args...
-          $nor: (args...)-> qb.not qb.or args... # not or # !(a||b) === !a && !b
+          $and: (items)-> qb.and _.castArray(items)...
+          $or: (items)-> qb.or _.castArray(items)...
+          $not: (items)-> qb.not _.castArray(items)...
+          $nor: (items)-> qb.not qb.or _.castArray(items)... # not or # !(a||b) === !a && !b
+
+          $where: (args...)-> throw new Error 'Not supported'
 
           # Comparison Query Operators (aoSecond is NOT sub-query)
           $eq: (aoFirst, aoSecond)->
@@ -156,111 +165,112 @@ module.exports = (Module)->
             todayEnd = moment().endOf 'day'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), todayStart.toISOString()
-                qb.lt wrapReference(aoFirst), todayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb todayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb todayEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), todayStart.toISOString()
-                qb.lt wrapReference(aoFirst), todayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb todayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb todayEnd.toISOString()
               ]...
           $ld: (aoFirst, aoSecond)-> # last day (yesterday)
             yesterdayStart = moment().subtract(1, 'days').startOf 'day'
             yesterdayEnd = moment().subtract(1, 'days').endOf 'day'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), yesterdayStart.toISOString()
-                qb.lt wrapReference(aoFirst), yesterdayEnd.toISOString()
+                qb.gte wrapReference(aoFirst),qb  yesterdayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb yesterdayEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), yesterdayStart.toISOString()
-                qb.lt wrapReference(aoFirst), yesterdayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb yesterdayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb yesterdayEnd.toISOString()
               ]...
           $tw: (aoFirst, aoSecond)-> # this week
             weekStart = moment().startOf 'week'
             weekEnd = moment().endOf 'week'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), weekEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), weekEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
               ]...
           $lw: (aoFirst, aoSecond)-> # last week
             weekStart = moment().subtract(1, 'weeks').startOf 'week'
             weekEnd = weekStart.clone().endOf 'week'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), weekEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), weekEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
               ]...
           $tm: (aoFirst, aoSecond)-> # this month
             firstDayStart = moment().startOf 'month'
             lastDayEnd = moment().endOf 'month'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
           $lm: (aoFirst, aoSecond)-> # last month
             firstDayStart = moment().subtract(1, 'months').startOf 'month'
             lastDayEnd = firstDayStart.clone().endOf 'month'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
           $ty: (aoFirst, aoSecond)-> # this year
             firstDayStart = moment().startOf 'year'
             lastDayEnd = firstDayStart.clone().endOf 'year'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
           $ly: (aoFirst, aoSecond)-> # last year
             firstDayStart = moment().subtract(1, 'years').startOf 'year'
             lastDayEnd = firstDayStart.clone().endOf 'year'
             if aoSecond
               qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
             else
               qb.not qb.and [
-                qb.gte wrapReference(aoFirst), firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), lastDayEnd.toISOString()
+                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
+                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
               ]...
 
       @public parseFilter: Function,
         args: [Object]
         return: Module::ANY
-        default: ({field, parts, operator, operand, implicitField})->
+        default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
+            throw new Error '`$not` must be defined in field operand'  if field is '$not'
             @operatorsMap[operator] field, operand
           else if field? and operator is '$elemMatch'
             if implicitField is yes
@@ -284,10 +294,12 @@ module.exports = (Module)->
                 for own asItemRef, asCollectionFullName of aoQuery.$forIn
                   voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                     .in asCollectionFullName
-                if (voJoin = aoQuery.$join)?
-                  vlJoinFilters = voJoin.$and.map (asItemRef, {$eq:asRelValue})->
-                    voItemRef = qb.ref asItemRef.replace '@', ''
-                    voRelValue = qb.ref asRelValue.replace '@', ''
+                if (voJoin = aoQuery.$join?.$and)?
+                  vlJoinFilters = voJoin.map (mongoFilter)->
+                    asItemRef = Object.keys(mongoFilter)[0]
+                    {$eq:asRelValue} = mongoFilter[asItemRef]
+                    voItemRef = wrapReference asItemRef
+                    voRelValue = wrapReference asRelValue
                     qb.eq voItemRef, voRelValue
                   voQuery = voQuery.filter qb.and vlJoinFilters...
                 if (voFilter = aoQuery.$filter)?
@@ -302,7 +314,7 @@ module.exports = (Module)->
             do =>
               if aoQuery.$into?
                 vhObjectForInsert = @serializer.serialize voRecord
-                voQuery = (voQuery ? qb).insert vhObjectForInsert
+                voQuery = (voQuery ? qb).insert qb vhObjectForInsert
                   .into aoQuery.$into
           else if (voRecord = aoQuery.$update)?
             do =>
@@ -312,9 +324,11 @@ module.exports = (Module)->
                     voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                       .in asCollectionFullName
                   if (voJoin = aoQuery.$join?.$and)?
-                    vlJoinFilters = voJoin.map (asItemRef, {$eq:asRelValue})->
-                      voItemRef = qb.ref asItemRef.replace '@', ''
-                      voRelValue = qb.ref asRelValue.replace '@', ''
+                    vlJoinFilters = voJoin.map (mongoFilter)->
+                      asItemRef = Object.keys(mongoFilter)[0]
+                      {$eq:asRelValue} = mongoFilter[asItemRef]
+                      voItemRef = wrapReference asItemRef
+                      voRelValue = wrapReference asRelValue
                       qb.eq voItemRef, voRelValue
                     voQuery = voQuery.filter qb.and vlJoinFilters...
                   if (voFilter = aoQuery.$filter)?
@@ -324,8 +338,9 @@ module.exports = (Module)->
                       voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 vhObjectForUpdate = _.omit @serializer.serialize(voRecord), ['id', '_key']
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
-                  .with vhObjectForUpdate
+                  .with qb vhObjectForUpdate
                   .into aoQuery.$into
+                voQuery = voQuery.returnNew 'new_doc'
           else if (voRecord = aoQuery.$replace)?
             do =>
               if aoQuery.$into?
@@ -334,9 +349,11 @@ module.exports = (Module)->
                     voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                       .in asCollectionFullName
                   if (voJoin = aoQuery.$join?.$and)?
-                    vlJoinFilters = voJoin.map (asItemRef, {$eq:asRelValue})->
-                      voItemRef = qb.ref asItemRef.replace '@', ''
-                      voRelValue = qb.ref asRelValue.replace '@', ''
+                    vlJoinFilters = voJoin.map (mongoFilter)->
+                      asItemRef = Object.keys(mongoFilter)[0]
+                      {$eq:asRelValue} = mongoFilter[asItemRef]
+                      voItemRef = wrapReference asItemRef
+                      voRelValue = wrapReference asRelValue
                       qb.eq voItemRef, voRelValue
                     voQuery = voQuery.filter qb.and vlJoinFilters...
                   if (voFilter = aoQuery.$filter)?
@@ -346,17 +363,20 @@ module.exports = (Module)->
                       voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
                 vhObjectForReplace = _.omit @serializer.serialize(voRecord), ['id', '_key']
                 voQuery = (voQuery ? qb).replace qb.ref 'doc'
-                  .with vhObjectForReplace
+                  .with qb vhObjectForReplace
                   .into aoQuery.$into
+                voQuery = voQuery.returnNew 'new_doc'
           else if aoQuery.$forIn?
             do =>
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
                 voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                   .in asCollectionFullName
-              if (voJoin = aoQuery.$join)?
-                vlJoinFilters = voJoin.$and.map (asItemRef, {$eq:asRelValue})->
-                  voItemRef = qb.ref asItemRef.replace '@', ''
-                  voRelValue = qb.ref asRelValue.replace '@', ''
+              if (voJoin = aoQuery.$join?.$and)?
+                vlJoinFilters = voJoin.map (mongoFilter)->
+                  asItemRef = Object.keys(mongoFilter)[0]
+                  {$eq:asRelValue} = mongoFilter[asItemRef]
+                  voItemRef = wrapReference asItemRef
+                  voRelValue = wrapReference asRelValue
                   qb.eq voItemRef, voRelValue
                 voQuery = voQuery.filter qb.and vlJoinFilters...
               if (voFilter = aoQuery.$filter)?
@@ -370,11 +390,11 @@ module.exports = (Module)->
               if (vsInto = aoQuery.$into)?
                 intoUsed = _.escapeRegExp "FILTER {{INTO #{vsInto}}}"
                 intoPartial = "INTO #{vsInto}"
-                query = query.filter qb.expr "{{INTO #{vsInto}}}"
+                voQuery = voQuery.filter qb.expr "{{INTO #{vsInto}}}"
               if (voHaving = aoQuery.$having)?
                 voQuery = voQuery.filter @parseFilter Parser.parse voHaving
               if (voSort = aoQuery.$sort)?
-                for {asRef, asSortDirect} in aoQuery.$sort
+                for own asRef, asSortDirect of aoQuery.$sort
                   do (asRef, asSortDirect)->
                     voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
 
@@ -411,13 +431,13 @@ module.exports = (Module)->
                     vhObj = {}
                     for own key, value of aoQuery.$return
                       do (key, value)->
-                        vhObj[key] = qb.ref value.replace '@', ''
+                        vhObj[key] = wrapReference value
                     vhObj
                   if aoQuery.$distinct
                     voQuery = voQuery.returnDistinct voReturn
                   else
                     voQuery = voQuery.return voReturn
-          vsQuery = voQuery.toAQL()
+          vsQuery = voQuery?.toAQL()
 
           if intoUsed and new RegExp(intoUsed).test vsQuery
             vsQuery = vsQuery.replace new RegExp(intoUsed), intoPartial
@@ -429,7 +449,7 @@ module.exports = (Module)->
       @public @async executeQuery: Function,
         default: (asQuery, options)->
           voNativeCursor = yield db._query asQuery
-          voCursor = Module::ArangoCursor.new @delegate, voNativeCursor
+          voCursor = Module::ArangoCursor.new null, voNativeCursor, @
           return voCursor
 
 

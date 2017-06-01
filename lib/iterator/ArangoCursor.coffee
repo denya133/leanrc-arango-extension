@@ -11,6 +11,7 @@ module.exports = (Module)->
 
     ipoCursor = @private cursor: LeanRC::ANY
     ipcRecord = @private Record: LeanRC::Class
+    ipoCollection = @private collection: Module::Collection
 
     @public setCursor: Function,
       args: [LeanRC::ANY]
@@ -24,31 +25,37 @@ module.exports = (Module)->
         @[ipcRecord] = acRecord
         return @
 
+    @public setCollection: Function,
+      default: (aoCollection)->
+        @[ipoCollection] = aoCollection
+        return @
+
     @public @async toArray: Function,
       default: (acRecord = null)->
         while yield @hasNext()
-          yield @next acRecord
+          yield @next acRecord ? @[ipoCollection]?.delegate
 
     @public @async next: Function,
       default: (acRecord = null)->
         acRecord ?= @[ipcRecord]
-        data = yield @[ipoCursor].next()
-        if acRecord?
-          if data?
-            acRecord.new data
-          else
-            data
+        data = yield LeanRC::Promise.resolve @[ipoCursor].next()
+        if data?
+          switch
+            when acRecord?
+              acRecord.new data
+            when @[ipoCollection]?
+              @[ipoCollection].normalize data
         else
           data
 
     @public @async hasNext: Function,
-      default: -> yield @[ipoCursor].hasNext()
+      default: -> yield LeanRC::Promise.resolve @[ipoCursor].hasNext()
 
     @public @async close: Function,
-      default: -> yield @[ipoCursor].dispose()
+      default: -> yield LeanRC::Promise.resolve @[ipoCursor].dispose()
 
     @public @async count: Function,
-      default: -> yield @[ipoCursor].count arguments...
+      default: -> yield LeanRC::Promise.resolve @[ipoCursor].count arguments...
 
     @public @async forEach: Function,
       default: (lambda, acRecord = null)->
@@ -107,9 +114,13 @@ module.exports = (Module)->
         records = []
         try
           while yield @hasNext()
-            rawRecord = yield @[ipoCursor].next()
+            rawRecord = yield LeanRC::Promise.resolve @[ipoCursor].next()
             unless _.isEmpty rawRecord
-              record = acRecord.new rawRecord
+              switch
+                when acRecord?
+                  record = acRecord.new rawRecord
+                when @[ipoCollection]?
+                  record = @[ipoCollection].normalize rawRecord
               records.push record
           records
         catch err
@@ -140,10 +151,11 @@ module.exports = (Module)->
           throw err
 
     @public init: Function,
-      default: (acRecord, aoCursor = null)->
+      default: (acRecord, aoCursor = null, aoCollection = null)->
         @super arguments...
         @[ipcRecord] = acRecord
         @[ipoCursor] = aoCursor
+        @[ipoCollection] = aoCollection
         return
 
 
