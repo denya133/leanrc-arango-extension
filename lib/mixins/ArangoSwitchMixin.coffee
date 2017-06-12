@@ -45,10 +45,10 @@ module.exports = (Module)->
         args: []
         return: Object
         default: ->
-          vrCollectionPrefix = new RegExp "^#{module.collectionPrefix}"
-          vlCollectionNames = db._collections().reduce (aoCollection, alResults)->
-            if vrCollectionPrefix.test aoCollection.name
-              alResults.push aoCollection.name
+          vrCollectionPrefix = new RegExp "^#{module.context.collectionPrefix}"
+          vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
+            if vrCollectionPrefix.test name = aoCollection.name()
+              alResults.push name
             alResults
           , []
           return read: vlCollectionNames, write: vlCollectionNames
