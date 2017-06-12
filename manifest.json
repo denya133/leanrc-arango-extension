@@ -53,6 +53,7 @@
     "test/lib/*.js",
     "test/lib/iterator/*.js",
     "test/lib/mixins/*.js",
+    "test/lib/switch/*.js",
     "test/*.js"
   ]
 }
