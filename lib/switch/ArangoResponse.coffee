@@ -106,7 +106,7 @@ module.exports = (Module)->
     @public redirect: Function,
       default: (url, alt)->
         if 'back' is url
-          url = @ctx.get('Referrer') ? alt ? '/'
+          url = @ctx.get('Referrer') or alt or '/'
         if statuses.redirect[@status]
           @res.redirect url
         else
@@ -171,9 +171,9 @@ module.exports = (Module)->
         prev = @get field
         if prev
           if _.isArray prev
-            prev.concat val
+            val = prev.concat val
           else
-            [prev].concat val
+            val = [prev].concat val
         @set field, val
 
     @public remove: Function,
