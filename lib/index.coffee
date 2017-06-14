@@ -47,8 +47,8 @@ Extension = (BaseClass) ->
     require('./mixins/AISCRouteMixin') @Module # needs testing # empty
     require('./mixins/ArangoCollectionMixin') @Module
     require('./mixins/ArangoSwitchMixin') @Module # needs testing
-    require('./mixins/ArangoMigrationMixin') @Module # needs testing
-    require('./mixins/ArangoConfigurationMixin') @Module # needs testing
+    require('./mixins/ArangoMigrationMixin') @Module
+    require('./mixins/ArangoConfigurationMixin') @Module
     require('./mixins/ArangoResqueMixin') @Module # needs testing
   ArangoExtension.initializeMixin()
 
