@@ -34,7 +34,9 @@
 
   "scripts": {
     "setup": "scripts/setup.js",
-    "teardown": "scripts/teardown.js"
+    "teardown": "scripts/teardown.js",
+    "TEST_SCRIPT_1": "scripts/test.js",
+    "TEST_SCRIPT_2": "scripts/test.js"
   },
 
   "dependencies": {

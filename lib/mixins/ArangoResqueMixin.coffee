@@ -1,6 +1,7 @@
 
 
 _             = require 'lodash'
+inflect       = do require 'i'
 { db }        = require '@arangodb'
 Queues        = require '@arangodb/foxx/queues'
 
@@ -24,6 +25,9 @@ module.exports = (Module)->
     class ArangoResqueMixin extends BaseClass
       @inheritProtected()
 
+      @public fullQueueName: Function,
+        default: (queueName)-> inflect.underscore "#{@moduleName()}_#{queueName}"
+
       @public @async ensureQueue: Function,
         default: (name, concurrency = 1)->
           name = @fullQueueName name
@@ -34,7 +38,7 @@ module.exports = (Module)->
         default: (name)->
           name = @fullQueueName name
           try
-            {maxWorkers:concurrency} = Queues.get name
+            {maxWorkers:concurrency} = db._queues.document name
             yield return {name, concurrency}
           catch e
             yield return
@@ -56,61 +60,82 @@ module.exports = (Module)->
       @public @async pushJob: Function,
         default: (queueName, scriptName, data, delayUntil)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
+          queue = Queues.get queueName
           {mount} = module.context
           jobID = queue.push {name: scriptName, mount}, data, {delayUntil}
           yield return jobID
 
       @public @async getJob: Function,
         default: (queueName, jobId)->
-          queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          job = queue.get jobId
-          yield return job
+          # queueName = @fullQueueName queueName
+          # queue = Queues.get queueName
+          try job = db._jobs.document jobId
+          yield return job ? null
 
       @public @async deleteJob: Function,
         default: (queueName, jobId)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
+          queue = Queues.get queueName
           isDeleted = queue.delete jobId
           yield return isDeleted
 
       @public @async abortJob: Function,
         default: (queueName, jobId)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          queue.abort jobId
+          queue = Queues.get queueName
+          job = queue.get jobId
+          job.abort()
           yield return
 
       @public @async allJobs: Function,
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          yield return queue.all scriptName
+          queue = Queues.get queueName
+          if scriptName?
+            { mount } = module.context
+            yield return queue.all { name: scriptName, mount }
+          else
+            yield return queue.all()
 
       @public @async pendingJobs: Function,
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          yield return queue.pending scriptName
+          queue = Queues.get queueName
+          if scriptName?
+            { mount } = module.context
+            yield return queue.pending { name: scriptName, mount }
+          else
+            yield return queue.pending()
 
       @public @async progressJobs: Function,
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          yield return queue.progress scriptName
+          queue = Queues.get queueName
+          if scriptName?
+            { mount } = module.context
+            yield return queue.progress { name: scriptName, mount }
+          else
+            yield return queue.progress()
 
       @public @async completedJobs: Function,
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          yield return queue.complete scriptName
+          queue = Queues.get queueName
+          if scriptName?
+            { mount } = module.context
+            yield return queue.complete { name: scriptName, mount }
+          else
+            yield return queue.complete()
 
       @public @async failedJobs: Function,
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
-          queue = @getQueue queueName
-          yield return queue.failed scriptName
+          queue = Queues.get queueName
+          if scriptName?
+            { mount } = module.context
+            yield return queue.failed { name: scriptName, mount }
+          else
+            yield return queue.failed()
 
 
     ArangoResqueMixin.initializeMixin()
