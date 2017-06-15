@@ -153,7 +153,7 @@ module.exports = (Module)->
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
           try
-            if method is 'get'
+            if method.toLowerCase() is 'get'
               @sendNotification resourceName, aoMessage, action
             else
               {read, write} = @getLocks()

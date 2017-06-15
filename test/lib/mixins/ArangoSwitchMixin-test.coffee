@@ -148,3 +148,85 @@ describe 'ArangoSwitchMixin', ->
         data = yield endPromise
         assert.equal data, '{"test":"test"}'
         yield return
+  describe '#sender', ->
+    facade = null
+    KEY = 'TEST_ARANGO_SWITCH_MIXIN_002'
+    after -> facade?.remove?()
+    it 'should send notification', ->
+      co ->
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root "#{__dirname}/config/root"
+        Test.initialize()
+        class TestConfiguration extends Test::Configuration
+          @inheritProtected()
+          @include Test::ArangoConfigurationMixin
+          @module Test
+        TestConfiguration.initialize()
+        configs = TestConfiguration.new LeanRC::CONFIGURATION, Test::ROOT
+        facade.registerProxy configs
+        class TestRouter extends LeanRC::Router
+          @inheritProtected()
+          @module Test
+        TestRouter.initialize()
+        facade.registerProxy TestRouter.new 'TEST_SWITCH_ROUTER'
+        class TestSwitch extends LeanRC::Switch
+          @inheritProtected()
+          @include Test::ArangoSwitchMixin
+          @module Test
+          @public routerName: String,
+            default: 'TEST_SWITCH_ROUTER'
+        TestSwitch.initialize()
+        class TestContext extends Test::ArangoContext
+          @inheritProtected()
+          @module Test
+        TestContext.initialize()
+        configs = TestConfiguration.new Test::CONFIGURATION, Test::ROOT
+        facade.registerProxy configs
+        req =
+          url: 'http://localhost:8888'
+          headers: 'x-forwarded-for': '192.168.0.1'
+        res =
+          type: (value) ->
+            if arguments.length is 0
+              @getHeader 'Content-Type'
+            else
+              type = (mimeTypes.lookup value) or value
+              if type?
+                @setHeader 'Content-Type', type
+              else
+                @removeHeader 'Content-Type'
+          headers: {}
+          status: (code) -> @statusCode = code
+          set: (headers) ->
+            for headerName, headerValue of headers ? {}
+              @setHeader headerName, headerValue
+          getHeaders: -> LeanRC::Utils.copy @headers
+          getHeader: (field) -> @headers[field.toLowerCase()]
+          setHeader: (field, value) -> @headers[field.toLowerCase()] = value
+          removeHeader: (field) -> delete @headers[field.toLowerCase()]
+        switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
+        switchMediator.initializeNotifier KEY
+        context = TestContext.new req, res, switchMediator
+        spySwitchSendNotification = sinon.spy switchMediator, 'sendNotification'
+        vhParams =
+          context: context
+          reverse: 'TEST_REVERSE'
+        vhOptions =
+          method: 'GET'
+          path: '/test'
+          resource: 'test'
+          action: 'list'
+        switchMediator.sender 'test', vhParams, vhOptions
+        assert.isTrue spySwitchSendNotification.called, 'Notification not sent'
+        assert.deepEqual spySwitchSendNotification.args[0], [
+          'test'
+          {
+            context: context
+            reverse: 'TEST_REVERSE'
+          }
+          'list'
+        ]
+        yield return
