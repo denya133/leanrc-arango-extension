@@ -51,6 +51,7 @@ module.exports = (Module)->
   Module.defineMixin (BaseClass) ->
     class ArangoSwitchMixin extends BaseClass
       @inheritProtected()
+      iphEventNames = @private 'eventNames': Object
 
       ################
       @public @static createMethod: Function,
@@ -105,6 +106,19 @@ module.exports = (Module)->
       @public onRegister: Function,
         default: -> # super не вызываем
           voEmitter = new EventEmitter()
+          unless _.isFunction voEmitter.eventNames
+            eventNames = @[iphEventNames] = {}
+            FILTER = [ 'newListener', 'removeListener' ]
+            voEmitter.on 'newListener', (event, listener) ->
+              unless event in FILTER
+                eventNames[event] ?= 0
+                ++eventNames[event]
+              return
+            voEmitter.on 'removeListener', (event, listener) ->
+              unless event in FILTER
+                if eventNames[event] > 0
+                  --eventNames[event]
+              return
           if voEmitter.listeners('error').length is 0
             voEmitter.on 'error', @onerror.bind @
           @setViewComponent voEmitter
@@ -114,7 +128,8 @@ module.exports = (Module)->
       @public onRemove: Function,
         default: -> # super не вызываем
           voEmitter = @getViewComponent()
-          voEmitter.eventNames().forEach (eventName)->
+          eventNames = voEmitter.eventNames?() ? Object.keys @[iphEventNames] ? {}
+          eventNames.forEach (eventName)->
             voEmitter.removeAllListeners eventName
           return
 

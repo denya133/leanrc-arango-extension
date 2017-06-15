@@ -287,3 +287,44 @@ describe 'ArangoSwitchMixin', ->
         assert.instanceOf switchMediator.getViewComponent(), EventEmitter
         assert.lengthOf switchMediator.getViewComponent().listeners('error'), 1
         yield return
+  describe '#onRemove', ->
+    facade = null
+    KEY = 'TEST_ARANGO_SWITCH_MIXIN_004'
+    after -> facade?.remove?()
+    it 'should run on-remove flow', ->
+      co ->
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root "#{__dirname}/config/root"
+        Test.initialize()
+        class TestConfiguration extends Test::Configuration
+          @inheritProtected()
+          @include Test::ArangoConfigurationMixin
+          @module Test
+        TestConfiguration.initialize()
+        configs = TestConfiguration.new LeanRC::CONFIGURATION, Test::ROOT
+        facade.registerProxy configs
+        class TestRouter extends LeanRC::Router
+          @inheritProtected()
+          @module Test
+        TestRouter.initialize()
+        facade.registerProxy TestRouter.new 'TEST_SWITCH_ROUTER'
+        class TestSwitch extends LeanRC::Switch
+          @inheritProtected()
+          @include Test::ArangoSwitchMixin
+          @module Test
+          @public routerName: String,
+            default: 'TEST_SWITCH_ROUTER'
+        TestSwitch.initialize()
+        switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
+        spyDefineRoutes = sinon.spy switchMediator, 'defineRoutes'
+        switchMediator.initializeNotifier KEY
+        switchMediator.onRegister()
+        assert.isTrue spyDefineRoutes.called
+        assert.instanceOf switchMediator.getViewComponent(), EventEmitter
+        assert.lengthOf switchMediator.getViewComponent().listeners('error'), 1
+        switchMediator.onRemove()
+        assert.lengthOf switchMediator.getViewComponent().listeners('error'), 0
+        yield return
