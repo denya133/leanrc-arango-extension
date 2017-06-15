@@ -1,7 +1,9 @@
 { db }  = require '@arangodb'
+EventEmitter = require 'events'
 
 { expect, assert } = require 'chai'
 sinon = require 'sinon'
+mimeTypes = require 'mime-types'
 
 LeanRC = require 'LeanRC'
 
@@ -79,4 +81,70 @@ describe 'ArangoSwitchMixin', ->
         switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
         switchMediator.del 'TEST'
         assert.isTrue spyDelete.calledWith 'TEST'
+        yield return
+  describe '#respond', ->
+    facade = null
+    KEY = 'TEST_ARANGO_SWITCH_MIXIN_001'
+    after -> facade?.remove?()
+    it 'should send response', ->
+      co ->
+        trigger = new EventEmitter
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root "#{__dirname}/config/root"
+        Test.initialize()
+        class TestConfiguration extends Test::Configuration
+          @inheritProtected()
+          @include Test::ArangoConfigurationMixin
+          @module Test
+        TestConfiguration.initialize()
+        class TestSwitch extends LeanRC::Switch
+          @inheritProtected()
+          @include Test::ArangoSwitchMixin
+          @module Test
+          @public routerName: String,
+            default: 'TEST_SWITCH_ROUTER'
+        TestSwitch.initialize()
+        class TestContext extends Test::ArangoContext
+          @inheritProtected()
+          @module Test
+        TestContext.initialize()
+        configs = TestConfiguration.new Test::CONFIGURATION, Test::ROOT
+        facade.registerProxy configs
+        req =
+          url: 'http://localhost:8888'
+          headers: 'x-forwarded-for': '192.168.0.1'
+        res =
+          type: (value) ->
+            if arguments.length is 0
+              @getHeader 'Content-Type'
+            else
+              type = (mimeTypes.lookup value) or value
+              if type?
+                @setHeader 'Content-Type', type
+              else
+                @removeHeader 'Content-Type'
+          headers: {}
+          status: (code) -> @statusCode = code
+          set: (headers) ->
+            for headerName, headerValue of headers ? {}
+              @setHeader headerName, headerValue
+          getHeaders: -> LeanRC::Utils.copy @headers
+          getHeader: (field) -> @headers[field.toLowerCase()]
+          setHeader: (field, value) -> @headers[field.toLowerCase()] = value
+          removeHeader: (field) -> delete @headers[field.toLowerCase()]
+          end: (data) -> trigger.emit 'end', data
+          send: (args...) -> @end args...
+        switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
+        switchMediator.initializeNotifier KEY
+        context = TestContext.new req, res, switchMediator
+        context.body = test: 'test'
+        context.set 'Content-Type', 'application/json'
+        endPromise = LeanRC::Promise.new (resolve) ->
+          trigger.once 'end', resolve
+        switchMediator.respond context
+        data = yield endPromise
+        assert.equal data, '{"test":"test"}'
         yield return

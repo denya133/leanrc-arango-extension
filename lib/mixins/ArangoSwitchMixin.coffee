@@ -131,7 +131,7 @@ module.exports = (Module)->
 
       @public respond: Function,
         default: (ctx)->
-          return if context.respond is no
+          return if ctx.respond is no
           return unless ctx.writable
           body = ctx.body
           code = ctx.status
