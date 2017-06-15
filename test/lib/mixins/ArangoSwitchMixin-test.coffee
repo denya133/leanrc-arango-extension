@@ -230,3 +230,21 @@ describe 'ArangoSwitchMixin', ->
           'list'
         ]
         yield return
+  describe '.createMethod', ->
+    it 'should send notification', ->
+      co ->
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root "#{__dirname}/config/root"
+        Test.initialize()
+        class TestSwitch extends LeanRC::Switch
+          @inheritProtected()
+          @include Test::ArangoSwitchMixin
+          @module Test
+          @createMethod 'test'
+        TestSwitch.initialize()
+        switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
+        assert.property switchMediator, 'test'
+        assert.isFunction switchMediator.test
+        yield return
