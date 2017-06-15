@@ -164,7 +164,7 @@ module.exports = (Module)->
       get: ->
         {subdomainOffset:offset} = @ctx.switch.configs
         hostname = @hostname
-        return [] if net.isIP
+        return []  if net.isIP(hostname) isnt 0
         hostname
           .split('.')
           .reverse()

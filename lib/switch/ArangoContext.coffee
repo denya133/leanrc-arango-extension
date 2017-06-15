@@ -62,7 +62,7 @@ module.exports = (Module)->
         res.set err.headers
         res.type 'text'
         err.status = 404 if 'ENOENT' is err.code
-        err.status = 500 if _.isNumber(err.status) or not statuses[err.status]
+        err.status = 500 if not _.isNumber(err.status) or not statuses[err.status]
         code = statuses[err.status]
         msg = if err.expose
            err.message

@@ -34,13 +34,45 @@
 
   "scripts": {
     "setup": "scripts/setup.js",
-    "teardown": "scripts/teardown.js"
+    "teardown": "scripts/teardown.js",
+    "TEST_SCRIPT_1": "scripts/test.js",
+    "TEST_SCRIPT_2": "scripts/test.js"
   },
 
   "dependencies": {
   },
 
   "configuration": {
+      "test1": {
+        "description": "test1 description",
+        "type": "string",
+        "default": "Test1"
+      },
+      "test2": {
+        "description": "test2 description",
+        "type": "number",
+        "default": 42.42
+      },
+      "test3": {
+        "description": "test3 description",
+        "type": "boolean",
+        "default": true
+      },
+      "test4": {
+        "description": "test4 description",
+        "type": "integer",
+        "default": 42
+      },
+      "test5": {
+        "description": "test5 description",
+        "type": "json",
+        "default": "{\"test\":\"test\"}"
+      },
+      "test6": {
+        "description": "test6 description",
+        "type": "password",
+        "default": "testpassword"
+      }
   },
 
   "files": {
@@ -53,6 +85,7 @@
     "test/lib/*.js",
     "test/lib/iterator/*.js",
     "test/lib/mixins/*.js",
+    "test/lib/switch/*.js",
     "test/*.js"
   ]
 }

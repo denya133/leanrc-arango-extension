@@ -10,7 +10,6 @@ module.exports = (Module)->
     @module Module
 
     ipoCursor = @private cursor: LeanRC::ANY
-    ipcRecord = @private Record: LeanRC::Class
     ipoCollection = @private collection: Module::Collection
 
     @public setCursor: Function,
@@ -18,11 +17,6 @@ module.exports = (Module)->
       return: LeanRC::CursorInterface
       default: (aoCursor)->
         @[ipoCursor] = aoCursor
-        return @
-
-    @public setRecord: Function,
-      default: (acRecord)->
-        @[ipcRecord] = acRecord
         return @
 
     @public setCollection: Function,
@@ -33,18 +27,19 @@ module.exports = (Module)->
     @public @async toArray: Function,
       default: (acRecord = null)->
         while yield @hasNext()
-          yield @next acRecord ? @[ipoCollection]?.delegate
+          yield @next acRecord
 
     @public @async next: Function,
       default: (acRecord = null)->
-        acRecord ?= @[ipcRecord]
         data = yield LeanRC::Promise.resolve @[ipoCursor].next()
         if data?
           switch
             when acRecord?
-              acRecord.new data
+              acRecord.new data, @[ipoCollection]
             when @[ipoCollection]?
               @[ipoCollection].normalize data
+            else
+              data
         else
           data
 
@@ -109,18 +104,19 @@ module.exports = (Module)->
 
     @public @async compact: Function,
       default: (acRecord = null)->
-        acRecord ?= @[ipcRecord]
         index = 0
         records = []
         try
           while yield @hasNext()
             rawRecord = yield LeanRC::Promise.resolve @[ipoCursor].next()
             unless _.isEmpty rawRecord
-              switch
+              record = switch
                 when acRecord?
-                  record = acRecord.new rawRecord
+                  acRecord.new rawRecord, @[ipoCollection]
                 when @[ipoCollection]?
-                  record = @[ipoCollection].normalize rawRecord
+                  @[ipoCollection].normalize rawRecord
+                else
+                  rawRecord
               records.push record
           records
         catch err
@@ -151,9 +147,8 @@ module.exports = (Module)->
           throw err
 
     @public init: Function,
-      default: (acRecord, aoCursor = null, aoCollection = null)->
+      default: (aoCollection, aoCursor = null)->
         @super arguments...
-        @[ipcRecord] = acRecord
         @[ipoCursor] = aoCursor
         @[ipoCollection] = aoCollection
         return

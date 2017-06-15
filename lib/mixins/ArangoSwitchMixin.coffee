@@ -9,6 +9,7 @@ FoxxRouter    = require '@arangodb/foxx/router'
 queues        = require '@arangodb/foxx/queues'
 statuses      = require 'statuses'
 { errors }    = require '@arangodb'
+EventEmitter  = require 'events'
 
 ARANGO_NOT_FOUND  = errors.ERROR_ARANGO_DOCUMENT_NOT_FOUND.code
 ARANGO_DUPLICATE  = errors.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED.code
@@ -50,6 +51,7 @@ module.exports = (Module)->
   Module.defineMixin (BaseClass) ->
     class ArangoSwitchMixin extends BaseClass
       @inheritProtected()
+      iphEventNames = @private 'eventNames': Object
 
       ################
       @public @static createMethod: Function,
@@ -104,6 +106,19 @@ module.exports = (Module)->
       @public onRegister: Function,
         default: -> # super не вызываем
           voEmitter = new EventEmitter()
+          unless _.isFunction voEmitter.eventNames
+            eventNames = @[iphEventNames] = {}
+            FILTER = [ 'newListener', 'removeListener' ]
+            voEmitter.on 'newListener', (event, listener) ->
+              unless event in FILTER
+                eventNames[event] ?= 0
+                ++eventNames[event]
+              return
+            voEmitter.on 'removeListener', (event, listener) ->
+              unless event in FILTER
+                if eventNames[event] > 0
+                  --eventNames[event]
+              return
           if voEmitter.listeners('error').length is 0
             voEmitter.on 'error', @onerror.bind @
           @setViewComponent voEmitter
@@ -113,7 +128,8 @@ module.exports = (Module)->
       @public onRemove: Function,
         default: -> # super не вызываем
           voEmitter = @getViewComponent()
-          voEmitter.eventNames().forEach (eventName)->
+          eventNames = voEmitter.eventNames?() ? Object.keys @[iphEventNames] ? {}
+          eventNames.forEach (eventName)->
             voEmitter.removeAllListeners eventName
           return
 
@@ -121,17 +137,17 @@ module.exports = (Module)->
         args: []
         return: Object
         default: ->
-          vrCollectionPrefix = new RegExp "^#{module.collectionPrefix}"
-          vlCollectionNames = db._collections().reduce (aoCollection, alResults)->
-            if vrCollectionPrefix.test aoCollection.name
-              alResults.push aoCollection.name
+          vrCollectionPrefix = new RegExp "^#{module.context.collectionPrefix}"
+          vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
+            if vrCollectionPrefix.test name = aoCollection.name()
+              alResults.push name
             alResults
           , []
           return read: vlCollectionNames, write: vlCollectionNames
 
       @public respond: Function,
         default: (ctx)->
-          return if context.respond is no
+          return if ctx.respond is no
           return unless ctx.writable
           body = ctx.body
           code = ctx.status
@@ -153,7 +169,7 @@ module.exports = (Module)->
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
           try
-            if method is 'get'
+            if method.toLowerCase() is 'get'
               @sendNotification resourceName, aoMessage, action
             else
               {read, write} = @getLocks()
