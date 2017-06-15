@@ -1,5 +1,5 @@
 { db } = require '@arangodb'
-{ expect, assert } = require 'chai'
+{ co, assert } = require 'chai'
 sinon = require 'sinon'
 _ = require 'lodash'
 LeanRC = require 'LeanRC'
@@ -22,7 +22,7 @@ describe 'ArangoCursor', ->
     db._drop 'test_thames_travel'
   describe '.new', ->
     it 'should create cursor instance', ->
-      expect ->
+      co ->
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
@@ -32,27 +32,14 @@ describe 'ArangoCursor', ->
           @inheritProtected()
           @module Test
         TestRecord.initialize()
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
         collection = db.test_thames_travel
-        cursor = Test::ArangoCursor.new TestRecord, collection.all()
-      .to.not.throw Error
-  describe '#setRecord', ->
-    it 'should setup record', ->
-      expect ->
-        class Test extends LeanRC
-          @inheritProtected()
-          @include ArangoExtension
-          @root __dirname
-        Test.initialize()
-        class TestRecord extends Test::Record
-          @inheritProtected()
-          @module Test
-        TestRecord.initialize()
-        cursor = Test::ArangoCursor.new()
-        cursor.setRecord TestRecord
-      .to.not.throw Error
+        cursor = Test::ArangoCursor.new collectionInstance, collection.all()
+        yield return
   describe '#setCollection', ->
     it 'should setup collection', ->
-      expect ->
+      co ->
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
@@ -68,10 +55,10 @@ describe 'ArangoCursor', ->
         TestCollection.initialize()
         cursor = Test::ArangoCursor.new()
         cursor.setCollection TestCollection.new()
-      .to.not.throw Error
+        yield return
   describe '#setCursor', ->
     it 'should setup cursor', ->
-      expect ->
+      co ->
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
@@ -81,10 +68,12 @@ describe 'ArangoCursor', ->
           @inheritProtected()
           @module Test
         TestRecord.initialize()
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
         collection = db.test_thames_travel
-        cursor = Test::ArangoCursor.new TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance
         cursor.setCursor collection.all()
-      .to.not.throw Error
+        yield return
   describe '#next', ->
     it 'should get next values one by one', ->
       co ->
@@ -98,14 +87,16 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         assert.equal (yield cursor.next()).data, 'three', 'First item is incorrect'
         assert.equal (yield cursor.next()).data, 'men', 'Second item is incorrect'
         assert.equal (yield cursor.next()).data, 'in', 'Third item is incorrect'
         assert.equal (yield cursor.next()).data, 'a boat', 'Fourth item is incorrect'
-        assert.isUndefined (yield cursor.next()), 'Unexpected item is present'
+        assert.isUndefined (yield cursor.next()), 'Uncoed item is present'
   describe '#hasNext', ->
     before ->
       collection = db._create 'test_collection'
@@ -125,8 +116,10 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
         collection = db.test_collection
-        cursor = Test::ArangoCursor.new TestRecord, collection.all()
+        cursor = Test::ArangoCursor.new collectionInstance, collection.all()
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         data = yield cursor.next()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
@@ -143,9 +136,11 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
         array = db._query 'FOR item IN test_thames_travel SORT item._key RETURN item'
         .toArray()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         records = yield cursor.toArray()
@@ -167,7 +162,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
@@ -187,7 +184,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         assert.equal (yield cursor.count()), 4, 'Count works incorrectly'
@@ -205,7 +204,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         spyLambda = sinon.spy -> yield return
@@ -230,7 +231,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         records = yield cursor.map (record) ->
@@ -255,7 +258,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         records = yield cursor.filter (record) ->
@@ -287,7 +292,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute name: String, { default: 'Unknown' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db.test_collection.all()
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db.test_collection.all()
         record = yield cursor.find (record) ->
           yield Test::Promise.resolve record.name is 'George'
         assert.equal record.name, 'George', 'Record is not match'
@@ -318,7 +325,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_collection SORT item._key RETURN item.data ? item : null
         '''
         records = yield cursor.compact()
@@ -339,7 +348,9 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         records = yield cursor.reduce (accumulator, item) ->
@@ -374,12 +385,14 @@ describe 'ArangoCursor', ->
           @module Test
           @attribute data: String, { default: '' }
         TestRecord.initialize()
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        collectionInstance = Test::Collection.new 'TEST_COLLECTION',
+          delegate: TestRecord
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_thames_travel SORT item._key RETURN item
         '''
         record = yield cursor.first()
         assert.equal record.data, 'three', '1st record is not match'
-        cursor = Test::ArangoCursor.new TestRecord, db._query '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
           FOR item IN test_collection SORT item._key RETURN item
         '''
         record = yield cursor.first()

@@ -449,7 +449,7 @@ module.exports = (Module)->
       @public @async executeQuery: Function,
         default: (asQuery, options)->
           voNativeCursor = yield db._query asQuery
-          voCursor = Module::ArangoCursor.new null, voNativeCursor, @
+          voCursor = Module::ArangoCursor.new @, voNativeCursor
           return voCursor
 
 
