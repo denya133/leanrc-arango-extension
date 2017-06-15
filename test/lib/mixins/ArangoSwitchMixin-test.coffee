@@ -231,7 +231,7 @@ describe 'ArangoSwitchMixin', ->
         ]
         yield return
   describe '.createMethod', ->
-    it 'should send notification', ->
+    it 'should create method for add native router', ->
       co ->
         class Test extends LeanRC
           @inheritProtected()
@@ -247,4 +247,43 @@ describe 'ArangoSwitchMixin', ->
         switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
         assert.property switchMediator, 'test'
         assert.isFunction switchMediator.test
+        yield return
+  describe '#onRegister', ->
+    facade = null
+    KEY = 'TEST_ARANGO_SWITCH_MIXIN_003'
+    after -> facade?.remove?()
+    it 'should run on-register flow', ->
+      co ->
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root "#{__dirname}/config/root"
+        Test.initialize()
+        class TestConfiguration extends Test::Configuration
+          @inheritProtected()
+          @include Test::ArangoConfigurationMixin
+          @module Test
+        TestConfiguration.initialize()
+        configs = TestConfiguration.new LeanRC::CONFIGURATION, Test::ROOT
+        facade.registerProxy configs
+        class TestRouter extends LeanRC::Router
+          @inheritProtected()
+          @module Test
+        TestRouter.initialize()
+        facade.registerProxy TestRouter.new 'TEST_SWITCH_ROUTER'
+        class TestSwitch extends LeanRC::Switch
+          @inheritProtected()
+          @include Test::ArangoSwitchMixin
+          @module Test
+          @public routerName: String,
+            default: 'TEST_SWITCH_ROUTER'
+        TestSwitch.initialize()
+        switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
+        spyDefineRoutes = sinon.spy switchMediator, 'defineRoutes'
+        switchMediator.initializeNotifier KEY
+        switchMediator.onRegister()
+        assert.isTrue spyDefineRoutes.called
+        assert.instanceOf switchMediator.getViewComponent(), EventEmitter
+        assert.lengthOf switchMediator.getViewComponent().listeners('error'), 1
         yield return

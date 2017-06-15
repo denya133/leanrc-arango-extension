@@ -9,6 +9,7 @@ FoxxRouter    = require '@arangodb/foxx/router'
 queues        = require '@arangodb/foxx/queues'
 statuses      = require 'statuses'
 { errors }    = require '@arangodb'
+EventEmitter  = require 'events'
 
 ARANGO_NOT_FOUND  = errors.ERROR_ARANGO_DOCUMENT_NOT_FOUND.code
 ARANGO_DUPLICATE  = errors.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED.code
