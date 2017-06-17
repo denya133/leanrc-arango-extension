@@ -45,7 +45,9 @@ module.exports = (Module)->
 
     ArangoContext
     LogMessage
+    Utils
   } = Module::
+  { co } = Utils
   {  ERROR, DEBUG, LEVELS, SEND_TO_LOG } = LogMessage
 
   Module.defineMixin (BaseClass) ->
