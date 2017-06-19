@@ -169,6 +169,7 @@ module.exports = (Module)->
         return: NILL
         default: (aoSwaggerEndpoint, resourceName, action)->
           voGateway = @facade.retrieveProxy "#{resourceName}Gateway"
+          console.log '>>>>>BBBB', resourceName, action, voGateway
           {
             tags
             headers
