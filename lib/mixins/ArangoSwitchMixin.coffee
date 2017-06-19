@@ -167,9 +167,10 @@ module.exports = (Module)->
       @public defineSwaggerEndpoint: Function,
         args: [Object, String, String]
         return: NILL
-        default: (aoSwaggerEndpoint, resourceName, action)->
-          voGateway = @facade.retrieveProxy "#{resourceName}Gateway"
-          console.log '>>>>>BBBB', resourceName, action, voGateway
+        default: (aoSwaggerEndpoint, resource, action)->
+          gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
+          voGateway = @facade.retrieveProxy gatewayName
+          console.log '>>>>>BBBB', gatewayName, action, voGateway
           {
             tags
             headers
@@ -257,7 +258,7 @@ module.exports = (Module)->
                 reject err
               return
             yield return next?()
-          @defineSwaggerEndpoint voEndpoint, resourceName, opts.action
+          @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
           module.context.use voRouter
           return
 
