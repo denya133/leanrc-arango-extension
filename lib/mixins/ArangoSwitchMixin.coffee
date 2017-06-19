@@ -47,7 +47,7 @@ module.exports = (Module)->
     LogMessage
     Utils
   } = Module::
-  { co } = Utils
+  { co, genRandomAlphaNumbers } = Utils
   {  ERROR, DEBUG, LEVELS, SEND_TO_LOG } = LogMessage
 
   Module.defineMixin (BaseClass) ->
@@ -66,7 +66,7 @@ module.exports = (Module)->
 
           @public "#{originMethodName}": Function,
             args: [String, LAMBDA]
-            return: NILL
+            return: Array
             default: (path, routeFunc)->
               voRouter = FoxxRouter()
               unless routeFunc
@@ -89,10 +89,7 @@ module.exports = (Module)->
                   voContext.onerror err
                   return
                 yield return
-              @defineSwaggerEndpoint voEndpoint
-
-              module.context.use voRouter
-              return
+              return [voRouter, voEndpoint]
           return
 
       methods.forEach (method)=>
@@ -167,6 +164,42 @@ module.exports = (Module)->
           ctx.res.send body
           return
 
+      @public defineSwaggerEndpoint: Function,
+        args: [Object, String, String]
+        return: NILL
+        default: (aoSwaggerEndpoint, resourceName, action)->
+          voGateway = @facade.retrieveProxy "#{resourceName}Gateway"
+          {
+            tags
+            headers
+            pathParams
+            queryParams
+            payload
+            responses
+            errors
+            title
+            synopsis
+            isDeprecated
+          } = voGateway.swaggerDefinitionFor action
+          tags?.forEach (tag)->
+            aoSwaggerEndpoint.tag tag
+          headers?.forEach ({name, schema, description})->
+            aoSwaggerEndpoint.header name, schema, description
+          pathParams?.forEach ({name, schema, description})->
+            aoSwaggerEndpoint.pathParam name, schema, description
+          queryParams?.forEach ({name, schema, description})->
+            aoSwaggerEndpoint.queryParam name, schema, description
+          if payload?
+            aoSwaggerEndpoint.body payload.schema, payload.mimes, payload.description
+          responses?.forEach ({status, schema, mimes, description})->
+            aoSwaggerEndpoint.response status, schema, mimes, description
+          errors?.forEach ({status, description})->
+            aoSwaggerEndpoint.error status, description
+          aoSwaggerEndpoint.summary title            if title?
+          aoSwaggerEndpoint.description synopsis     if synopsis?
+          aoSwaggerEndpoint.deprecated isDeprecated  if isDeprecated?
+          return
+
       @public sender: Function,
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
@@ -203,5 +236,28 @@ module.exports = (Module)->
               return
           return
 
+      @public createNativeRoute: Function,
+        default: (opts)->
+          {method, path} = opts
+          resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
+
+          [voRouter, voEndpoint] = @[method]? path, co.wrap (context, next)=>
+            yield Module::Promise.new (resolve, reject)=>
+              try
+                reverse = genRandomAlphaNumbers 32
+                @getViewComponent().once reverse, co.wrap ({result, resource})=>
+                  try
+                    yield @sendHttpResponse context, result, resource, opts
+                    yield return resolve()
+                  catch error
+                    reject error
+                @sender resourceName, {context, reverse}, opts
+              catch err
+                reject err
+              return
+            yield return next?()
+          @defineSwaggerEndpoint voEndpoint, resourceName, opts.action
+          module.context.use voRouter
+          return
 
     ArangoSwitchMixin.initializeMixin()
