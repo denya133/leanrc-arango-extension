@@ -170,7 +170,6 @@ module.exports = (Module)->
         default: (aoSwaggerEndpoint, resource, action)->
           gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
           voGateway = @facade.retrieveProxy gatewayName
-          console.log '>>>>>BBBB', gatewayName, action, voGateway
           {
             tags
             headers
