@@ -101,10 +101,11 @@ module.exports = (Module)->
           opts =
             type: options.type ? 'hash'
             fields: field_names ? []
-            unique: options.unique ? no
-            sparse: options.sparse ? no
           if opts.type is 'fulltext'
             opts.minLength = 3
+          else
+            opts.unique = options.unique ? no
+            opts.sparse = options.sparse ? no
           db._collection(qualifiedName).ensureIndex opts
           yield return
 
