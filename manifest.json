@@ -1,6 +1,6 @@
 {
   "name": "leanrc-arango-extension",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.6",
   "license": "AGPL-3.0",
   "description": "LeanRC extension for creating application based on ArangoDB platform",
   "author": "Denis Trayzhon",
