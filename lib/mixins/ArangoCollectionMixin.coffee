@@ -11,14 +11,12 @@ moment        = require 'moment'
 
 
 module.exports = (Module)->
-  Module.defineMixin (BaseClass) ->
+  Module.defineMixin Module::Collection, (BaseClass) ->
     class ArangoCollectionMixin extends BaseClass
       @inheritProtected()
       @implements Module::QueryableMixinInterface
 
-      @public generateId: Function,
-        default: ->
-          Module::Utils.uuid.v4()
+      # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 
       @public @async push: Function,
         default: (aoRecord)->

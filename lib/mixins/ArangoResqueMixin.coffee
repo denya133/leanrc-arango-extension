@@ -21,7 +21,7 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
-  Module.defineMixin (BaseClass) ->
+  Module.defineMixin Module::Resque, (BaseClass) ->
     class ArangoResqueMixin extends BaseClass
       @inheritProtected()
 

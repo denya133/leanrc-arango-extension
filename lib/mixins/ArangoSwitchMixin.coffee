@@ -50,7 +50,7 @@ module.exports = (Module)->
   { co, genRandomAlphaNumbers } = Utils
   {  ERROR, DEBUG, LEVELS, SEND_TO_LOG } = LogMessage
 
-  Module.defineMixin (BaseClass) ->
+  Module.defineMixin Module::Switch, (BaseClass) ->
     class ArangoSwitchMixin extends BaseClass
       @inheritProtected()
       iphEventNames = @private 'eventNames': Object

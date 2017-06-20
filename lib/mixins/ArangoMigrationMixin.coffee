@@ -57,7 +57,7 @@ module.exports = (Module)->
 # миксин должен содержать нативный платформозависимый код для обращения к релаьной базе данных на понятном ей языке.
 
 module.exports = (Module)->
-  Module.defineMixin (BaseClass) ->
+  Module.defineMixin Module::Migration, (BaseClass) ->
     class ArangoMigrationMixin extends BaseClass
       @inheritProtected()
 
@@ -97,6 +97,7 @@ module.exports = (Module)->
 
       @public @async addIndex: Function,
         default: (collection_name, field_names, options)->
+          # TODO; fulltext индекс вызывает ошибку в аранге - надо дебажить
           qualifiedName = @collection.collectionFullName collection_name
           opts =
             type: options.type ? 'hash'

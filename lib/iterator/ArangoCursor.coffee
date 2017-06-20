@@ -25,23 +25,20 @@ module.exports = (Module)->
         return @
 
     @public @async toArray: Function,
-      default: (acRecord = null)->
+      default: ->
         while yield @hasNext()
-          yield @next acRecord
+          yield @next()
 
     @public @async next: Function,
-      default: (acRecord = null)->
+      default: ->
         data = yield LeanRC::Promise.resolve @[ipoCursor].next()
-        if data?
-          switch
-            when acRecord?
-              acRecord.new data, @[ipoCollection]
-            when @[ipoCollection]?
-              @[ipoCollection].normalize data
-            else
-              data
-        else
-          data
+        switch
+          when not data?
+            yield return data
+          when @[ipoCollection]?
+            yield return @[ipoCollection].normalize data
+          else
+            yield return data
 
     @public @async hasNext: Function,
       default: -> yield LeanRC::Promise.resolve @[ipoCursor].hasNext()
@@ -53,33 +50,33 @@ module.exports = (Module)->
       default: -> yield LeanRC::Promise.resolve @[ipoCursor].count arguments...
 
     @public @async forEach: Function,
-      default: (lambda, acRecord = null)->
+      default: (lambda)->
         index = 0
         try
           while yield @hasNext()
-            yield lambda (yield @next acRecord), index++
+            yield lambda (yield @next()), index++
           return
         catch err
           yield @close()
           throw err
 
     @public @async map: Function,
-      default: (lambda, acRecord = null)->
+      default: (lambda)->
         index = 0
         try
           while yield @hasNext()
-            yield lambda (yield @next acRecord), index++
+            yield lambda (yield @next()), index++
         catch err
           yield @close()
           throw err
 
     @public @async filter: Function,
-      default: (lambda, acRecord = null)->
+      default: (lambda)->
         index = 0
         records = []
         try
           while yield @hasNext()
-            record = yield @next acRecord
+            record = yield @next()
             if yield lambda record, index++
               records.push record
           records
@@ -88,12 +85,12 @@ module.exports = (Module)->
           throw err
 
     @public @async find: Function,
-      default: (lambda, acRecord = null)->
+      default: (lambda)->
         index = 0
         _record = null
         try
           while yield @hasNext()
-            record = yield @next acRecord
+            record = yield @next()
             if yield lambda record, index++
               _record = record
               break
@@ -103,51 +100,51 @@ module.exports = (Module)->
           throw err
 
     @public @async compact: Function,
-      default: (acRecord = null)->
+      default: ->
         index = 0
-        records = []
+        results = []
         try
           while yield @hasNext()
-            rawRecord = yield LeanRC::Promise.resolve @[ipoCursor].next()
-            unless _.isEmpty rawRecord
-              record = switch
-                when acRecord?
-                  acRecord.new rawRecord, @[ipoCollection]
+            rawResult = yield LeanRC::Promise.resolve @[ipoCursor].next()
+            unless _.isEmpty rawResult
+              result = switch
                 when @[ipoCollection]?
-                  @[ipoCollection].normalize rawRecord
+                  @[ipoCollection].normalize rawResult
                 else
-                  rawRecord
-              records.push record
-          records
+                  rawResult
+              results.push result
+          yield return results
         catch err
           yield @close()
           throw err
 
     @public @async reduce: Function,
-      default: (lambda, initialValue, acRecord = null)->
+      default: (lambda, initialValue)->
         try
           index = 0
           _initialValue = initialValue
           while yield @hasNext()
-            _initialValue = yield lambda _initialValue, (yield @next acRecord), index++
+            _initialValue = yield lambda _initialValue, (yield @next()), index++
           _initialValue
         catch err
           yield @close()
           throw err
 
     @public @async first: Function,
-      default: (acRecord = null)->
+      default: ->
         try
-          if yield @hasNext()
-            yield @next acRecord
+          result = if yield @hasNext()
+            yield @next()
           else
             null
+          yield @close()
+          yield return result
         catch err
           yield @close()
           throw err
 
     @public init: Function,
-      default: (aoCollection, aoCursor = null)->
+      default: (aoCollection = null, aoCursor = null)->
         @super arguments...
         @[ipoCursor] = aoCursor
         @[ipoCollection] = aoCollection
