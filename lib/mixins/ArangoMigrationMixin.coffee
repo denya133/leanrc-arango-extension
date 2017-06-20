@@ -98,11 +98,14 @@ module.exports = (Module)->
       @public @async addIndex: Function,
         default: (collection_name, field_names, options)->
           qualifiedName = @collection.collectionFullName collection_name
-          db._collection(qualifiedName).ensureIndex
+          opts =
             type: options.type ? 'hash'
             fields: field_names ? []
             unique: options.unique ? no
             sparse: options.sparse ? no
+          if opts.type is 'fulltext'
+            opts.minLength = 3
+          db._collection(qualifiedName).ensureIndex opts
           yield return
 
       @public @async addTimestamps: Function,
