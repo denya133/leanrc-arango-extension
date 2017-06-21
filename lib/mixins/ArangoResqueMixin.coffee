@@ -61,8 +61,8 @@ module.exports = (Module)->
         default: (queueName, scriptName, data, delayUntil)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
-          console.log '>>> IN ArangoResqueMixin::pushJob', @Module.name, @Module.context?
-          {mount} = @Module.context
+          console.log '>>> IN ArangoResqueMixin::pushJob', @Module.name, @Module.context()?
+          {mount} = @Module.context()
           jobID = queue.push {name: scriptName, mount}, data, {delayUntil}
           yield return jobID
 
@@ -93,8 +93,8 @@ module.exports = (Module)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
           if scriptName?
-            console.log '>>> IN ArangoResqueMixin::allJobs', @Module.name, @Module.context?
-            { mount } = @Module.context
+            console.log '>>> IN ArangoResqueMixin::allJobs', @Module.name, @Module.context()?
+            { mount } = @Module.context()
             yield return queue.all { name: scriptName, mount }
           else
             yield return queue.all()
@@ -104,8 +104,8 @@ module.exports = (Module)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
           if scriptName?
-            console.log '>>> IN ArangoResqueMixin::pendingJobs', @Module.name, @Module.context?
-            { mount } = @Module.context
+            console.log '>>> IN ArangoResqueMixin::pendingJobs', @Module.name, @Module.context()?
+            { mount } = @Module.context()
             yield return queue.pending { name: scriptName, mount }
           else
             yield return queue.pending()
@@ -115,8 +115,8 @@ module.exports = (Module)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
           if scriptName?
-            console.log '>>> IN ArangoResqueMixin::progressJobs', @Module.name, @Module.context?
-            { mount } = @Module.context
+            console.log '>>> IN ArangoResqueMixin::progressJobs', @Module.name, @Module.context()?
+            { mount } = @Module.context()
             yield return queue.progress { name: scriptName, mount }
           else
             yield return queue.progress()
@@ -126,8 +126,8 @@ module.exports = (Module)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
           if scriptName?
-            console.log '>>> IN ArangoResqueMixin::completedJobs', @Module.name, @Module.context?
-            { mount } = @Module.context
+            console.log '>>> IN ArangoResqueMixin::completedJobs', @Module.name, @Module.context()?
+            { mount } = @Module.context()
             yield return queue.complete { name: scriptName, mount }
           else
             yield return queue.complete()
@@ -137,8 +137,8 @@ module.exports = (Module)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
           if scriptName?
-            console.log '>>> IN ArangoResqueMixin::failedJobs', @Module.name, @Module.context?
-            { mount } = @Module.context
+            console.log '>>> IN ArangoResqueMixin::failedJobs', @Module.name, @Module.context()?
+            { mount } = @Module.context()
             yield return queue.failed { name: scriptName, mount }
           else
             yield return queue.failed()

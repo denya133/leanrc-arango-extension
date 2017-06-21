@@ -40,8 +40,9 @@ Extension = (BaseClass) ->
     console.log '>>> IN ArangoExtension', module.context?
     ipoModule = @private @static module: Object,
       default: module
-    @public @static context: Object,
-      get: -> @[ipoModule].context
+    @public @static context: Function,
+      default: -> @[ipoModule].context
+    console.log '>>> IN ArangoExtension 222'
 
     require('./iterator/ArangoCursor') @Module
 
