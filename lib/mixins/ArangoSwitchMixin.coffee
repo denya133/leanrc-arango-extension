@@ -258,7 +258,6 @@ module.exports = (Module)->
               return
             yield return next?()
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
-          console.log '>>> IN ArangoSwitchMixin::createNativeRoute', @Module.name, @Module.context()?
           @Module.context().use voRouter
           return
 
