@@ -38,7 +38,8 @@ Extension = (BaseClass) ->
   class ArangoExtension extends BaseClass
     @inheritProtected()
     console.log '>>> IN ArangoExtension', module.context?
-    @public @static context: module.context
+    @public @static context: Object,
+      default: module.context
 
     require('./iterator/ArangoCursor') @Module
 
