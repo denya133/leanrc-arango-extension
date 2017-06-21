@@ -306,7 +306,7 @@ module.exports = (Module)->
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
                     voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
-                voQuery = (voQuery ? qb).remove id: wrapReference "#{aoQuery.$remove}.id"
+                voQuery = (voQuery ? qb).remove _key: wrapReference "#{aoQuery.$remove}._key"
                 if aoQuery.$into?
                   voQuery = voQuery.into aoQuery.$into
           else if (voRecord = aoQuery.$insert)?
