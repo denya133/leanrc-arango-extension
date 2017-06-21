@@ -142,6 +142,8 @@ module.exports = (Module)->
               alResults.push name
             alResults
           , []
+          vlCollectionNames.push '_jobs'
+          vlCollectionNames.push '_queues'
           return read: vlCollectionNames, write: vlCollectionNames
 
       @public respond: Function,
@@ -217,7 +219,7 @@ module.exports = (Module)->
                   write: write
                   allowImplicit: yes
                 action: (params)->
-                  params.self.sendNotification params.resourceName, params.message, params.action
+                  params.self.facade.sendNotification params.resourceName, params.message, params.action
                 params: {resourceName, action, message: aoMessage, self}
             queues._updateQueueDelay()
           catch err
@@ -243,16 +245,23 @@ module.exports = (Module)->
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
 
           [voRouter, voEndpoint] = @[method]? path, co.wrap (context, next)=>
+            console.log '>>>>>>>> IN createNativeRoute 111'
             yield Module::Promise.new (resolve, reject)=>
               try
+                console.log '>>>>>>>> IN createNativeRoute 222'
                 reverse = genRandomAlphaNumbers 32
+                console.log '>>>>>>>> IN createNativeRoute 333'
                 @getViewComponent().once reverse, co.wrap ({result, resource})=>
                   try
+                    console.log '>>>>>>>> IN createNativeRoute 666'
                     yield @sendHttpResponse context, result, resource, opts
+                    console.log '>>>>>>>> IN createNativeRoute 777'
                     yield return resolve()
                   catch error
                     reject error
+                console.log '>>>>>>>> IN createNativeRoute 444'
                 @sender resourceName, {context, reverse}, opts
+                console.log '>>>>>>>> IN createNativeRoute 555'
               catch err
                 reject err
               return

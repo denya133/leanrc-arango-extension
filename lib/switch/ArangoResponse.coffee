@@ -2,6 +2,7 @@ _                   = require 'lodash'
 typeis              = require('type-is').is
 statuses            = require 'statuses'
 assert              = require 'assert'
+getType             = require('mime-types').contentType
 
 
 module.exports = (Module)->
@@ -70,14 +71,14 @@ module.exports = (Module)->
         setType = not @headers['content-type']
         if _.isString val
           if setType
-            @res.type if /^\s*</.test val then 'html' else 'text'
+            @type = if /^\s*</.test val then 'html' else 'text'
           return
         if _.isBuffer val
           if setType
-            @res.type 'bin'
+            @type = 'bin'
           return
         @remove 'Content-Length'
-        @res.type 'json'
+        @type = 'json'
         return
 
     @public length: Boolean,
@@ -134,11 +135,23 @@ module.exports = (Module)->
         val = "\"#{val}\"" unless /^(W\/)?"/.test val
         @set 'ETag', val
 
+    # @public type: String,
+    #   get: ->
+    #     @res.type()
+    #   set: (type)->
+    #     @res.type type
+
     @public type: String,
       get: ->
-        @res.type()
+        type = @get 'Content-Type'
+        return '' unless type
+        type.split(';')[0]
       set: (type)->
-        @res.type type
+        type = getType type
+        if type
+          @set 'Content-Type', type
+        else
+          @remove 'Content-Type'
 
     @public is: Function,
       default: (args...)->
