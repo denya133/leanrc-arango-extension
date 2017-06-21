@@ -455,12 +455,12 @@ module.exports = (Module)->
 
       @public @async executeQuery: Function,
         default: (asQuery, options)->
-          voNativeCursor = yield db._query "#{asQuery}"
+          voNativeCursor = db._query "#{asQuery}"
           voCursor = if asQuery.isCustomReturn
             Module::ArangoCursor.new null, voNativeCursor
           else
             Module::ArangoCursor.new @, voNativeCursor
-          return voCursor
+          yield return voCursor
 
 
     ArangoCollectionMixin.initializeMixin()
