@@ -31,7 +31,7 @@ module.exports = (Module)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
             .filter '@doc.id': {$eq: id}
-            .remove 'id': '@doc.id'
+            .remove '@doc'
             .into @collectionFullName()
           yield @query voQuery
           return yes
@@ -306,7 +306,7 @@ module.exports = (Module)->
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
                     voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
-                voQuery = (voQuery ? qb).remove aoQuery.$remove
+                voQuery = (voQuery ? qb).remove id: wrapReference "#{aoQuery.$remove}.id"
                 if aoQuery.$into?
                   voQuery = voQuery.into aoQuery.$into
           else if (voRecord = aoQuery.$insert)?
