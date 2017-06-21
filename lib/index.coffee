@@ -37,7 +37,7 @@ module.exports = TestApp.initialize().freeze()
 Extension = (BaseClass) ->
   class ArangoExtension extends BaseClass
     @inheritProtected()
-    console.log '>>> IN ArangoExtension', module.context
+    console.log '>>> IN ArangoExtension', module.context?
     @public @static context: module.context
 
     require('./iterator/ArangoCursor') @Module
