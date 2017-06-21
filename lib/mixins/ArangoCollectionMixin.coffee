@@ -30,8 +30,8 @@ module.exports = (Module)->
         default: (id)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
-            .filter '@doc._key': {$eq: id}
-            .remove '_key': 'doc._key'
+            .filter '@doc.id': {$eq: id}
+            .remove 'id': '@doc.id'
             .into @collectionFullName()
           yield @query voQuery
           return yes
@@ -40,7 +40,7 @@ module.exports = (Module)->
         default: (id)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
-            .filter '@doc._key': {$eq: id}
+            .filter '@doc.id': {$eq: id}
             .return '@doc'
           cursor = yield @query voQuery
           cursor.first()
@@ -49,7 +49,7 @@ module.exports = (Module)->
         default: (ids)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
-            .filter '@doc._key': {$in: ids}
+            .filter '@doc.id': {$in: ids}
             .return '@doc'
           yield @query voQuery
 
@@ -64,7 +64,7 @@ module.exports = (Module)->
         default: (id, aoRecord)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
-            .filter '@doc._key': {$eq: id}
+            .filter '@doc.id': {$eq: id}
             .replace aoRecord
             .into @collectionFullName()
           yield (yield @query voQuery).first()
@@ -73,7 +73,7 @@ module.exports = (Module)->
         default: (id, aoRecord)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
-            .filter '@doc._key': {$eq: id}
+            .filter '@doc.id': {$eq: id}
             .update aoRecord
             .into @collectionFullName()
           yield (yield @query voQuery).first()
@@ -82,7 +82,7 @@ module.exports = (Module)->
         default: (id)->
           voQuery = Module::Query.new()
             .forIn '@doc': @collectionFullName()
-            .filter '@doc._key': {$eq: id}
+            .filter '@doc.id': {$eq: id}
             .limit 1
             .return '@doc'
           cursor = yield @query voQuery
@@ -366,6 +366,7 @@ module.exports = (Module)->
                 voQuery = voQuery.returnNew 'new_doc'
           else if aoQuery.$forIn?
             do =>
+              isCustomReturn = no
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
                 voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                   .in asCollectionFullName
@@ -383,6 +384,7 @@ module.exports = (Module)->
                 for own asRef, aoValue of voLet
                   voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
               if (voCollect = aoQuery.$collect)?
+                isCustomReturn = yes
                 for own asRef, aoValue of voCollect
                   voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
               if (vsInto = aoQuery.$into)?
@@ -403,26 +405,33 @@ module.exports = (Module)->
                   voQuery = voQuery.limit vnLimit
 
               if (aoQuery.$count)?
+                isCustomReturn = yes
                 voQuery = voQuery.collectWithCountInto 'counter'
                   .return qb.ref('counter').then('counter').else('0')
               else if (vsSum = aoQuery.$sum)?
+                isCustomReturn = yes
                 finAggUsed = "RETURN {{COLLECT AGGREGATE result = SUM\\(TO_NUMBER\\(#{vsSum.replace '@', ''}\\)\\) RETURN result}}"
                 finAggPartial = "COLLECT AGGREGATE result = SUM(TO_NUMBER(#{vsSum.replace '@', ''})) RETURN result"
                 voQuery = voQuery.return qb.expr "{{#{finAggPartial}}}"
               else if (vsMin = aoQuery.$min)?
+                isCustomReturn = yes
                 voQuery = voQuery.sort qb.ref(vsMin.replace '@', '')
                   .limit 1
                   .return qb.ref(vsMin.replace '@', '')
               else if (vsMax = aoQuery.$max)?
+                isCustomReturn = yes
                 voQuery = voQuery.sort qb.ref(vsMax.replace '@', ''), 'DESC'
                   .limit 1
                   .return qb.ref(vsMax.replace '@', '')
               else if (vsAvg = aoQuery.$avg)?
+                isCustomReturn = yes
                 finAggUsed = "RETURN {{COLLECT AGGREGATE result = AVG\\(TO_NUMBER\\(#{vsAvg.replace '@', ''}\\)\\) RETURN result}}"
                 finAggPartial = "COLLECT AGGREGATE result = AVG(TO_NUMBER(#{vsAvg.replace '@', ''})) RETURN result"
                 voQuery = voQuery.return qb.expr "{{#{finAggPartial}}}"
               else
                 if aoQuery.$return?
+                  if aoQuery.$return isnt '@doc'
+                    isCustomReturn = yes
                   voReturn = if _.isString aoQuery.$return
                     qb.ref aoQuery.$return.replace '@', ''
                   else if _.isObject aoQuery.$return
@@ -441,13 +450,17 @@ module.exports = (Module)->
             vsQuery = vsQuery.replace new RegExp(intoUsed), intoPartial
           if finAggUsed and new RegExp(finAggUsed).test vsQuery
             vsQuery = vsQuery.replace new RegExp(finAggUsed), finAggPartial
-
+          vsQuery = new String vsQuery
+          Reflect.defineProperty vsQuery, 'isCustomReturn', value: isCustomReturn
           return vsQuery
 
       @public @async executeQuery: Function,
         default: (asQuery, options)->
           voNativeCursor = yield db._query asQuery
-          voCursor = Module::ArangoCursor.new @, voNativeCursor
+          voCursor = if asQuery.isCustomReturn
+            Module::ArangoCursor.new null, voNativeCursor
+          else
+            Module::ArangoCursor.new @, voNativeCursor
           return voCursor
 
 
