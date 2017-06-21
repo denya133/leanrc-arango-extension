@@ -286,6 +286,7 @@ module.exports = (Module)->
         default: (aoQuery)->
           voQuery = null
           intoUsed = intoPartial = finAggUsed = finAggPartial = null
+          isCustomReturn = no
           if aoQuery.$remove?
             do =>
               if aoQuery.$forIn?
@@ -366,7 +367,6 @@ module.exports = (Module)->
                 voQuery = voQuery.returnNew 'new_doc'
           else if aoQuery.$forIn?
             do =>
-              isCustomReturn = no
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
                 voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                   .in asCollectionFullName
@@ -437,8 +437,7 @@ module.exports = (Module)->
                   else if _.isObject aoQuery.$return
                     vhObj = {}
                     for own key, value of aoQuery.$return
-                      do (key, value)->
-                        vhObj[key] = wrapReference value
+                      vhObj[key] = wrapReference value
                     vhObj
                   if aoQuery.$distinct
                     voQuery = voQuery.returnDistinct voReturn
@@ -456,7 +455,7 @@ module.exports = (Module)->
 
       @public @async executeQuery: Function,
         default: (asQuery, options)->
-          voNativeCursor = yield db._query asQuery
+          voNativeCursor = yield db._query "#{asQuery}"
           voCursor = if asQuery.isCustomReturn
             Module::ArangoCursor.new null, voNativeCursor
           else
