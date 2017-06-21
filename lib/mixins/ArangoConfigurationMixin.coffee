@@ -47,15 +47,17 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
-  { NILL } = Module
   Module.defineMixin Module::Configuration, (BaseClass) ->
     class ArangoConfigurationMixin extends BaseClass
       @inheritProtected()
 
       @public defineConfigProperties: Function,
-        args: []
-        return: NILL
         default: ->
+          Reflect.defineProperty @, 'version',
+            enumerable: yes
+            configurable: yes
+            writable: no
+            value: @Module.context().manifest.version
           configs = @Module.context().configuration
           for own key, value of configs
             do (attr = key, config = value)=>
