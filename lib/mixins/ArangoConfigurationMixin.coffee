@@ -56,7 +56,7 @@ module.exports = (Module)->
         args: []
         return: NILL
         default: ->
-          configs = module.context.configuration
+          configs = @Module.context.configuration
           for own key, value of configs
             do (attr = key, config = value)=>
               Reflect.defineProperty @, attr,

@@ -136,7 +136,7 @@ module.exports = (Module)->
         args: []
         return: Object
         default: ->
-          vrCollectionPrefix = new RegExp "^#{module.context.collectionPrefix}"
+          vrCollectionPrefix = new RegExp "^#{inflect.underscore @Module.name}_"
           vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
             if vrCollectionPrefix.test name = aoCollection.name()
               alResults.push name
@@ -258,7 +258,7 @@ module.exports = (Module)->
               return
             yield return next?()
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
-          module.context.use voRouter
+          @Module.context.use voRouter
           return
 
     ArangoSwitchMixin.initializeMixin()
