@@ -56,6 +56,7 @@ module.exports = (Module)->
         args: []
         return: NILL
         default: ->
+          console.log '>>> IN ArangoConfigurationMixin', @Module.name, @Module.context
           configs = @Module.context.configuration
           for own key, value of configs
             do (attr = key, config = value)=>
