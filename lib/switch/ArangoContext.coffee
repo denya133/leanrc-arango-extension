@@ -1,6 +1,7 @@
 _             = require 'lodash'
 assert        = require 'assert'
 statuses      = require 'statuses'
+createError   = require 'http-errors'
 
 
 module.exports = (Module)->
@@ -38,13 +39,14 @@ module.exports = (Module)->
     # @public database: String # возможно это тоже надо получать из метода из отдельного модуля
 
     @public throw: Function,
-      default: (args...)-> @res.throw args...
+      default: (args...)-> throw createError args...
 
     @public assert: Function,
       default: assert
 
     @public onerror: Function,
       default: (err)->
+        console.log '>>>>>>> IN ArangoContext::onerror 111'
         return unless err?
         unless _.isError err
           err = new Error "non-error thrown: #{err}"
@@ -52,24 +54,29 @@ module.exports = (Module)->
         if @headerSent or not @writable
           headerSent = err.headerSent = yes
         @switch.getViewComponent().emit 'error', err, @
-
+        console.log '>>>>>>> IN ArangoContext::onerror 222'
         return if headerSent
-        {res} = @
-        if _.isFunction res.getHeaderNames
-          res.getHeaderNames().forEach (name)-> res.removeHeader name
-        if (vlHeaderNames = Object.keys res.headers ? {}).length > 0
-          vlHeaderNames.forEach (name)-> res.removeHeader name
-        res.set err.headers
-        res.type 'text'
+        if _.isFunction @res.getHeaderNames
+          @res.getHeaderNames().forEach (name)=> @res.removeHeader name
+        if (vlHeaderNames = Object.keys @res.headers ? {}).length > 0
+          vlHeaderNames.forEach (name)=> @res.removeHeader name
+        console.log '>>>>>>> IN ArangoContext::onerror 333'
+        @response.set err.headers
+        @response.type = 'text'
+        console.log '>>>>>>> IN ArangoContext::onerror 444'
         err.status = 404 if 'ENOENT' is err.code
         err.status = 500 if not _.isNumber(err.status) or not statuses[err.status]
+        console.log '>>>>>>> IN ArangoContext::onerror 555'
         code = statuses[err.status]
         msg = if err.expose
            err.message
         else
           code
-        res.status err.status
-        res.send msg
+        console.log '>>>>>>> IN ArangoContext::onerror 666'
+        @res.status err.status
+        console.log '>>>>>>> IN ArangoContext::onerror 777'
+        @res.send msg
+        console.log '>>>>>>> IN ArangoContext::onerror 888'
         return
 
     # Request aliases

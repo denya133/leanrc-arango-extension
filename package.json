@@ -56,6 +56,7 @@
     "escape-html",
     "destroy",
     "http-assert",
+    "http-errors",
     "deep-equal",
     "methods",
     "path-to-regexp",
@@ -81,7 +82,8 @@
     "pluralize": "1.2.1",
     "reportback": "0.1.9",
     "scaffolt": "0.5.0",
-    "supererror": "0.7.1"
+    "supererror": "0.7.1",
+    "http-errors": "^1.6.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
