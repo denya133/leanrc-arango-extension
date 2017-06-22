@@ -56,7 +56,7 @@ describe 'ArangoCursor', ->
         cursor = Test::ArangoCursor.new()
         cursor.setCollection TestCollection.new()
         yield return
-  describe '#setCursor', ->
+  describe '#setIterable', ->
     it 'should setup cursor', ->
       co ->
         class Test extends LeanRC
@@ -72,7 +72,7 @@ describe 'ArangoCursor', ->
           delegate: TestRecord
         collection = db.test_thames_travel
         cursor = Test::ArangoCursor.new collectionInstance
-        cursor.setCursor collection.all()
+        cursor.setIterable collection.all()
         yield return
   describe '#next', ->
     it 'should get next values one by one', ->

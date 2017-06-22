@@ -12,7 +12,7 @@ module.exports = (Module)->
     ipoCursor = @private cursor: LeanRC::ANY
     ipoCollection = @private collection: Module::Collection
 
-    @public setCursor: Function,
+    @public setIterable: Function,
       args: [LeanRC::ANY]
       return: LeanRC::CursorInterface
       default: (aoCursor)->
