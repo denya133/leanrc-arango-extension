@@ -86,7 +86,6 @@ module.exports = (Module)->
                   yield routeFunc.call @, voContext
                   @respond voContext
                 catch err
-                  console.log '>>>>>>> ERROR IN {originMethodName} before voContext.onerror', err
                   voContext.onerror err
                 yield return
               return [voRouter, voEndpoint]
@@ -242,29 +241,21 @@ module.exports = (Module)->
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
 
           [voRouter, voEndpoint] = @[method]? path, co.wrap (context, next)=>
-            console.log '>>>>>>>> IN createNativeRoute 111'
             yield Module::Promise.new (resolve, reject)=>
               try
-                console.log '>>>>>>>> IN createNativeRoute 222'
                 reverse = genRandomAlphaNumbers 32
-                console.log '>>>>>>>> IN createNativeRoute 333'
                 @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
                   if error?
-                    console.log '>>>>>> ERROR AFTER RESOURCE', error
                     reject error
                     yield return
                   try
-                    console.log '>>>>>>>> IN createNativeRoute 666'
                     yield @sendHttpResponse context, result, resource, opts
-                    console.log '>>>>>>>> IN createNativeRoute 777'
                     resolve()
                     yield return
                   catch err
                     reject err
                     yield return
-                console.log '>>>>>>>> IN createNativeRoute 444'
                 @sender resourceName, {context, reverse}, opts
-                console.log '>>>>>>>> IN createNativeRoute 555'
               catch err
                 reject err
               return
