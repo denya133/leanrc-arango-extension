@@ -1,6 +1,7 @@
 _  = require 'lodash'
 LeanRC = require 'LeanRC'
 
+# TODO: Возможно стоит подумать над тем, чтобы повторно реиспользовать курсор, по которому уже прошлись один раз - например сохранять все итемы в кеш-скрытый массив, чтобы потом итерировать уже по ним.
 
 module.exports = (Module)->
   class ArangoCursor extends LeanRC::CoreObject
