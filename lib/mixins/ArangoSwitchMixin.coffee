@@ -160,9 +160,6 @@ module.exports = (Module)->
           unless body?
             body = ctx.message ? String code
             return ctx.res.send body
-          if _.isBuffer(body) or _.isString body
-            return ctx.res.send body
-          body = JSON.stringify body
           ctx.res.send body
           return
 
