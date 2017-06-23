@@ -217,7 +217,9 @@ module.exports = (Module)->
                 action: (params)->
                   params.self.facade.sendNotification params.resourceName, params.message, params.action
                 params: {resourceName, action, message: aoMessage, self}
-            queues._updateQueueDelay()
+              # TODO: с этим надо что то придумать, потому что внутри транзакции когда запрос на создание чего-то посылается http запрос на получение сессии текущего пользователя, транзакция залочила _queues коллекцию и соответственно GET запрос на получение сессии умирает по таймауту (дед-лок)
+              # пока как временное решение ввел queues._updateQueueDelay() под else - то есть записывать на отложенную обработку job'ы при прихождении get запросов нельзя.
+              queues._updateQueueDelay()
           catch err
             console.log '???????????????????!!', JSON.stringify err
             if err.isArangoError and err.errorNum is ARANGO_NOT_FOUND
