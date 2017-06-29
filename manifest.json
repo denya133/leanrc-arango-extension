@@ -1,10 +1,10 @@
 {
   "name": "leanrc-arango-extension",
-  "version": "1.0.0-rc.11",
+  "version": "1.0.0-rc.12",
   "license": "AGPL-3.0",
   "description": "LeanRC extension for creating application based on ArangoDB platform",
   "author": "Denis Trayzhon",
-  "thumbnail": "assets/basis.png",
+  "thumbnail": "assets/logo.png",
 
   "engines": {
     "arangodb": "^3.0.0"
@@ -23,13 +23,7 @@
     "ArangoDB",
     "Foxx",
     "API",
-    "FoxxMC",
-    "auth",
-    "users",
-    "uploads",
-    "roles",
-    "permitions",
-    "companies"
+    "LeanRC"
   ],
 
   "scripts": {
