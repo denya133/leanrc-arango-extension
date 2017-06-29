@@ -37,7 +37,7 @@ describe 'ArangoMigrationMixin', ->
         Test.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -68,7 +68,7 @@ describe 'ArangoMigrationMixin', ->
         Test.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -126,13 +126,13 @@ describe 'ArangoMigrationMixin', ->
         Migration2.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
         class ArangoTestCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoTestCollection.initialize()
@@ -176,7 +176,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -216,13 +216,13 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
         class ArangoTestCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoTestCollection.initialize()
@@ -258,7 +258,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -295,7 +295,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -330,7 +330,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -358,7 +358,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -389,7 +389,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -427,7 +427,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -457,7 +457,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -500,7 +500,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -535,7 +535,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()
@@ -577,7 +577,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         class ArangoMigrationCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoMigrationCollection.initialize()

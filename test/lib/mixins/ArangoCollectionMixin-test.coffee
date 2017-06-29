@@ -39,7 +39,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -67,7 +67,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -268,7 +268,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -348,7 +348,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -384,7 +384,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -445,7 +445,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -506,7 +506,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -563,7 +563,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -644,7 +644,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -694,7 +694,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -744,7 +744,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -794,7 +794,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -844,7 +844,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -894,7 +894,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -946,7 +946,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -991,7 +991,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1028,7 +1028,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1080,7 +1080,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1131,7 +1131,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1191,7 +1191,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1247,7 +1247,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1299,7 +1299,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1351,7 +1351,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1405,7 +1405,7 @@ describe 'ArangoCollectionMixin', ->
         Test.initialize()
         class ArangoCollection extends Test::Collection
           @inheritProtected()
-          @include Test::QueryableMixin
+          @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
