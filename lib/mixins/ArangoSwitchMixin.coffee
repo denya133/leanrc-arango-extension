@@ -141,8 +141,8 @@ module.exports = (Module)->
               alResults.push name
             alResults
           , []
-          vlCollectionNames.push '_jobs'
-          vlCollectionNames.push '_queues'
+          # vlCollectionNames.push '_jobs'
+          # vlCollectionNames.push '_queues'
           return read: vlCollectionNames, write: vlCollectionNames
 
       @public respond: Function,
