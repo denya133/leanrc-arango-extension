@@ -6,7 +6,6 @@ inflect       = do require 'i'
 methods       = require 'methods'
 FoxxRouter    = require '@arangodb/foxx/router'
 { db }        = require '@arangodb'
-queues        = require '@arangodb/foxx/queues'
 statuses      = require 'statuses'
 { errors }    = require '@arangodb'
 EventEmitter  = require 'events'
@@ -131,20 +130,6 @@ module.exports = (Module)->
             voEmitter.removeAllListeners eventName
           return
 
-      @public getLocks: Function,
-        args: []
-        return: Object
-        default: ->
-          vrCollectionPrefix = new RegExp "^#{inflect.underscore @Module.name}_"
-          vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
-            if vrCollectionPrefix.test name = aoCollection.name()
-              alResults.push name
-            alResults
-          , []
-          # vlCollectionNames.push '_jobs'
-          # vlCollectionNames.push '_queues'
-          return read: vlCollectionNames, write: vlCollectionNames
-
       @public respond: Function,
         default: (ctx)->
           return if ctx.respond is no
@@ -203,23 +188,7 @@ module.exports = (Module)->
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
           try
-            if method.toLowerCase() is 'get'
-              @sendNotification resourceName, aoMessage, action
-            else
-              {read, write} = @getLocks()
-              self = @
-              db._executeTransaction
-                waitForSync: yes
-                collections:
-                  read: read
-                  write: write
-                  allowImplicit: yes
-                action: (params)->
-                  params.self.facade.sendNotification params.resourceName, params.message, params.action
-                params: {resourceName, action, message: aoMessage, self}
-              # TODO: с этим надо что то придумать, потому что внутри транзакции когда запрос на создание чего-то посылается http запрос на получение сессии текущего пользователя, транзакция залочила _queues коллекцию и соответственно GET запрос на получение сессии умирает по таймауту (дед-лок)
-              # пока как временное решение ввел queues._updateQueueDelay() под else - то есть записывать на отложенную обработку job'ы при прихождении get запросов нельзя.
-              queues._updateQueueDelay()
+            @sendNotification resourceName, aoMessage, action
           catch err
             console.log '???????????????????!!', JSON.stringify err
             if err.isArangoError and err.errorNum is ARANGO_NOT_FOUND
