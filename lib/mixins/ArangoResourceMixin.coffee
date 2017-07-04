@@ -63,7 +63,7 @@ module.exports = (Module)->
               allowImplicit: yes
             action: @wrap (params)->
               {caller} = arguments.callee
-              console.log 'caller in ArangoResourceMixin::saveDelayeds', caller.pointer ? caller.name
+              console.log 'caller in ArangoResourceMixin::saveDelayeds', caller, caller.pointer, caller.name
               p = params.self.super params.app
               console.log 'p in ArangoResourceMixin::saveDelayeds', p
               p
