@@ -32,32 +32,44 @@ module.exports = (Module)->
       @public @async doAction: Function, # для того, чтобы отдельная примесь могла переопределить этот метод и обернуть выполнение например в транзакцию
         default: (action, context)->
           voResult = if action in @listNonTransactionables()
-            yield @super action, context
+            superRes = @super action, context
+            console.log 'superRes in ArangoResourceMixin::doAction', superRes
+            yield superRes
           else
             {read, write} = @getLocks()
             self = @
-            yield db._executeTransaction
+            transEx = db._executeTransaction
               waitForSync: yes
               collections:
                 read: read
                 write: write
                 allowImplicit: yes
               action: @wrap (params)->
-                params.self.super params.action, params.context
+                p = params.self.super params.action, params.context
+                console.log 'p in ArangoResourceMixin::doAction', p
+                p
               params: {self, action, context}
+            console.log 'transEx in ArangoResourceMixin::doAction', transEx
+            yield transEx
           yield return voResult
 
       @public @async saveDelayeds: Function, # для того, чтобы сохранить все отложенные джобы
         default: (app)->
           self = @
-          yield db._executeTransaction
+          transEx = db._executeTransaction
             waitForSync: yes
             collections:
               write: ['_queues', '_jobs']
               allowImplicit: yes
-            action: (params)->
-              params.self.super params.app
+            action: @wrap (params)->
+              {caller} = arguments.callee
+              console.log 'caller in ArangoResourceMixin::saveDelayeds', caller, caller.pointer, caller.name
+              p = params.self.super params.app
+              console.log 'p in ArangoResourceMixin::saveDelayeds', p
+              p
             params: {self, app}
+          console.log 'transEx in ArangoResourceMixin::saveDelayeds', transEx
+          yield transEx
           queues._updateQueueDelay()
           yield return
 
