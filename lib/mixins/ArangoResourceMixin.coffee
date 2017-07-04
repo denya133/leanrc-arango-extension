@@ -44,7 +44,7 @@ module.exports = (Module)->
                 read: read
                 write: write
                 allowImplicit: yes
-              action: (params)->
+              action: doAction = (params)->
                 p = params.self.super params.action, params.context
                 console.log 'p in ArangoResourceMixin::doAction', p
                 p
@@ -61,7 +61,7 @@ module.exports = (Module)->
             collections:
               write: ['_queues', '_jobs']
               allowImplicit: yes
-            action: (params)->
+            action: saveDelayeds = (params)->
               p = params.self.super params.app
               console.log 'p in ArangoResourceMixin::saveDelayeds', p
               p
