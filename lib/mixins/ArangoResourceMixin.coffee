@@ -64,7 +64,8 @@ module.exports = (Module)->
             action: @wrap (params)->
               {caller} = arguments.callee
               console.log 'caller in ArangoResourceMixin::saveDelayeds', caller, caller.pointer, caller.name
-              p = params.self.super params.app
+              # p = params.self.super params.app
+              p = @super params.app
               console.log 'p in ArangoResourceMixin::saveDelayeds', p
               p
             params: {self, app}
