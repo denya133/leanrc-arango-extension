@@ -62,6 +62,8 @@ module.exports = (Module)->
               write: ['_queues', '_jobs']
               allowImplicit: yes
             action: saveDelayeds = (params)->
+              {caller} = arguments.callee
+              console.log 'caller in ArangoResourceMixin::saveDelayeds', caller.pointer ? caller.name
               p = params.self.super params.app
               console.log 'p in ArangoResourceMixin::saveDelayeds', p
               p
