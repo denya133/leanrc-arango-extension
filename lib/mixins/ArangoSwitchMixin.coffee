@@ -43,11 +43,9 @@ module.exports = (Module)->
     LAMBDA
 
     ArangoContext
-    LogMessage
-    Utils
+    LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
+    Utils: { co, genRandomAlphaNumbers }
   } = Module::
-  { co, genRandomAlphaNumbers } = Utils
-  {  ERROR, DEBUG, LEVELS, SEND_TO_LOG } = LogMessage
 
   Module.defineMixin Module::Switch, (BaseClass) ->
     class ArangoSwitchMixin extends BaseClass
@@ -79,7 +77,7 @@ module.exports = (Module)->
                 res.statusCode = 404
                 voContext = ArangoContext.new req, res, @
                 voContext.routePath = path
-                @facade.sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{req.pathParams}", LEVELS[DEBUG]
+                @facade.sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
                 voContext.pathParams = req.pathParams
                 try
                   yield routeFunc.call @, voContext
