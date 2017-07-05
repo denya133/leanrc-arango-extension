@@ -25,14 +25,14 @@ module.exports = (Module)->
 
       @public @async start: Function,
         args: []
-        return: NILL
+        return: Module::NILL
         default: ->
           queues._updateQueueDelay()
           yield return
 
       @public @async stop: Function,
         args: []
-        return: NILL
+        return: Module::NILL
         default: ->
           yield return
 
