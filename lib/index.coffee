@@ -55,6 +55,7 @@ Extension = (BaseClass) ->
     require('./mixins/ArangoMigrationMixin') @Module
     require('./mixins/ArangoConfigurationMixin') @Module
     require('./mixins/ArangoResqueMixin') @Module
+    require('./mixins/ArangoExecutorMixin') @Module
   ArangoExtension.initializeMixin()
 
 sample = Extension LeanRC
