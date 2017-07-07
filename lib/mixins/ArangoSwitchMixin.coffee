@@ -44,7 +44,10 @@ module.exports = (Module)->
 
     ArangoContext
     LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
-    Utils: { co, genRandomAlphaNumbers }
+    Utils: {
+      co
+      genRandomAlphaNumbers
+    }
   } = Module::
 
   Module.defineMixin Module::Switch, (BaseClass) ->
