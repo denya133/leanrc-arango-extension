@@ -7,6 +7,7 @@ createError   = require 'http-errors'
 module.exports = (Module)->
   {
     ANY
+    DEVELOPMENT
 
     CoreObject
     ContextInterface
@@ -77,8 +78,16 @@ module.exports = (Module)->
         console.log '>>>>> IN ArangoContext::onerror err.status', err.status
         console.log '>>>>> IN ArangoContext::onerror code', code
         console.log '>>>>> IN ArangoContext::onerror msg', msg
+        message =
+          error: yes
+          errorNum: err.status
+          errorMessage: msg
+          code: err.code ? code
+        # if @switch.configs.environment is DEVELOPMENT
+        message.exception = "#{err.name ? 'Error'}: #{msg}"
+        message.stacktrace = err.stack.split '\n'
         @res.status err.status
-        @res.send msg
+        @res.send message
         return
 
     # Request aliases
