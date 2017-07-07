@@ -47,7 +47,6 @@ module.exports = (Module)->
     @public onerror: Function,
       default: (err)->
         console.log '>>>>> IN ArangoContext::onerror ownKeys', Reflect.ownKeys err
-        console.log '>>>>> IN ArangoContext::onerror', err.message, err.name, err.stack
         return unless err?
         unless _.isError err
           err = new Error "non-error thrown: #{err}"
@@ -69,6 +68,15 @@ module.exports = (Module)->
            err.message
         else
           code
+        console.log '>>>>> IN ArangoContext::onerror err.message', err.message
+        console.log '>>>>> IN ArangoContext::onerror err.name', err.name
+        console.log '>>>>> IN ArangoContext::onerror err.stack', err.stack
+        console.log '>>>>> IN ArangoContext::onerror err.headers', err.headers
+        console.log '>>>>> IN ArangoContext::onerror err.code', err.code
+        console.log '>>>>> IN ArangoContext::onerror err.expose', err.expose
+        console.log '>>>>> IN ArangoContext::onerror err.status', err.status
+        console.log '>>>>> IN ArangoContext::onerror code', code
+        console.log '>>>>> IN ArangoContext::onerror msg', msg
         @res.status err.status
         @res.send msg
         return
