@@ -26,7 +26,13 @@ module.exports = (Module)->
       @inheritProtected()
 
       @public fullQueueName: Function,
-        default: (queueName)-> inflect.underscore "#{@moduleName()}_#{queueName}"
+        default: (queueName)->
+          unless /\_\_/.test queueName
+            [ moduleName ] = @moduleName().split '|>'
+            queueName = "#{moduleName}__#{queueName}"
+          if /\|\>/.test queueName
+            queueName = queueName.replace '|>', '__'
+          inflect.underscore queueName
 
       @public @async ensureQueue: Function,
         default: (name, concurrency = 1)->
