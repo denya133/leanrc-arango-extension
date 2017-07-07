@@ -269,7 +269,11 @@ module.exports = (Module)->
         default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
             throw new Error '`$not` must be defined in field operand'  if field is '$not'
-            @operatorsMap[operator] field, operand
+            customFilter = @delegate.customFilters[field]
+            if (customFilterFunc = customFilter?[operator])?
+              customFilterFunc.call @, operand
+            else
+              @operatorsMap[operator] field, operand
           else if field? and operator is '$elemMatch'
             if implicitField is yes
               @operatorsMap[operator] field, parts.map (part)=>
