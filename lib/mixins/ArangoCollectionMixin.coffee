@@ -286,7 +286,7 @@ module.exports = (Module)->
           else
             @operatorsMap[operator ? '$and'] parts.map @parseFilter.bind @
 
-      @public parseQuery: Function,
+      @public @async parseQuery: Function,
         default: (aoQuery)->
           voQuery = null
           intoUsed = intoPartial = finAggUsed = finAggPartial = null
@@ -455,7 +455,7 @@ module.exports = (Module)->
             vsQuery = vsQuery.replace new RegExp(finAggUsed), finAggPartial
           vsQuery = new String vsQuery
           Reflect.defineProperty vsQuery, 'isCustomReturn', value: isCustomReturn
-          return vsQuery
+          yield return vsQuery
 
       @public @async executeQuery: Function,
         default: (asQuery, options)->
