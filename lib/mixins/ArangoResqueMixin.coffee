@@ -21,6 +21,7 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
+  ARANGO_SCRIPT = 'resque_executor'
   Module.defineMixin Module::Resque, (BaseClass) ->
     class ArangoResqueMixin extends BaseClass
       @inheritProtected()
@@ -68,7 +69,7 @@ module.exports = (Module)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
           {mount} = @Module.context()
-          jobID = queue.push {name: scriptName, mount}, data, {delayUntil}
+          jobID = queue.push {name: ARANGO_SCRIPT, mount}, {scriptName, data}, {delayUntil}
           yield return jobID
 
       @public @async getJob: Function,
@@ -99,7 +100,9 @@ module.exports = (Module)->
           queue = Queues.get queueName
           if scriptName?
             { mount } = @Module.context()
-            yield return queue.all { name: scriptName, mount }
+            allJobs = queue.all { name: ARANGO_SCRIPT, mount }
+              .filter (job) -> job.data.scriptName is scriptName
+            yield return allJobs
           else
             yield return queue.all()
 
@@ -109,7 +112,9 @@ module.exports = (Module)->
           queue = Queues.get queueName
           if scriptName?
             { mount } = @Module.context()
-            yield return queue.pending { name: scriptName, mount }
+            pendingJobs = queue.pending { name: ARANGO_SCRIPT, mount }
+              .filter (job) -> job.data.scriptName is scriptName
+            yield return pendingJobs
           else
             yield return queue.pending()
 
@@ -119,7 +124,9 @@ module.exports = (Module)->
           queue = Queues.get queueName
           if scriptName?
             { mount } = @Module.context()
-            yield return queue.progress { name: scriptName, mount }
+            progressJobs = queue.progress { name: ARANGO_SCRIPT, mount }
+              .filter (job) -> job.data.scriptName is scriptName
+            yield return progressJobs
           else
             yield return queue.progress()
 
@@ -129,7 +136,9 @@ module.exports = (Module)->
           queue = Queues.get queueName
           if scriptName?
             { mount } = @Module.context()
-            yield return queue.complete { name: scriptName, mount }
+            completeJobs = queue.complete { name: ARANGO_SCRIPT, mount }
+              .filter (job) -> job.data.scriptName is scriptName
+            yield return completeJobs
           else
             yield return queue.complete()
 
@@ -139,7 +148,9 @@ module.exports = (Module)->
           queue = Queues.get queueName
           if scriptName?
             { mount } = @Module.context()
-            yield return queue.failed { name: scriptName, mount }
+            failedJobs = queue.failed { name: ARANGO_SCRIPT, mount }
+              .filter (job) -> job.data.scriptName is scriptName
+            yield return failedJobs
           else
             yield return queue.failed()
 
