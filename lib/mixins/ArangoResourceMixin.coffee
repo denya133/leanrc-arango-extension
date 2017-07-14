@@ -31,7 +31,7 @@ module.exports = (Module)->
 
       @public @async doAction: Function, # для того, чтобы отдельная примесь могла переопределить этот метод и обернуть выполнение например в транзакцию
         default: (action, context)->
-          needsTransaction = action not in @listNonTransactionables
+          needsTransaction = action not in @listNonTransactionables()
           voResult = if needsTransaction and  yield @needsTransaction action, context
             {read, write} = @getLocks()
             self = @
