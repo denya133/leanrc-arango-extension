@@ -31,9 +31,7 @@ module.exports = (Module)->
 
       @public @async doAction: Function, # для того, чтобы отдельная примесь могла переопределить этот метод и обернуть выполнение например в транзакцию
         default: (action, context)->
-          voResult = if action in @listNonTransactionables()
-            yield @super action, context
-          else
+          voResult = if yield @needsTransaction action, context
             {read, write} = @getLocks()
             self = @
             promise = db._executeTransaction
@@ -46,6 +44,8 @@ module.exports = (Module)->
                 params.self.super params.action, params.context
               params: {self, action, context}
             yield promise
+          else
+            yield @super action, context
           yield return voResult
 
       @public @async saveDelayeds: Function, # для того, чтобы сохранить все отложенные джобы
