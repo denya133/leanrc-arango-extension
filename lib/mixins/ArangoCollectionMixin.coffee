@@ -398,9 +398,11 @@ module.exports = (Module)->
               if (voHaving = aoQuery.$having)?
                 voQuery = voQuery.filter @parseFilter Parser.parse voHaving
               if (voSort = aoQuery.$sort)?
-                for own asRef, asSortDirect of aoQuery.$sort
-                  do (asRef, asSortDirect)->
-                    voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
+                for sortObj in aoQuery.$sort
+                  do (sortObj)->
+                    for own asRef, asSortDirect of sortObj
+                      do (asRef, asSortDirect)->
+                        voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
 
               if (vnLimit = aoQuery.$limit)?
                 if (vnOffset = aoQuery.$offset)?
