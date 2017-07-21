@@ -43,7 +43,9 @@ module.exports = (Module)->
 
       @public @async getQueue: Function,
         default: (name)->
+          console.log '>>> name before fullQueueName', name
           name = @fullQueueName name
+          console.log '>>> name after fullQueueName', name
           try
             {maxWorkers:concurrency} = db._queues.document name
             yield return {name, concurrency}
