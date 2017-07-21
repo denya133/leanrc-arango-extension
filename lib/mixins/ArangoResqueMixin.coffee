@@ -48,6 +48,7 @@ module.exports = (Module)->
             {maxWorkers:concurrency} = db._queues.document name
             yield return {name, concurrency}
           catch e
+            console.log 'ERROR IN ArangoResqueMixin::getQueue', err.stack
             yield return
 
       @public @async removeQueue: Function,
