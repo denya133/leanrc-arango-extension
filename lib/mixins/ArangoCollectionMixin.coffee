@@ -26,7 +26,7 @@ module.exports = (Module)->
             .returnNew 'doc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
-          yield return @normalize voNativeCursor.first()
+          yield return @normalize voNativeCursor.next()
 
       @public @async remove: Function,
         default: (id)->
@@ -47,7 +47,7 @@ module.exports = (Module)->
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
-          yield return @normalize voNativeCursor.first()
+          yield return @normalize voNativeCursor.next()
 
       @public @async takeBy: Function,
         default: (query)->
@@ -90,7 +90,7 @@ module.exports = (Module)->
             .returnNew 'newDoc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
-          yield return @normalize voNativeCursor.first()
+          yield return @normalize voNativeCursor.next()
 
       @public @async includes: Function,
         default: (id)->
@@ -122,7 +122,7 @@ module.exports = (Module)->
           #   .return qb.ref 'count'
           # vsQuery = voQuery.toAQL()
           # voNativeCursor = db._query "#{vsQuery}"
-          # yield return voNativeCursor.first()
+          # yield return voNativeCursor.next()
           collection = db._collection @collectionFullName()
           yield return collection.figures().alive.count
 
