@@ -26,7 +26,10 @@ module.exports = (Module)->
             .returnNew 'doc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
-          yield return @normalize voNativeCursor.next()
+          if voNativeCursor.hasNext()
+            yield return @normalize voNativeCursor.next()
+          else
+            yield return
 
       @public @async remove: Function,
         default: (id)->
@@ -47,8 +50,10 @@ module.exports = (Module)->
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
-          console.log '????? vsQuery', vsQuery, voNativeCursor.next()
-          yield return @normalize voNativeCursor.next()
+          if voNativeCursor.hasNext()
+            yield return @normalize voNativeCursor.next()
+          else
+            yield return
 
       @public @async takeBy: Function,
         default: (query)->
@@ -91,7 +96,10 @@ module.exports = (Module)->
             .returnNew 'newDoc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
-          yield return @normalize voNativeCursor.next()
+          if voNativeCursor.hasNext()
+            yield return @normalize voNativeCursor.next()
+          else
+            yield return
 
       @public @async includes: Function,
         default: (id)->
