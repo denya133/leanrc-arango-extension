@@ -47,6 +47,7 @@ module.exports = (Module)->
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
           voNativeCursor = db._query "#{vsQuery}"
+          console.log '????? vsQuery', vsQuery, voNativeCursor.next()
           yield return @normalize voNativeCursor.next()
 
       @public @async takeBy: Function,
