@@ -68,7 +68,7 @@
     "lodash": "^4.13.1"
   },
   "dependencies": {
-    "LeanRC": "git+ssh://git@bitbucket.org/webbasis/leanrc.git#v3.0.0-rc.26",
+    "LeanRC": "git+ssh://git@bitbucket.org/webbasis/leanrc.git#feature/5-logic-at-using-query-should-be-improved",
     "change-case": "3.0.0",
     "commander": "2.9.0",
     "fs-extra": "0.30.0",
