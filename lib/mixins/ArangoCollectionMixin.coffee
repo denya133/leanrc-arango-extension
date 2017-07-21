@@ -86,7 +86,7 @@ module.exports = (Module)->
 
       @public @async override: Function,
         default: (id, aoRecord)->
-          vhObjectForUpdate = _.omit @serialize(voRecord), ['id', '_key']
+          vhObjectForUpdate = _.omit @serialize(aoRecord), ['id', '_key']
           voQuery = qb.for 'doc'
             .in @collectionFullName()
             .filter qb.eq qb.ref('doc.id'), qb(id)
@@ -353,12 +353,6 @@ module.exports = (Module)->
                 voQuery = (voQuery ? qb).remove _key: wrapReference "@doc._key"
                 if aoQuery.$into?
                   voQuery = voQuery.into aoQuery.$into
-          # else if (voRecord = aoQuery.$insert)?
-          #   do =>
-          #     if aoQuery.$into?
-          #       vhObjectForInsert = @serialize voRecord
-          #       voQuery = (voQuery ? qb).insert qb vhObjectForInsert
-          #         .into aoQuery.$into
           else if aoQuery.$patch?
             do =>
               if aoQuery.$into?
@@ -384,32 +378,6 @@ module.exports = (Module)->
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
                   .with qb vhObjectForUpdate
                   .into aoQuery.$into
-                # voQuery = voQuery.returnNew 'newDoc'
-          # else if (voRecord = aoQuery.$replace)?
-          #   do =>
-          #     if aoQuery.$into?
-          #       if aoQuery.$forIn?
-          #         for own asItemRef, asCollectionFullName of aoQuery.$forIn
-          #           voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
-          #             .in asCollectionFullName
-          #         if (voJoin = aoQuery.$join?.$and)?
-          #           vlJoinFilters = voJoin.map (mongoFilter)->
-          #             asItemRef = Object.keys(mongoFilter)[0]
-          #             {$eq:asRelValue} = mongoFilter[asItemRef]
-          #             voItemRef = wrapReference asItemRef
-          #             voRelValue = wrapReference asRelValue
-          #             qb.eq voItemRef, voRelValue
-          #           voQuery = voQuery.filter qb.and vlJoinFilters...
-          #         if (voFilter = aoQuery.$filter)?
-          #           voQuery = voQuery.filter @parseFilter Parser.parse voFilter
-          #         if (voLet = aoQuery.$let)?
-          #           for own asRef, aoValue of voLet
-          #             voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
-          #       vhObjectForReplace = _.omit @serialize(voRecord), ['id', '_key']
-          #       voQuery = (voQuery ? qb).replace qb.ref 'doc'
-          #         .with qb vhObjectForReplace
-          #         .into aoQuery.$into
-          #       voQuery = voQuery.returnNew 'new_doc'
           else if aoQuery.$forIn?
             do =>
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
