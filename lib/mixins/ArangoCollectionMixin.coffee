@@ -20,81 +20,120 @@ module.exports = (Module)->
 
       @public @async push: Function,
         default: (aoRecord)->
-          voQuery = Module::Query.new()
-            .insert aoRecord
+          vhObjectForInsert = @serialize aoRecord
+          voQuery = qb.insert qb vhObjectForInsert
             .into @collectionFullName()
-          yield @query voQuery
-          return yes
+            .returnNew 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          if voNativeCursor.hasNext()
+            yield return @normalize voNativeCursor.next()
+          else
+            yield return
 
       @public @async remove: Function,
         default: (id)->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .filter '@doc.id': {$eq: id}
-            .remove '@doc'
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter qb.eq qb.ref('doc.id'), qb(id)
+            .remove _key: 'doc._key'
             .into @collectionFullName()
-          yield @query voQuery
-          return yes
+          vsQuery = voQuery.toAQL()
+          db._query "#{vsQuery}"
+          yield return
 
       @public @async take: Function,
         default: (id)->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .filter '@doc.id': {$eq: id}
-            .return '@doc'
-          cursor = yield @query voQuery
-          cursor.first()
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter qb.eq qb.ref('doc.id'), qb(id)
+            .return qb.ref 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          if voNativeCursor.hasNext()
+            yield return @normalize voNativeCursor.next()
+          else
+            yield return
+
+      @public @async takeBy: Function,
+        default: (query)->
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter @parseFilter Parser.parse query
+            .return qb.ref 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          yield return Module::ArangoCursor.new @, voNativeCursor
 
       @public @async takeMany: Function,
         default: (ids)->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .filter '@doc.id': {$in: ids}
-            .return '@doc'
-          yield @query voQuery
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter qb.in qb.ref('doc.id'), qb(ids)
+            .return qb.ref 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          yield return Module::ArangoCursor.new @, voNativeCursor
 
       @public @async takeAll: Function,
         default: ->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .return '@doc'
-          yield @query voQuery
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .return qb.ref 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          yield return Module::ArangoCursor.new @, voNativeCursor
 
       @public @async override: Function,
         default: (id, aoRecord)->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .filter '@doc.id': {$eq: id}
-            .replace aoRecord
+          vhObjectForUpdate = _.omit @serialize(aoRecord), ['id', '_key']
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter qb.eq qb.ref('doc.id'), qb(id)
+            .update qb.ref 'doc'
+            .with qb vhObjectForUpdate
             .into @collectionFullName()
-          yield (yield @query voQuery).first()
-
-      @public @async patch: Function,
-        default: (id, aoRecord)->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .filter '@doc.id': {$eq: id}
-            .update aoRecord
-            .into @collectionFullName()
-          yield (yield @query voQuery).first()
+            .returnNew 'newDoc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          if voNativeCursor.hasNext()
+            yield return @normalize voNativeCursor.next()
+          else
+            yield return
 
       @public @async includes: Function,
         default: (id)->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .filter '@doc.id': {$eq: id}
-            .limit 1
-            .return '@doc'
-          cursor = yield @query voQuery
-          cursor.hasNext()
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter qb.eq qb.ref('doc.id'), qb(id)
+            .limit qb 1
+            .return qb.ref 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          yield return voNativeCursor.hasNext()
+
+      @public @async exists: Function,
+        default: (query)->
+          voQuery = qb.for 'doc'
+            .in @collectionFullName()
+            .filter @parseFilter Parser.parse query
+            .limit qb 1
+            .return qb.ref 'doc'
+          vsQuery = voQuery.toAQL()
+          voNativeCursor = db._query "#{vsQuery}"
+          yield return voNativeCursor.hasNext()
 
       @public @async length: Function,
         default: ->
-          voQuery = Module::Query.new()
-            .forIn '@doc': @collectionFullName()
-            .count()
-          cursor = db._query @parseQuery voQuery
-          yield return cursor.next()
+          # voQuery = qb.for 'doc'
+          #   .in @collectionFullName()
+          #   .collectWithCountInto 'count'
+          #   .return qb.ref 'count'
+          # vsQuery = voQuery.toAQL()
+          # voNativeCursor = db._query "#{vsQuery}"
+          # yield return voNativeCursor.next()
+          collection = db._collection @collectionFullName()
+          yield return collection.figures().alive.count
 
       wrapReference = (value)->
         if _.isString(value) and /^[@]/.test value
@@ -309,17 +348,12 @@ module.exports = (Module)->
                   voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
-                    voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
-                voQuery = (voQuery ? qb).remove _key: wrapReference "#{aoQuery.$remove}._key"
+                    voQuery = (voQuery ? qb).let wrapReference(asRef), qb.expr @parseQuery Module::Query.new aoValue
+                isCustomReturn = yes
+                voQuery = (voQuery ? qb).remove _key: wrapReference "@doc._key"
                 if aoQuery.$into?
                   voQuery = voQuery.into aoQuery.$into
-          else if (voRecord = aoQuery.$insert)?
-            do =>
-              if aoQuery.$into?
-                vhObjectForInsert = @serializer.serialize voRecord
-                voQuery = (voQuery ? qb).insert qb vhObjectForInsert
-                  .into aoQuery.$into
-          else if (voRecord = aoQuery.$update)?
+          else if aoQuery.$patch?
             do =>
               if aoQuery.$into?
                 if aoQuery.$forIn?
@@ -339,36 +373,11 @@ module.exports = (Module)->
                   if (voLet = aoQuery.$let)?
                     for own asRef, aoValue of voLet
                       voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
-                vhObjectForUpdate = _.omit @serializer.serialize(voRecord), ['id', '_key']
+                vhObjectForUpdate = _.omit aoQuery.$patch, ['id', '_key']
+                isCustomReturn = yes
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
                   .with qb vhObjectForUpdate
                   .into aoQuery.$into
-                voQuery = voQuery.returnNew 'new_doc'
-          else if (voRecord = aoQuery.$replace)?
-            do =>
-              if aoQuery.$into?
-                if aoQuery.$forIn?
-                  for own asItemRef, asCollectionFullName of aoQuery.$forIn
-                    voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
-                      .in asCollectionFullName
-                  if (voJoin = aoQuery.$join?.$and)?
-                    vlJoinFilters = voJoin.map (mongoFilter)->
-                      asItemRef = Object.keys(mongoFilter)[0]
-                      {$eq:asRelValue} = mongoFilter[asItemRef]
-                      voItemRef = wrapReference asItemRef
-                      voRelValue = wrapReference asRelValue
-                      qb.eq voItemRef, voRelValue
-                    voQuery = voQuery.filter qb.and vlJoinFilters...
-                  if (voFilter = aoQuery.$filter)?
-                    voQuery = voQuery.filter @parseFilter Parser.parse voFilter
-                  if (voLet = aoQuery.$let)?
-                    for own asRef, aoValue of voLet
-                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
-                vhObjectForReplace = _.omit @serializer.serialize(voRecord), ['id', '_key']
-                voQuery = (voQuery ? qb).replace qb.ref 'doc'
-                  .with qb vhObjectForReplace
-                  .into aoQuery.$into
-                voQuery = voQuery.returnNew 'new_doc'
           else if aoQuery.$forIn?
             do =>
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
