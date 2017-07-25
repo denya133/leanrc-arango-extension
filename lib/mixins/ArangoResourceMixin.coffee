@@ -21,10 +21,12 @@ module.exports = (Module)->
           vrCollectionPrefix = new RegExp "^#{inflect.underscore @Module.name}_"
           vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
             if vrCollectionPrefix.test name = aoCollection.name()
-              alResults.push name
+              alResults.push name unless /migrations$/.test name
             alResults
           , []
-          return read: vlCollectionNames, write: vlCollectionNames
+          write = vlCollectionNames
+          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations"]
+          return {read, write}
 
       @public listNonTransactionables: Function,
         default: -> ['list', 'detail']
