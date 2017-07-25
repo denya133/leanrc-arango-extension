@@ -31,22 +31,30 @@ module.exports = (Module)->
 
       @public @async doAction: Function, # для того, чтобы отдельная примесь могла переопределить этот метод и обернуть выполнение например в транзакцию
         default: (action, context)->
-          needsTransaction = action not in @listNonTransactionables()
-          voResult = if needsTransaction and  yield @needsTransaction action, context
-            {read, write} = @getLocks()
-            self = @
+          isTransactionables = action not in @listNonTransactionables()
+          {read, write} = @getLocks()
+          self = @
+          writeTransaction = yield @writeTransaction action, context
+          voResult = if isTransactionables and writeTransaction
             promise = db._executeTransaction
               waitForSync: yes
               collections:
-                read: read
                 write: write
-                allowImplicit: yes
+                allowImplicit: no
               action: @wrap (params)->
                 params.self.super params.action, params.context
               params: {self, action, context}
             yield promise
           else
-            yield @super action, context
+            promise = db._executeTransaction
+              waitForSync: yes
+              collections:
+                read: read
+                allowImplicit: no
+              action: @wrap (params)->
+                params.self.super params.action, params.context
+              params: {self, action, context}
+            yield promise
           yield return voResult
 
       @public @async saveDelayeds: Function, # для того, чтобы сохранить все отложенные джобы
@@ -56,7 +64,7 @@ module.exports = (Module)->
             waitForSync: yes
             collections:
               write: ['_queues', '_jobs']
-              allowImplicit: yes
+              allowImplicit: no
             action: @wrap (params)->
               params.self.super params.app
             params: {self, app}
