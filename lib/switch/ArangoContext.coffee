@@ -36,6 +36,8 @@ module.exports = (Module)->
     @public respond: Boolean
     @public routePath: String
     @public pathParams: Object
+    @public isPerformExecution: Boolean,
+      default: no
 
     # @public database: String # возможно это тоже надо получать из метода из отдельного модуля
 
