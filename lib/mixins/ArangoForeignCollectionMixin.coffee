@@ -16,6 +16,7 @@ inflect       = do require 'i'
 
 module.exports = (Module)->
   {
+    NILL
     APPLICATION_SWITCH
     Collection
     QueryableCollectionMixinInterface
