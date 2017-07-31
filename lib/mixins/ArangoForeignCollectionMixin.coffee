@@ -428,7 +428,10 @@ module.exports = (Module)->
         default: ({method, url, options})->
           foreignApp = @Module.context().dependencies[@dependencyName]
           foreignSwitch = foreignApp.facade.retrieveMediator APPLICATION_SWITCH
-          return yield foreignSwitch.perform method, url, options
+          console.log '>>>> foreignSwitch', foreignSwitch
+          foreignRes = yield foreignSwitch.perform method, url, options
+          console.log '>>>>>>>>>>>> foreignRes', foreignRes
+          yield return foreignRes
 
       @public requestToHash: Function,
         args: [Object]
