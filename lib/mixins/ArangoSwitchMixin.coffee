@@ -360,7 +360,9 @@ module.exports = (Module)->
                 reject err
               return
             console.log '>>> ArangoSwitchMixin::createNativeRoute before yield return next?()'
-            yield return next?()
+            if next? and _.isFunction next
+              yield Module::Promise.resolve next()
+            yield return
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
           @Module.context().use voRouter
           return
