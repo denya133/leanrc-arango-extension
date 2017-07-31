@@ -104,16 +104,19 @@ module.exports = (Module)->
       @public @async saveDelayeds: Function, # для того, чтобы сохранить все отложенные джобы
         default: (app)->
           self = @
-          promise = db._executeTransaction
-            waitForSync: yes
-            collections:
-              write: ['_queues', '_jobs']
-              allowImplicit: no
-            action: @wrap (params)->
-              params.self.super params.app
-            params: {self, app}
-          yield promise
-          queues._updateQueueDelay()
+          if @nonPerformExecution app.context
+            promise = db._executeTransaction
+              waitForSync: yes
+              collections:
+                write: ['_queues', '_jobs']
+                allowImplicit: no
+              action: @wrap (params)->
+                params.self.super params.app
+              params: {self, app}
+            yield promise
+            queues._updateQueueDelay()
+          else
+            yield self.super app
           yield return
 
 
