@@ -146,6 +146,7 @@ module.exports = (Module)->
             yield @middlewaresHandler voContext
             @respond voContext
           catch err
+            console.log '>>> ArangoSwitchMixin::callback catch err', err.stack
             voContext.onerror err
           yield return
 
@@ -307,6 +308,7 @@ module.exports = (Module)->
               try
                 reverse = genRandomAlphaNumbers 32
                 @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
+                  console.log '>>> ArangoSwitchMixin::createNativeRoute', {error, result, resource}
                   if error?
                     reject error
                     yield return
