@@ -430,6 +430,7 @@ module.exports = (Module)->
         args: [Object]
         return: Object
         default: ({method, url, options})->
+          console.log '>>> ArangoForeignCollectionMixin::sendRequest', {method, url, options}
           foreignApp = @Module.context().dependencies[@dependencyName]
           foreignSwitch = foreignApp.facade.retrieveMediator APPLICATION_SWITCH
           console.log '>>>> foreignSwitch', foreignSwitch
@@ -441,6 +442,7 @@ module.exports = (Module)->
         args: [Object]
         return: Object
         default: ({method, url, headers, data})->
+          console.log '>>> ArangoForeignCollectionMixin::requestToHash', {method, url, headers, data}
           options = {
             json: yes
             headers
@@ -456,6 +458,7 @@ module.exports = (Module)->
         args: [Object]
         return: Object
         default: (request)-> # result of requestFor
+          console.log '>>> ArangoForeignCollectionMixin::makeRequest request', request
           {
             LogMessage: {
               SEND_TO_LOG
@@ -503,8 +506,11 @@ module.exports = (Module)->
 
       @public @async executeQuery: Function,
         default: (aoQuery, options)->
+          console.log '>>> ArangoForeignCollectionMixin::executeQuery 111 aoQuery', aoQuery
           request = @requestFor aoQuery
+          console.log '>>> ArangoForeignCollectionMixin::executeQuery 222 request', request
           res = yield @makeRequest request
+          console.log '>>> ArangoForeignCollectionMixin::executeQuery 333 res', res
 
           if res.status >= 400
             throw new Error "
