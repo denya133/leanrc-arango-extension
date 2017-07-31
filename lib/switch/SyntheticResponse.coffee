@@ -22,7 +22,7 @@ module.exports = (Module)->
   MIME_JSON = 'application/json; charset=utf-8'
   MIME_BINARY = 'application/octet-stream'
 
-  class SyntheticRequest extends CoreObject
+  class SyntheticResponse extends CoreObject
     @inheritProtected()
     @module Module
 
@@ -337,4 +337,4 @@ module.exports = (Module)->
         return
 
 
-  SyntheticRequest.initialize()
+  SyntheticResponse.initialize()
