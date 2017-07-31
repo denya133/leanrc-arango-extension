@@ -34,7 +34,9 @@ module.exports = (Module)->
           params.recordName = @delegate.name
           params.snapshot = @serialize aoRecord
 
+          console.log '>>>> ArangoForeignCollectionMixin::push params', params
           request = @requestFor params
+          console.log '>>>> ArangoForeignCollectionMixin::push request', request
           res = yield @makeRequest request
 
           if res.status >= 400
@@ -69,6 +71,7 @@ module.exports = (Module)->
 
       @public @async take: Function,
         default: (id)->
+          console.log '>>> ArangoForeignCollectionMixin::take', id
           params = {}
           params.requestType = 'take'
           params.recordName = @delegate.name
@@ -190,6 +193,7 @@ module.exports = (Module)->
 
       @public @async includes: Function,
         default: (id)->
+          console.log '>>> ArangoForeignCollectionMixin::includes', id
           voQuery =
             $forIn: '@doc': @collectionFullName()
             $filter: '@doc.id': {$eq: id}
