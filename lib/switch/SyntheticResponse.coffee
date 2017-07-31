@@ -115,7 +115,6 @@ module.exports = (Module)->
             opts.secure,
             opts.httpOnly
           )
-        }
         return @
     @public getHeader: Function,
       default: (name)->
