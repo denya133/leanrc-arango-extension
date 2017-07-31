@@ -144,6 +144,7 @@ module.exports = (Module)->
           voContext.isPerformExecution = yes
           try
             yield @middlewaresHandler voContext
+            console.log '>>> ArangoSwitchMixin::callback after yield @middlewaresHandler'
             @respond voContext
           catch err
             console.log '>>> ArangoSwitchMixin::callback catch err', err.stack
