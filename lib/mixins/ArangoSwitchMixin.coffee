@@ -69,24 +69,25 @@ module.exports = (Module)->
           for fn in middlewares
             unless _.isFunction fn
               throw new Error 'Middleware must be composed of functions!'
-          co.wrap (context, next)->
+          (context, next)->
             index = -1
-            dispatch = co.wrap (i)->
+            dispatch = (i)->
               console.log '>>> ArangoSwitchMixin.compose.dispatch', i, middlewares.length, middlewares[i]?
               if i <= index
-                throw new Error 'next() called multiple times'
+                Module::Promise.reject new Error 'next() called multiple times'
               index = i
               middleware = middlewares[i]
               if i is middlewares.length
                 middleware = next
-              unless middleware?
-                yield return
+              unless middleware
+                return Module::Promise.resolve()
               try
-                return yield middleware context, -> dispatch i+1
+                return Module::Promise.resolve middleware context, ->
+                  return dispatch i + 1
               catch err
                 console.log '>>> ArangoSwitchMixin.compose in lambda err', err.stack
-                throw err
-            return yield dispatch 0
+                return Module::Promise.reject err
+            return dispatch 0
       ##########################################################################
 
       # from https://github.com/koajs/route/blob/master/index.js ###############
