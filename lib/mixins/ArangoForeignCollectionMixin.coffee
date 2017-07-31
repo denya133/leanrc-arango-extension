@@ -216,10 +216,10 @@ module.exports = (Module)->
         get: ->
           console.log '>>> ArangoForeignCollectionMixin::namespace.get 111', @dependencyName
           console.log '>>> ArangoForeignCollectionMixin::namespace.get 222', @Module.context()
-          console.log '>>> ArangoForeignCollectionMixin::namespace.get 333', @Module.context().configuration
-          console.log '>>> ArangoForeignCollectionMixin::namespace.get 444', @Module.context().configuration.dependencies
-          console.log '>>> ArangoForeignCollectionMixin::namespace.get 555', @Module.context().configuration.dependencies[@dependencyName]
-          conf = @Module.context().configuration.dependencies[@dependencyName]
+          console.log '>>> ArangoForeignCollectionMixin::namespace.get 333', @Module.context().manifest
+          console.log '>>> ArangoForeignCollectionMixin::namespace.get 444', @Module.context().manifest.dependencies
+          console.log '>>> ArangoForeignCollectionMixin::namespace.get 555', @Module.context().manifest.dependencies[@dependencyName]
+          conf = @Module.context().manifest.dependencies[@dependencyName]
           [shortVersion] = conf.version.match(/^\d{1,}[.]\d{1,}/) ? []
           return "v#{shortVersion}"
       @public queryEndpoint: String,
