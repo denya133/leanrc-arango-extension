@@ -207,6 +207,7 @@ module.exports = (Module)->
           return unless ctx.writable
           body = ctx.body
           code = ctx.status
+          console.log '>>> ArangoSwitchMixin::respond body, code', body, code
           if statuses.empty[code]
             ctx.body = null
             return ctx.res.send()
@@ -215,6 +216,7 @@ module.exports = (Module)->
           unless body?
             body = ctx.message ? String code
             return ctx.res.send body
+          console.log '>>> ArangoSwitchMixin::respond before ctx.res.send body'
           ctx.res.send body
           return
 
