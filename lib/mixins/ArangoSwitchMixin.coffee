@@ -111,7 +111,7 @@ module.exports = (Module)->
                     return yield routeFunc.apply @, [ctx, next]
                   catch err
                     console.log '>>> ArangoSwitchMixin @use co.wrap (ctx, next)=> err', err.stack
-                    voContext.onerror err
+                    ctx.onerror err
                   # yield return
                 yield return next?()
 
