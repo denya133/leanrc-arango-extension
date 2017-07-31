@@ -59,50 +59,6 @@ module.exports = (Module)->
       iphEventNames = @private 'eventNames': Object
       @public middlewaresHandler: LAMBDA
 
-      # # from https://github.com/koajs/compose/blob/master/index.js #############
-      # @public @static compose: Function,
-      #   args: [Array]
-      #   return: LAMBDA
-      #   default: (middlewares)->
-      #     unless _.isArray middlewares
-      #       throw new Error 'Middleware stack must be an array!'
-      #     for fn in middlewares
-      #       unless _.isFunction fn
-      #         throw new Error 'Middleware must be composed of functions!'
-      #     (context, next)->
-      #       index = -1
-      #       dispatch = (i)->
-      #         console.log '>>> ArangoSwitchMixin.compose.dispatch', i, middlewares.length, middlewares[i]?
-      #         if i <= index
-      #           Module::Promise.reject new Error 'next() called multiple times'
-      #         index = i
-      #         middleware = middlewares[i]
-      #         if i is middlewares.length
-      #           middleware = next
-      #         unless middleware
-      #           return Module::Promise.resolve()
-      #         try
-      #           return Module::Promise.resolve().then -> middleware context, ->
-      #             return dispatch i + 1
-      #         catch err
-      #           console.log '>>> ArangoSwitchMixin.compose in lambda err', err.stack
-      #           return Module::Promise.reject err
-      #       return dispatch 0
-      # ##########################################################################
-      @public @static compose: Function,
-        args: [Array]
-        return: LAMBDA
-        default: (middlewares)->
-          unless _.isArray middlewares
-            throw new Error 'Middleware stack must be an array!'
-          for fn in middlewares
-            unless _.isFunction fn
-              throw new Error 'Middleware must be composed of functions!'
-          co.wrap (context)->
-            for middleware in middlewares
-              yield middleware context
-            yield return
-
       # from https://github.com/koajs/route/blob/master/index.js ###############
       decode = (val)-> # чистая функция
         decodeURIComponent val if val
@@ -136,11 +92,8 @@ module.exports = (Module)->
                 #{method ? 'ALL'} #{path} -> #{re} has been defined
               ", LEVELS[DEBUG]
 
-              @use co.wrap (ctx, next)=>
+              @use co.wrap (ctx)=>
                 unless matches ctx, method
-                  # yield return next?()
-                  if next? and _.isFunction next
-                    yield Module::Promise.resolve().then -> next()
                   yield return
                 m = re.exec ctx.path
                 if m
@@ -154,10 +107,7 @@ module.exports = (Module)->
                   @facade.sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
                   ctx.pathParams = pathParams
                   ctx.req.pathParams = pathParams
-                  return yield routeFunc.apply @, [ctx, next]
-                # yield return next?()
-                if next? and _.isFunction next
-                  yield Module::Promise.resolve().then -> next()
+                  return yield routeFunc.call @, ctx
                 yield return
 
               voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)=>
@@ -193,8 +143,7 @@ module.exports = (Module)->
           voContext = ArangoContext.new req, res, @
           voContext.isPerformExecution = yes
           try
-            r = yield @middlewaresHandler(voContext)
-            console.log '>>> ArangoSwitchMixin::callback after yield @middlewaresHandler', r
+            yield @middlewaresHandler voContext
             @respond voContext
           catch err
             console.log '>>> ArangoSwitchMixin::callback catch err', err.stack
@@ -354,7 +303,7 @@ module.exports = (Module)->
           {method, path} = opts
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
 
-          [voRouter, voEndpoint] = @[method]? path, co.wrap (context, next)=>
+          [voRouter, voEndpoint] = @[method]? path, co.wrap (context)=>
             yield Module::Promise.new (resolve, reject)=>
               try
                 reverse = genRandomAlphaNumbers 32
@@ -374,9 +323,6 @@ module.exports = (Module)->
               catch err
                 reject err
               return
-            console.log '>>> ArangoSwitchMixin::createNativeRoute before yield return next?()'
-            if next? and _.isFunction next
-              yield Module::Promise.resolve().then -> next()
             yield return
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
           @Module.context().use voRouter

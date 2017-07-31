@@ -429,7 +429,9 @@ module.exports = (Module)->
           console.log '>>> ArangoForeignCollectionMixin::requestFor method', method
           url     = @urlForRequest params
           console.log '>>> ArangoForeignCollectionMixin::requestFor url', url
-          headers = @headersForRequest params
+          headers = {}
+          for own headerName, headerValue of @headersForRequest params
+            headers[headerName.toLowerCase()] = headerValue
           console.log '>>> ArangoForeignCollectionMixin::requestFor headers', headers
           data    = @dataForRequest params
           console.log '>>> ArangoForeignCollectionMixin::requestFor data', data
