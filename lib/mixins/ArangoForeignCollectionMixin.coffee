@@ -214,6 +214,8 @@ module.exports = (Module)->
       @public dependencyName: String
       @public namespace: String,
         get: ->
+          console.log '>>> ArangoForeignCollectionMixin::namespace.get 111'
+          console.log '>>> ArangoForeignCollectionMixin::namespace.get 222', @Module.context().configuration.dependencies[@dependencyName]
           conf = @Module.context().configuration.dependencies[@dependencyName]
           [shortVersion] = conf.version.match(/^\d{1,}[.]\d{1,}/) ? []
           return "v#{shortVersion}"
@@ -421,9 +423,13 @@ module.exports = (Module)->
         return: Object
         default: (params)->
           method  = @methodForRequest params
+          console.log '>>> ArangoForeignCollectionMixin::requestFor method', method
           url     = @urlForRequest params
+          console.log '>>> ArangoForeignCollectionMixin::requestFor url', url
           headers = @headersForRequest params
+          console.log '>>> ArangoForeignCollectionMixin::requestFor headers', headers
           data    = @dataForRequest params
+          console.log '>>> ArangoForeignCollectionMixin::requestFor data', data
           return {method, url, headers, data}
 
       @public @async sendRequest: Function,
