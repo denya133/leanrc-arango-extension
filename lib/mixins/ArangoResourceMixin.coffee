@@ -68,9 +68,12 @@ module.exports = (Module)->
           console.log '>>> ArangoResourceMixin::doAction action, context', action, context
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
+          console.log '>>> ArangoResourceMixin::doAction locksMethodName', locksMethodName
           {read, write} = extend {}, @getLocks(), (@[locksMethodName]?() ? {})
           self = @
+          console.log '>>> ArangoResourceMixin::doAction {read, write}', {read, write}
           writeTransaction = yield @writeTransaction action, context
+          console.log '>>> ArangoResourceMixin::doAction isTransactionables, writeTransaction, @nonPerformExecution context', isTransactionables, writeTransaction, @nonPerformExecution context
           voResult = if @nonPerformExecution context
             if isTransactionables and writeTransaction
               promise = db._executeTransaction
