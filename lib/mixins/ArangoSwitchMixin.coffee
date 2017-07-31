@@ -82,7 +82,7 @@ module.exports = (Module)->
               unless middleware
                 return Module::Promise.resolve()
               try
-                return Module::Promise.resolve middleware context, ->
+                return Module::Promise.resolve().then -> middleware context, ->
                   return dispatch i + 1
               catch err
                 console.log '>>> ArangoSwitchMixin.compose in lambda err', err.stack
@@ -361,7 +361,7 @@ module.exports = (Module)->
               return
             console.log '>>> ArangoSwitchMixin::createNativeRoute before yield return next?()'
             if next? and _.isFunction next
-              yield Module::Promise.resolve next()
+              yield Module::Promise.resolve().then -> next()
             yield return
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
           @Module.context().use voRouter
