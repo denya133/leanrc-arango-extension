@@ -70,13 +70,21 @@ module.exports = (Module)->
 
 
     @public accepts: Function,
-      default: (args...)-> @accept.types args...
+      default: (args...)->
+        accept = accepts @
+        accept.types args...
     @public acceptsEncodings: Function,
-      default: (args...)-> @accept.encodings args...
+      default: (args...)->
+        accept = accepts @
+        accept.encodings args...
     @public acceptsCharsets: Function,
-      default: (args...)-> @accept.charsets args...
+      default: (args...)->
+        accept = accepts @
+        accept.charsets args...
     @public acceptsLanguages: Function,
-      default: (args...)-> @accept.languages args...
+      default: (args...)->
+        accept = accepts @
+        accept.languages args...
 
     @public cookie: Function,
       default: (name, opts)->
@@ -149,7 +157,6 @@ module.exports = (Module)->
       default: (context)->
         @super()
         @context = context
-        @accept = accepts @
         @pathParams = {}
         return
 
