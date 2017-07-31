@@ -107,7 +107,11 @@ module.exports = (Module)->
                   @facade.sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
                   ctx.pathParams = pathParams
                   ctx.req.pathParams = pathParams
-                  return yield routeFunc.apply @, [ctx, next]
+                  try
+                    return yield routeFunc.apply @, [ctx, next]
+                  catch err
+                    voContext.onerror err
+                  # yield return
                 yield return next?()
 
               voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)=>
