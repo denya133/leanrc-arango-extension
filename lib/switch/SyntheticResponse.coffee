@@ -248,14 +248,14 @@ module.exports = (Module)->
         if _.isString status
           status = statuses status
 
-        if reason instanceof Error
+        if _.isError reason
           err = reason
           reason = err.message
           options = Object.assign {
             cause: err,
             errorNum: err.errorNum
           }, options
-        }
+
         if reason and _.isObjectLike reason
           options = reason
           reason = undefined
