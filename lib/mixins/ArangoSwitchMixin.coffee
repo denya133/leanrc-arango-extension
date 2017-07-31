@@ -72,6 +72,7 @@ module.exports = (Module)->
           (context, next)->
             index = -1
             dispatch = co.wrap (i)->
+              console.log '>>> ArangoSwitchMixin.compose.dispatch', i, middlewares.length, middlewares[i]?
               if i <= index
                 throw new Error 'next() called multiple times'
               index = i
@@ -176,8 +177,14 @@ module.exports = (Module)->
           voContext = ArangoContext.new req, res, @
           voContext.isPerformExecution = yes
           try
-            yield @middlewaresHandler voContext
-            console.log '>>> ArangoSwitchMixin::callback after yield @middlewaresHandler'
+            r = yield @middlewaresHandler(voContext)
+              .then (_r)->
+                console.log '>>> ArangoSwitchMixin::callback then @middlewaresHandler', _r
+                return _r
+              .catch (_err)->
+                console.log '>>> ArangoSwitchMixin::callback catch @middlewaresHandler', _err.stack
+                throw _err
+            console.log '>>> ArangoSwitchMixin::callback after yield @middlewaresHandler', r
             @respond voContext
           catch err
             console.log '>>> ArangoSwitchMixin::callback catch err', err.stack
