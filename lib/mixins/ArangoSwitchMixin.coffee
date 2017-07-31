@@ -59,6 +59,35 @@ module.exports = (Module)->
       iphEventNames = @private 'eventNames': Object
       @public middlewaresHandler: LAMBDA
 
+      # from https://github.com/koajs/compose/blob/master/index.js #############
+      @public @static compose: Function,
+        args: [Array]
+        return: LAMBDA
+        default: (middlewares)->
+          unless _.isArray middlewares
+            throw new Error 'Middleware stack must be an array!'
+          for fn in middlewares
+            unless _.isFunction fn
+              throw new Error 'Middleware must be composed of functions!'
+          (context, next)->
+            index = -1
+            dispatch = co.wrap (i)->
+              if i <= index
+                throw new Error 'next() called multiple times'
+              index = i
+              middleware = middlewares[i]
+              if i is middlewares.length
+                middleware = next
+              unless middleware?
+                yield return
+              try
+                return yield middleware context, -> dispatch i+1
+              catch err
+                console.log '>>> ArangoSwitchMixin.compose in lambda err', err.stack
+                throw err
+            return dispatch 0
+      ##########################################################################
+
       # from https://github.com/koajs/route/blob/master/index.js ###############
       decode = (val)-> # чистая функция
         decodeURIComponent val if val
@@ -107,12 +136,11 @@ module.exports = (Module)->
                   @facade.sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
                   ctx.pathParams = pathParams
                   ctx.req.pathParams = pathParams
-                  try
-                    return yield routeFunc.apply @, [ctx, next]
-                  catch err
-                    console.log '>>> ArangoSwitchMixin @use co.wrap (ctx, next)=> err', err.stack
-                    ctx.onerror err
-                  # yield return
+                  # try
+                  return yield routeFunc.apply @, [ctx, next]
+                  # catch err
+                  #   console.log '>>> ArangoSwitchMixin @use co.wrap (ctx, next)=> err', err.stack
+                  #   ctx.onerror err
                 yield return next?()
 
               voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)=>
@@ -329,6 +357,7 @@ module.exports = (Module)->
               catch err
                 reject err
               return
+            console.log '>>> ArangoSwitchMixin::createNativeRoute before yield return next?()'
             yield return next?()
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
           @Module.context().use voRouter
