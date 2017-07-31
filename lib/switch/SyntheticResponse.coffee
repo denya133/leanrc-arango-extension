@@ -76,7 +76,7 @@ module.exports = (Module)->
         )
           lastModified = new Date fs.mtime(filename) * 1000
           @headers['last-modified'] = lastModified.toUTCString()
-        unless @contentType)
+        unless @contentType
           @contentType = mimeTypes.lookup(filename) ? MIME_BINARY
         return @
 
