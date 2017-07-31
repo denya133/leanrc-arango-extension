@@ -65,6 +65,7 @@ module.exports = (Module)->
 
       @public @async doAction: Function, # для того, чтобы отдельная примесь могла переопределить этот метод и обернуть выполнение например в транзакцию
         default: (action, context)->
+          console.log '>>> ArangoResourceMixin::doAction action, context', action, context
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
           {read, write} = extend {}, @getLocks(), (@[locksMethodName]?() ? {})
