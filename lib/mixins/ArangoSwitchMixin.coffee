@@ -69,7 +69,7 @@ module.exports = (Module)->
           for fn in middlewares
             unless _.isFunction fn
               throw new Error 'Middleware must be composed of functions!'
-          (context, next)->
+          co.wrap (context, next)->
             index = -1
             dispatch = co.wrap (i)->
               console.log '>>> ArangoSwitchMixin.compose.dispatch', i, middlewares.length, middlewares[i]?
@@ -86,7 +86,7 @@ module.exports = (Module)->
               catch err
                 console.log '>>> ArangoSwitchMixin.compose in lambda err', err.stack
                 throw err
-            return dispatch 0
+            return yield dispatch 0
       ##########################################################################
 
       # from https://github.com/koajs/route/blob/master/index.js ###############
@@ -178,12 +178,6 @@ module.exports = (Module)->
           voContext.isPerformExecution = yes
           try
             r = yield @middlewaresHandler(voContext)
-              .then (_r)->
-                console.log '>>> ArangoSwitchMixin::callback then @middlewaresHandler', _r
-                return _r
-              .catch (_err)->
-                console.log '>>> ArangoSwitchMixin::callback catch @middlewaresHandler', _err.stack
-                throw _err
             console.log '>>> ArangoSwitchMixin::callback after yield @middlewaresHandler', r
             @respond voContext
           catch err
