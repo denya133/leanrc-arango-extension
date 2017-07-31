@@ -54,7 +54,7 @@ module.exports = (Module)->
             alResults
           , []
           write = vlCollectionNames
-          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations"]
+          read = ["#{inflect.underscore @Module.name}_migrations"]
           return {read, write}
 
       @public listNonTransactionables: Function,
@@ -94,6 +94,7 @@ module.exports = (Module)->
               yield promise
           else
             yield self.super action, context
+          console.log '>>> ArangoResourceMixin::doAction voResult', voResult
           yield return voResult
 
       @public @async saveDelayeds: Function, # для того, чтобы сохранить все отложенные джобы
