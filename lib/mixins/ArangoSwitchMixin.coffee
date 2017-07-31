@@ -220,6 +220,24 @@ module.exports = (Module)->
           ctx.res.send body
           return
 
+      @public @async sendHttpResponse: Function,
+        default: (ctx, aoData, resource, opts)->
+          if opts.action is 'create'
+            ctx.status = 201
+          console.log '>>> ArangoSwitchMixin::sendHttpResponse ctx.headers?.accept?', ctx.headers?.accept?
+          unless ctx.headers?.accept?
+            yield return
+          console.log '>>> ArangoSwitchMixin::sendHttpResponse ctx.accepts @responseFormats', ctx.accepts @responseFormats
+          switch (vsFormat = ctx.accepts @responseFormats)
+            when no
+            else
+              if @["#{vsFormat}RendererName"]?
+                voRenderer = @rendererFor vsFormat
+                voRendered = yield voRenderer
+                  .render ctx, aoData, resource, opts
+                ctx.body = voRendered
+          yield return
+
       @public defineSwaggerEndpoint: Function,
         args: [Object, String, String]
         return: NILL
