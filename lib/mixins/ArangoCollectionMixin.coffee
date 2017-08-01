@@ -459,6 +459,7 @@ module.exports = (Module)->
                   else
                     voQuery = voQuery.return voReturn
           vsQuery = voQuery?.toAQL()
+          console.log '>>> ArangoCollectionMixin::parseQuery aoQuery, voQuery, vsQuery', JSON.stringify(aoQuery), JSON.stringify(voQuery), vsQuery
 
           if intoUsed and new RegExp(intoUsed).test vsQuery
             vsQuery = vsQuery.replace new RegExp(intoUsed), intoPartial
