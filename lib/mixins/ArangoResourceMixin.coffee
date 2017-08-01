@@ -63,7 +63,7 @@ module.exports = (Module)->
       @public nonPerformExecution: Function,
         default: (context)-> not context.isPerformExecution
 
-      @public @async doAction: Function
+      @public @async doAction: Function,
         default: (action, context)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
