@@ -288,7 +288,10 @@ module.exports = (Module)->
                 reverse = genRandomAlphaNumbers 32
                 @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
                   @facade.sendNotification SEND_TO_LOG, "
-                    ArangoSwitchMixin::createNativeRoute <result from resource> #{JSON.stringify {error, result, resource}}
+                    ArangoSwitchMixin::createNativeRoute <result from resource>
+                    isError #{error?} #{if error? then error.stack}
+                    result: #{JSON.stringify result}
+                    resource: #{resource.constructor.name}
                   ", LEVELS[DEBUG]
                   if error?
                     reject error
