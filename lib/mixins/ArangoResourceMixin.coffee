@@ -54,7 +54,7 @@ module.exports = (Module)->
             alResults
           , []
           write = vlCollectionNames
-          read = ["#{inflect.underscore @Module.name}_migrations"]
+          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues']
           return {read, write}
 
       @public listNonTransactionables: Function,
@@ -103,6 +103,7 @@ module.exports = (Module)->
             promise = db._executeTransaction
               waitForSync: yes
               collections:
+                read: ['_queues', '_jobs']
                 write: ['_queues', '_jobs']
                 allowImplicit: no
               action: @wrap (params)->
