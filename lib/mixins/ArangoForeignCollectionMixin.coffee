@@ -18,6 +18,7 @@ module.exports = (Module)->
   {
     NILL
     APPLICATION_SWITCH
+    APPLICATION_MEDIATOR
     Collection
     QueryableCollectionMixinInterface
     Cursor
