@@ -146,7 +146,6 @@ module.exports = (Module)->
             yield @middlewaresHandler voContext
             @respond voContext
           catch err
-            console.log '>>> ArangoSwitchMixin::callback catch err', err.stack
             voContext.onerror err
           yield return
 
@@ -208,7 +207,6 @@ module.exports = (Module)->
           return unless ctx.writable
           body = ctx.body
           code = ctx.status
-          console.log '>>> ArangoSwitchMixin::respond body, code', body, code
           if statuses.empty[code]
             ctx.body = null
             return ctx.res.send()
@@ -217,27 +215,8 @@ module.exports = (Module)->
           unless body?
             body = ctx.message ? String code
             return ctx.res.send body
-          console.log '>>> ArangoSwitchMixin::respond before ctx.res.send body'
           ctx.res.send body
           return
-
-      @public @async sendHttpResponse: Function,
-        default: (ctx, aoData, resource, opts)->
-          if opts.action is 'create'
-            ctx.status = 201
-          console.log '>>> ArangoSwitchMixin::sendHttpResponse ctx.headers?.accept?', ctx.headers?.accept?
-          unless ctx.headers?.accept?
-            yield return
-          console.log '>>> ArangoSwitchMixin::sendHttpResponse ctx.accepts @responseFormats', ctx.accepts @responseFormats
-          switch (vsFormat = ctx.accepts @responseFormats)
-            when no
-            else
-              if @["#{vsFormat}RendererName"]?
-                voRenderer = @rendererFor vsFormat
-                voRendered = yield voRenderer
-                  .render ctx, aoData, resource, opts
-                ctx.body = voRendered
-          yield return
 
       @public defineSwaggerEndpoint: Function,
         args: [Object, String, String]
@@ -308,7 +287,9 @@ module.exports = (Module)->
               try
                 reverse = genRandomAlphaNumbers 32
                 @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
-                  console.log '>>> ArangoSwitchMixin::createNativeRoute', {error, result, resource}
+                  @facade.sendNotification SEND_TO_LOG, "
+                    ArangoSwitchMixin::createNativeRoute<result from resource> #{{error, result, resource}}
+                  ", LEVELS[DEBUG]
                   if error?
                     reject error
                     yield return

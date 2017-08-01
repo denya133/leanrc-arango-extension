@@ -20,6 +20,12 @@ module.exports = (Module)->
     APPLICATION_SWITCH
     Collection
     QueryableCollectionMixinInterface
+    Cursor
+    LogMessage: {
+      SEND_TO_LOG
+      LEVELS
+      DEBUG
+    }
   } = Module::
 
   Module.defineMixin Collection, (BaseClass) ->
@@ -34,9 +40,7 @@ module.exports = (Module)->
           params.recordName = @delegate.name
           params.snapshot = @serialize aoRecord
 
-          console.log '>>>> ArangoForeignCollectionMixin::push params', params
           request = @requestFor params
-          console.log '>>>> ArangoForeignCollectionMixin::push request', request
           res = yield @makeRequest request
 
           if res.status >= 400
@@ -71,7 +75,6 @@ module.exports = (Module)->
 
       @public @async take: Function,
         default: (id)->
-          console.log '>>> ArangoForeignCollectionMixin::take', id
           params = {}
           params.requestType = 'take'
           params.recordName = @delegate.name
@@ -193,7 +196,6 @@ module.exports = (Module)->
 
       @public @async includes: Function,
         default: (id)->
-          console.log '>>> ArangoForeignCollectionMixin::includes', id
           voQuery =
             $forIn: '@doc': @collectionFullName()
             $filter: '@doc.id': {$eq: id}
@@ -421,34 +423,28 @@ module.exports = (Module)->
         return: Object
         default: (params)->
           method  = @methodForRequest params
-          console.log '>>> ArangoForeignCollectionMixin::requestFor method', method
           url     = @urlForRequest params
-          console.log '>>> ArangoForeignCollectionMixin::requestFor url', url
           headers = {}
           for own headerName, headerValue of @headersForRequest params
             headers[headerName.toLowerCase()] = headerValue
-          console.log '>>> ArangoForeignCollectionMixin::requestFor headers', headers
+          headers['accept'] ?= '*/*'
           data    = @dataForRequest params
-          console.log '>>> ArangoForeignCollectionMixin::requestFor data', data
           return {method, url, headers, data}
 
       @public @async sendRequest: Function,
         args: [Object]
         return: Object
         default: ({method, url, options})->
-          console.log '>>> ArangoForeignCollectionMixin::sendRequest', {method, url, options}
           foreignApp = @Module.context().dependencies[@dependencyName]
           foreignSwitch = foreignApp.facade.retrieveMediator APPLICATION_SWITCH
-          console.log '>>>> foreignSwitch', foreignSwitch
           foreignRes = yield foreignSwitch.perform method, url, options
-          console.log '>>>>>>>>>>>> foreignRes', foreignRes
+          @sendNotification(SEND_TO_LOG, "ArangoForeignCollectionMixin::sendRequest <result> #{JSON.stringify foreignRes}", LEVELS[DEBUG])
           yield return foreignRes
 
       @public requestToHash: Function,
         args: [Object]
         return: Object
         default: ({method, url, headers, data})->
-          console.log '>>> ArangoForeignCollectionMixin::requestToHash', {method, url, headers, data}
           options = {
             json: yes
             headers
@@ -464,16 +460,8 @@ module.exports = (Module)->
         args: [Object]
         return: Object
         default: (request)-> # result of requestFor
-          console.log '>>> ArangoForeignCollectionMixin::makeRequest request', request
-          {
-            LogMessage: {
-              SEND_TO_LOG
-              LEVELS
-              DEBUG
-            }
-          } = Module::
           hash = @requestToHash request
-          @sendNotification(SEND_TO_LOG, "ArangoForeignCollectionMixin::makeRequest hash #{JSON.stringify hash}", LEVELS[DEBUG])
+          @sendNotification(SEND_TO_LOG, "ArangoForeignCollectionMixin::makeRequest <hash> #{JSON.stringify hash}", LEVELS[DEBUG])
           return yield @sendRequest hash
 
       @public @async parseQuery: Function,
@@ -512,11 +500,8 @@ module.exports = (Module)->
 
       @public @async executeQuery: Function,
         default: (aoQuery, options)->
-          console.log '>>> ArangoForeignCollectionMixin::executeQuery 111 aoQuery', aoQuery
           request = @requestFor aoQuery
-          console.log '>>> ArangoForeignCollectionMixin::executeQuery 222 request', request
           res = yield @makeRequest request
-          console.log '>>> ArangoForeignCollectionMixin::executeQuery 333 res', res
 
           if res.status >= 400
             throw new Error "
@@ -532,11 +517,11 @@ module.exports = (Module)->
               body = [body]
 
             if aoQuery.isCustomReturn
-              return Module::Cursor.new null, body
+              return Cursor.new null, body
             else
-              return Module::Cursor.new @, body
+              return Cursor.new @, body
           else
-            return Module::Cursor.new null, []
+            return Cursor.new null, []
 
 
     ArangoForeignCollectionMixin.initializeMixin()
