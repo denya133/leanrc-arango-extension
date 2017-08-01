@@ -11,10 +11,23 @@ moment        = require 'moment'
 
 
 module.exports = (Module)->
-  Module.defineMixin Module::Collection, (BaseClass) ->
+  {
+    ANY
+    Collection
+    QueryableCollectionMixinInterface
+    ArangoCursor
+    Query
+    LogMessage: {
+      SEND_TO_LOG
+      LEVELS
+      DEBUG
+    }
+  } = Module::
+
+  Module.defineMixin Collection, (BaseClass) ->
     class ArangoCollectionMixin extends BaseClass
       @inheritProtected()
-      @implements Module::QueryableCollectionMixinInterface
+      @implements QueryableCollectionMixinInterface
 
       # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 
@@ -25,6 +38,7 @@ module.exports = (Module)->
             .into @collectionFullName()
             .returnNew 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::push vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           if voNativeCursor.hasNext()
             yield return @normalize voNativeCursor.next()
@@ -39,6 +53,7 @@ module.exports = (Module)->
             .remove _key: 'doc._key'
             .into @collectionFullName()
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::remove vsQuery #{vsQuery}", LEVELS[DEBUG])
           db._query "#{vsQuery}"
           yield return
 
@@ -49,6 +64,7 @@ module.exports = (Module)->
             .filter qb.eq qb.ref('doc.id'), qb(id)
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::take vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           if voNativeCursor.hasNext()
             yield return @normalize voNativeCursor.next()
@@ -62,8 +78,9 @@ module.exports = (Module)->
             .filter @parseFilter Parser.parse query
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::takeBy vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
-          yield return Module::ArangoCursor.new @, voNativeCursor
+          yield return ArangoCursor.new @, voNativeCursor
 
       @public @async takeMany: Function,
         default: (ids)->
@@ -72,8 +89,9 @@ module.exports = (Module)->
             .filter qb.in qb.ref('doc.id'), qb(ids)
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::takeMany vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
-          yield return Module::ArangoCursor.new @, voNativeCursor
+          yield return ArangoCursor.new @, voNativeCursor
 
       @public @async takeAll: Function,
         default: ->
@@ -81,8 +99,9 @@ module.exports = (Module)->
             .in @collectionFullName()
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::takeAll vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
-          yield return Module::ArangoCursor.new @, voNativeCursor
+          yield return ArangoCursor.new @, voNativeCursor
 
       @public @async override: Function,
         default: (id, aoRecord)->
@@ -95,6 +114,7 @@ module.exports = (Module)->
             .into @collectionFullName()
             .returnNew 'newDoc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::override vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           if voNativeCursor.hasNext()
             yield return @normalize voNativeCursor.next()
@@ -109,6 +129,7 @@ module.exports = (Module)->
             .limit qb 1
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::includes vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           yield return voNativeCursor.hasNext()
 
@@ -120,6 +141,7 @@ module.exports = (Module)->
             .limit qb 1
             .return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::exists vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           yield return voNativeCursor.hasNext()
 
@@ -304,7 +326,7 @@ module.exports = (Module)->
 
       @public parseFilter: Function,
         args: [Object]
-        return: Module::ANY
+        return: ANY
         default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
             throw new Error '`$not` must be defined in field operand'  if field is '$not'
@@ -348,7 +370,7 @@ module.exports = (Module)->
                   voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
-                    voQuery = (voQuery ? qb).let wrapReference(asRef), qb.expr @parseQuery Module::Query.new aoValue
+                    voQuery = (voQuery ? qb).let wrapReference(asRef), qb.expr @parseQuery Query.new aoValue
                 isCustomReturn = yes
                 voQuery = (voQuery ? qb).remove _key: wrapReference "@doc._key"
                 if aoQuery.$into?
@@ -372,7 +394,7 @@ module.exports = (Module)->
                     voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                   if (voLet = aoQuery.$let)?
                     for own asRef, aoValue of voLet
-                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
+                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Query.new aoValue
                 vhObjectForUpdate = _.omit aoQuery.$patch, ['id', '_key']
                 isCustomReturn = yes
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
@@ -395,11 +417,11 @@ module.exports = (Module)->
                 voQuery = voQuery.filter @parseFilter Parser.parse voFilter
               if (voLet = aoQuery.$let)?
                 for own asRef, aoValue of voLet
-                  voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
+                  voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Query.new aoValue
               if (voCollect = aoQuery.$collect)?
                 isCustomReturn = yes
                 for own asRef, aoValue of voCollect
-                  voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Module::Query.new aoValue
+                  voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Query.new aoValue
               if (vsInto = aoQuery.$into)?
                 intoUsed = _.escapeRegExp "FILTER {{INTO #{vsInto}}}"
                 intoPartial = "INTO #{vsInto}"
@@ -470,11 +492,12 @@ module.exports = (Module)->
 
       @public @async executeQuery: Function,
         default: (asQuery, options)->
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::executeQuery asQuery #{asQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{asQuery}"
           voCursor = if asQuery.isCustomReturn
-            Module::ArangoCursor.new null, voNativeCursor
+            ArangoCursor.new null, voNativeCursor
           else
-            Module::ArangoCursor.new @, voNativeCursor
+            ArangoCursor.new @, voNativeCursor
           yield return voCursor
 
 

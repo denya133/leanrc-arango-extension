@@ -9,6 +9,7 @@ FoxxRouter    = require '@arangodb/foxx/router'
 statuses      = require 'statuses'
 { errors }    = require '@arangodb'
 EventEmitter  = require 'events'
+pathToRegexp  = require 'path-to-regexp'
 
 ARANGO_NOT_FOUND  = errors.ERROR_ARANGO_DOCUMENT_NOT_FOUND.code
 ARANGO_DUPLICATE  = errors.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED.code
@@ -43,6 +44,8 @@ module.exports = (Module)->
     LAMBDA
 
     ArangoContext
+    SyntheticRequest
+    SyntheticResponse
     LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
     Utils: {
       co
@@ -54,7 +57,17 @@ module.exports = (Module)->
     class ArangoSwitchMixin extends BaseClass
       @inheritProtected()
       iphEventNames = @private 'eventNames': Object
+      @public middlewaresHandler: LAMBDA
 
+      # from https://github.com/koajs/route/blob/master/index.js ###############
+      decode = (val)-> # чистая функция
+        decodeURIComponent val if val
+      matches = (ctx, method)->
+        return yes unless method
+        return yes if ctx.method is method
+        if method is 'GET' and ctx.method is 'HEAD'
+          return yes
+        return no
       ################
       @public @static createMethod: Function,
         default: (method)->
@@ -72,9 +85,30 @@ module.exports = (Module)->
               unless routeFunc
                 throw new Error 'handler is required'
 
+              keys = []
+              re = pathToRegexp path, keys
+
               @facade.sendNotification SEND_TO_LOG, "
-                #{method ? 'ALL'} #{path} has been defined
+                #{method ? 'ALL'} #{path} -> #{re} has been defined
               ", LEVELS[DEBUG]
+
+              @use co.wrap (ctx)=>
+                unless matches ctx, method
+                  yield return
+                m = re.exec ctx.path
+                if m
+                  pathParams = m[1..]
+                    .map decode
+                    .reduce (prev, item, index)->
+                      prev[keys[index].name] = item
+                      prev
+                    , {}
+                  ctx.routePath = path
+                  @facade.sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
+                  ctx.pathParams = pathParams
+                  ctx.req.pathParams = pathParams
+                  return yield routeFunc.call @, ctx
+                yield return
 
               voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)=>
                 res.statusCode = 404
@@ -101,9 +135,45 @@ module.exports = (Module)->
       @createMethod() # create @public all:...
       ##########################################################################
 
+      @public @async callback: Function,
+        args: []
+        return: LAMBDA
+        default: (req, res)->
+          res.statusCode = 404
+          voContext = ArangoContext.new req, res, @
+          voContext.isPerformExecution = yes
+          try
+            yield @middlewaresHandler voContext
+            @respond voContext
+          catch err
+            voContext.onerror err
+          yield return
+
+      @public @async perform: Function,
+        default: (method, url, options)->
+          req = SyntheticRequest.new @Module.context()
+          res = SyntheticResponse.new @Module.context()
+          req.method = method
+          req.url = url
+          req.initialUrl = url
+          req.headers = options.headers
+          if options.body?
+            req.body = options.body
+            req.rawBody = new Buffer JSON.stringify options.body
+          yield @callback req, res
+          {
+            statusCode: status
+            statusMessage: message
+            body
+            headers
+            cookies
+          } = res
+          yield return {status, message, headers, cookies, body}
+
       @public onRegister: Function,
         default: -> # super не вызываем
           voEmitter = new EventEmitter()
+          @middlewaresHandler = @constructor.compose @middlewares
           unless _.isFunction voEmitter.eventNames
             eventNames = @[iphEventNames] = {}
             FILTER = [ 'newListener', 'removeListener' ]
@@ -212,11 +282,17 @@ module.exports = (Module)->
           {method, path} = opts
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
 
-          [voRouter, voEndpoint] = @[method]? path, co.wrap (context, next)=>
+          [voRouter, voEndpoint] = @[method]? path, co.wrap (context)=>
             yield Module::Promise.new (resolve, reject)=>
               try
                 reverse = genRandomAlphaNumbers 32
                 @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
+                  @facade.sendNotification SEND_TO_LOG, "
+                    ArangoSwitchMixin::createNativeRoute <result from resource>
+                    isError #{error?} #{if error? then error.stack}
+                    result: #{JSON.stringify result}
+                    resource: #{resource.constructor.name}
+                  ", LEVELS[DEBUG]
                   if error?
                     reject error
                     yield return
@@ -231,7 +307,7 @@ module.exports = (Module)->
               catch err
                 reject err
               return
-            yield return next?()
+            yield return
           @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
           @Module.context().use voRouter
           return

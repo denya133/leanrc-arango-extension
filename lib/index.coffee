@@ -44,14 +44,16 @@ Extension = (BaseClass) ->
 
     require('./iterator/ArangoCursor') @Module
 
+    require('./switch/SyntheticRequest') @Module # needs test
+    require('./switch/SyntheticResponse') @Module # needs test
     require('./switch/ArangoRequest') @Module
     require('./switch/ArangoResponse') @Module
     require('./switch/ArangoContext') @Module
 
-    require('./mixins/AISCRouteMixin') @Module # needs testing # empty
+    require('./mixins/ArangoForeignCollectionMixin') @Module # needs test
     require('./mixins/ArangoCollectionMixin') @Module
-    require('./mixins/ArangoSwitchMixin') @Module
-    require('./mixins/ArangoResourceMixin') @Module
+    require('./mixins/ArangoSwitchMixin') @Module # needs retest
+    require('./mixins/ArangoResourceMixin') @Module # needs retest
     require('./mixins/ArangoMigrationMixin') @Module
     require('./mixins/ArangoConfigurationMixin') @Module
     require('./mixins/ArangoResqueMixin') @Module
