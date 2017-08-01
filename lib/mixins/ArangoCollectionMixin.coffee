@@ -470,6 +470,14 @@ module.exports = (Module)->
 
       @public @async executeQuery: Function,
         default: (asQuery, options)->
+          {
+            LogMessage: {
+              SEND_TO_LOG
+              LEVELS
+              DEBUG
+            }
+          } = Module::
+          @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::executeQuery asQuery #{asQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{asQuery}"
           voCursor = if asQuery.isCustomReturn
             Module::ArangoCursor.new null, voNativeCursor
