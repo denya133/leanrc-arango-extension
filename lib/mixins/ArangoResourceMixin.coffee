@@ -53,8 +53,8 @@ module.exports = (Module)->
               alResults.push name unless /migrations$/.test name
             alResults
           , []
-          write = vlCollectionNames
-          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues']
+          write = vlCollectionNames.concat ['_queues', '_jobs']
+          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues', '_jobs']
           return {read, write}
 
       @public listNonTransactionables: Function,
@@ -63,7 +63,7 @@ module.exports = (Module)->
       @public nonPerformExecution: Function,
         default: (context)-> not context.isPerformExecution
 
-      @public @async doAction: Function, # для того, чтобы отдельная примесь могла переопределить этот метод и обернуть выполнение например в транзакцию
+      @public @async doAction: Function
         default: (action, context)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
@@ -94,26 +94,8 @@ module.exports = (Module)->
               yield promise
           else
             yield self.super action, context
+          queues._updateQueueDelay()
           yield return voResult
-
-      @public @async saveDelayeds: Function, # для того, чтобы сохранить все отложенные джобы
-        default: (app)->
-          self = @
-          if @nonPerformExecution app.context
-            promise = db._executeTransaction
-              waitForSync: yes
-              collections:
-                read: ['_queues', '_jobs']
-                write: ['_queues', '_jobs']
-                allowImplicit: no
-              action: @wrap (params)->
-                params.self.super params.app
-              params: {self, app}
-            yield promise
-            queues._updateQueueDelay()
-          else
-            yield self.super app
-          yield return
 
 
     ArangoResourceMixin.initializeMixin()
