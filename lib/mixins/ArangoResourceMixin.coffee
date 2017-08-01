@@ -75,7 +75,7 @@ module.exports = (Module)->
               promise = db._executeTransaction
                 waitForSync: yes
                 collections:
-                  read: ["#{inflect.underscore @Module.name}_migrations"]
+                  read: read
                   write: write
                   allowImplicit: no
                 action: @wrap (params)->
