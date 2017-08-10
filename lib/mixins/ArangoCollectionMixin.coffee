@@ -193,8 +193,8 @@ module.exports = (Module)->
 
           # Array Query Operators
           $all: (aoFirst, alItems)-> # contains some values
-            qb.and alItems.map (aoItem)->
-              qb.in wrapReference(aoItem), wrapReference(aoFirst)
+            qb.and (alItems.map (aoItem)->
+              qb.in wrapReference(aoItem), wrapReference(aoFirst))...
           $elemMatch: (aoFirst, aoSecond)-> # conditions for complex item
             wrappedReference = aoFirst.replace '@', ''
             voFilter = qb.and(aoSecond...).toAQL()
