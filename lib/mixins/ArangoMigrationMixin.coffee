@@ -1,6 +1,7 @@
 
 
 _             = require 'lodash'
+inflect       = do require 'i'
 { db }        = require '@arangodb'
 
 
@@ -57,7 +58,12 @@ module.exports = (Module)->
 # миксин должен содержать нативный платформозависимый код для обращения к релаьной базе данных на понятном ей языке.
 
 module.exports = (Module)->
-  Module.defineMixin Module::Migration, (BaseClass) ->
+  {
+    Migration
+    Utils: { extend, forEach }
+  } = Module::
+
+  Module.defineMixin Migration, (BaseClass) ->
     class ArangoMigrationMixin extends BaseClass
       @inheritProtected()
 
@@ -145,7 +151,7 @@ module.exports = (Module)->
             timestamp
             array
             hash
-          } = Module::Migration::SUPPORTED_TYPES
+          } = Migration::SUPPORTED_TYPES
           typeCast = switch options.type
             when boolean
               "TO_BOOL(doc.#{field_name})"
@@ -238,6 +244,130 @@ module.exports = (Module)->
               LET new_doc = UNSET(doc, 'createdAt', 'updatedAt', 'deletedAt')
               REPLACE doc._key WITH new_doc IN #{qualifiedName}
           "
+          yield return
+
+      @public customLocks: Function,
+        args: []
+        return: Object
+        default: -> {}
+
+      @public getLocks: Function,
+        args: []
+        return: Object
+        default: ->
+          vrCollectionPrefix = new RegExp "^#{inflect.underscore @Module.name}_"
+          vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
+            if vrCollectionPrefix.test name = aoCollection.name()
+              alResults.push name unless /migrations$/.test name
+            alResults
+          , []
+          write = vlCollectionNames.concat ['_queues', '_jobs']
+          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues', '_jobs']
+          return {read, write}
+
+      @public @async up: Function,
+        default: ->
+          iplSteps = @constructor.instanceVariables['_steps'].pointer
+          {read, write} = extend {}, @getLocks(), @customLocks()
+          steps = @[iplSteps]?[..] ? []
+          [
+            nonTransactionableSteps
+            transactionableSteps
+          ] = steps.reduce (prev, current)->
+            [nonTrans, trans] = prev
+            if current.method in [
+              'createCollection'
+              'createEdgeCollection'
+              'addIndex'
+              'changeCollection'
+              'renameIndex'
+              'renameCollection'
+              'dropCollection'
+              'dropEdgeCollection'
+            ]
+              nonTrans.push current
+            else
+              trans.push current
+            [nonTrans, trans]
+          , [[], []]
+          yield forEach nonTransactionableSteps, ({method,args})->
+            yield @[method] args...
+          , @
+          yield db._executeTransaction
+            waitForSync: yes
+            collections:
+              read: read
+              write: write
+              allowImplicit: no
+            action: @wrap (params)->
+              forEach params.steps, ({ method, args }) ->
+                if method is 'reversible'
+                  [lambda] = args
+                  yield lambda.call @,
+                    up: (f)-> f()
+                    down: -> Module::Promise.resolve()
+                else
+                  yield @[method] args...
+              , params.self
+            params: {self: @, steps: transactionableSteps}
+          yield return
+
+      @public @async down: Function,
+        default: ->
+          iplSteps = @constructor.instanceVariables['_steps'].pointer
+          {read, write} = extend {}, @getLocks(), @customLocks()
+          steps = @[iplSteps]?[..] ? []
+          steps.reverse()
+          [
+            transactionableSteps
+            nonTransactionableSteps
+          ] = steps.reduce (prev, current)->
+            [trans, nonTrans] = prev
+            if current.method in [
+              'createCollection'
+              'createEdgeCollection'
+              'addIndex'
+              'changeCollection'
+              'renameIndex'
+              'renameCollection'
+              'dropCollection'
+              'dropEdgeCollection'
+            ]
+              nonTrans.push current
+            else
+              trans.push current
+            [trans, nonTrans]
+          , [[], []]
+          yield db._executeTransaction
+            waitForSync: yes
+            collections:
+              read: read
+              write: write
+              allowImplicit: no
+            action: @wrap (params)->
+              forEach params.steps, ({ method, args }) ->
+                if method is 'reversible'
+                  [lambda] = args
+                  yield lambda.call @,
+                    up: -> Module::Promise.resolve()
+                    down: (f)-> f()
+                else if method is 'renameField'
+                  [collectionName, oldName, newName] = args
+                  yield @[method] collectionName, newName, oldName
+                else
+                  yield @[Migration::REVERSE_MAP[method]] args...
+              , params.self
+            params: {self: @, steps: transactionableSteps}
+          yield forEach nonTransactionableSteps, ({method,args})->
+            if method is 'renameIndex'
+              [collectionName, oldName, newName] = args
+              yield @[method] collectionName, newName, oldName
+            else if method is 'renameCollection'
+              [collectionName, newName] = args
+              yield @[method] newName, collectionName
+            else
+              yield @[Migration::REVERSE_MAP[method]] args...
+          , @
           yield return
 
 
