@@ -87,6 +87,7 @@ module.exports = (Module)->
                 waitForSync: yes
                 collections:
                   read: read
+                  write: write
                   allowImplicit: no
                 action: @wrap (params)->
                   params.self.super params.action, params.context
