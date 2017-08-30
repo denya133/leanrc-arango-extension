@@ -302,7 +302,7 @@ module.exports = (Module)->
           if transactionableSteps.length > 0
             yield db._executeTransaction
               waitForSync: yes
-              intermediateCommitSize: 65536
+              intermediateCommitSize: 33554432
               collections:
                 read: read
                 write: write
@@ -349,7 +349,7 @@ module.exports = (Module)->
           if transactionableSteps.length > 0
             yield db._executeTransaction
               waitForSync: yes
-              intermediateCommitSize: 65536
+              intermediateCommitSize: 33554432
               collections:
                 read: read
                 write: write
