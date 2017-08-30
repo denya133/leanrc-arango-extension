@@ -91,14 +91,19 @@ module.exports = (Module)->
               initial = options.default.toISOString()
             else if _.isString options.default
               initial = "'#{options.default}'"
+            else if _.isPlainObject options.default
+              initial = JSON.stringify options.default
+            else if _.isArray options.default
+              initial = JSON.stringify options.default
             else
-              initial = 'null'
+              initial = null
           else
-            initial = 'null'
-          db._query "
-            FOR doc IN #{qualifiedName}
-              UPDATE doc._key WITH {#{field_name}: #{initial}} IN #{qualifiedName}
-          "
+            initial = null
+          if initial?
+            db._query "
+              FOR doc IN #{qualifiedName}
+                UPDATE doc._key WITH {#{field_name}: #{initial}} IN #{qualifiedName}
+            "
           yield return
 
       @public @async addIndex: Function,
