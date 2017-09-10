@@ -10,14 +10,14 @@ module.exports = (Module)->
     NILL
 
     CoreObject
-    ResponseInterface
+    # ResponseInterface
     SwitchInterface
     ContextInterface
   } = Module::
 
   class ArangoResponse extends CoreObject
     @inheritProtected()
-    @implements ResponseInterface
+    # @implements ResponseInterface
     @module Module
 
     @public res: Object, # native response object

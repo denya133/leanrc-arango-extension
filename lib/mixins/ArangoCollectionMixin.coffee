@@ -14,7 +14,7 @@ module.exports = (Module)->
   {
     ANY
     Collection
-    QueryableCollectionMixinInterface
+    # QueryableCollectionMixinInterface
     ArangoCursor
     Query
     LogMessage: {
@@ -27,7 +27,7 @@ module.exports = (Module)->
   Module.defineMixin Collection, (BaseClass) ->
     class ArangoCollectionMixin extends BaseClass
       @inheritProtected()
-      @implements QueryableCollectionMixinInterface
+      # @implements QueryableCollectionMixinInterface
 
       # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 

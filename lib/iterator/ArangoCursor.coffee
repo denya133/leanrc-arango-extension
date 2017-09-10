@@ -6,7 +6,7 @@ LeanRC = require 'LeanRC'
 module.exports = (Module)->
   class ArangoCursor extends LeanRC::CoreObject
     @inheritProtected()
-    @implements LeanRC::CursorInterface
+    # @implements LeanRC::CursorInterface
 
     @module Module
 
