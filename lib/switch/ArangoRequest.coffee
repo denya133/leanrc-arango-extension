@@ -16,14 +16,14 @@ module.exports = (Module)->
     ANY
 
     CoreObject
-    RequestInterface
+    # RequestInterface
     SwitchInterface
     ContextInterface
   } = Module::
 
   class ArangoRequest extends CoreObject
     @inheritProtected()
-    @implements RequestInterface
+    # @implements RequestInterface
     @module Module
 
     @public req: Object, # native request object

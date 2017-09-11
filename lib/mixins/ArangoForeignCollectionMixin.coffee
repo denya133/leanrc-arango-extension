@@ -20,7 +20,7 @@ module.exports = (Module)->
     APPLICATION_SWITCH
     APPLICATION_MEDIATOR
     Collection
-    QueryableCollectionMixinInterface
+    # QueryableCollectionMixinInterface
     Cursor
     LogMessage: {
       SEND_TO_LOG
@@ -32,7 +32,7 @@ module.exports = (Module)->
   Module.defineMixin Collection, (BaseClass) ->
     class ArangoForeignCollectionMixin extends BaseClass
       @inheritProtected()
-      @implements QueryableCollectionMixinInterface
+      # @implements QueryableCollectionMixinInterface
 
       @public @async push: Function,
         default: (aoRecord)->

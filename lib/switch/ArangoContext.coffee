@@ -10,7 +10,7 @@ module.exports = (Module)->
     DEVELOPMENT
 
     CoreObject
-    ContextInterface
+    # ContextInterface
     RequestInterface
     ResponseInterface
     SwitchInterface
@@ -22,7 +22,7 @@ module.exports = (Module)->
 
   class ArangoContext extends CoreObject
     @inheritProtected()
-    @implements ContextInterface
+    # @implements ContextInterface
     @module Module
 
     @public req: Object # native request object
