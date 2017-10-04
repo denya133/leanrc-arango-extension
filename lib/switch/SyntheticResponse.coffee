@@ -65,7 +65,7 @@ module.exports = (Module)->
         @sendFile path
         return @
     @public sendFile: Function,
-      default: (path, options)->
+      default: (filename, opts)->
         if _.isBoolean opts
           opts = lastModified: opts
         unless opts
@@ -132,7 +132,7 @@ module.exports = (Module)->
         return @
 
     @public json: Function,
-      default: (data)->
+      default: (value)->
         unless @contentType
           @contentType = MIME_JSON
         if pretty or @Module.context().isDevelopment
