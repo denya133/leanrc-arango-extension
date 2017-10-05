@@ -12,7 +12,6 @@
 
 _             = require 'lodash'
 inflect       = do require 'i'
-semver        = require 'semver'
 
 
 module.exports = (Module)->
@@ -219,16 +218,7 @@ module.exports = (Module)->
       @public namespace: String,
         get: ->
           conf = @Module.context().manifest.dependencies[@dependencyName]
-          voApp = @Module.context().dependencies[@dependencyName]
-          depModuleName = voApp.Module.name
-          depModuleVersion = voApp.Module.context().manifest.version
-          unless semver.satisfies depModuleVersion, conf.version
-            throw new Error "
-              Dependent module #{depModuleName} not compatible.
-              This module required version #{conf.version} but #{depModuleName} version is #{depModuleVersion}.
-            "
-          [shortVersion] = depModuleVersion.match(/^\d{1,}[.]\d{1,}/) ? []
-          return "v#{shortVersion}"
+          conf.version
       @public queryEndpoint: String,
         default: 'query'
 
