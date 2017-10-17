@@ -332,7 +332,7 @@ module.exports = (Module)->
             throw new Error '`$not` must be defined in field operand'  if field is '$not'
             customFilter = @delegate.customFilters[field]
             if (customFilterFunc = customFilter?[operator])?
-              customFilterFunc.call @, operand
+              qb.expr customFilterFunc.call @, operand
             else
               @operatorsMap[operator] field, operand
           else if field? and operator is '$elemMatch'
