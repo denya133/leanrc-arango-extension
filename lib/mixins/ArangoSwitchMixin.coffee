@@ -219,9 +219,9 @@ module.exports = (Module)->
           return
 
       @public defineSwaggerEndpoint: Function,
-        args: [Object, String, String]
+        args: [Object, Object]
         return: NILL
-        default: (aoSwaggerEndpoint, resource, action)->
+        default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag})->
           gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
           voGateway = @facade.retrieveProxy gatewayName
           {
@@ -236,8 +236,10 @@ module.exports = (Module)->
             synopsis
             isDeprecated
           } = voGateway.swaggerDefinitionFor action
-          tags?.forEach (tag)->
-            aoSwaggerEndpoint.tag tag
+          if resourceTag?
+            aoSwaggerEndpoint.tag resourceTag
+          if tags?.length
+            aoSwaggerEndpoint.tag tags...
           headers?.forEach ({name, schema, description})->
             aoSwaggerEndpoint.header name, schema, description
           pathParams?.forEach ({name, schema, description})->
@@ -308,7 +310,7 @@ module.exports = (Module)->
                 reject err
               return
             yield return
-          @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
+          @defineSwaggerEndpoint voEndpoint, opts
           @Module.context().use voRouter
           return
 
