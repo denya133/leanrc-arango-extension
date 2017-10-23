@@ -219,7 +219,7 @@ module.exports = (Module)->
           return
 
       @public defineSwaggerEndpoint: Function,
-        args: [Object, String, String]
+        args: [Object, Object]
         return: NILL
         default: (aoSwaggerEndpoint, {resource, action, tags:resourceTags})->
           gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
@@ -310,7 +310,7 @@ module.exports = (Module)->
                 reject err
               return
             yield return
-          @defineSwaggerEndpoint voEndpoint, opts.resource, opts.action
+          @defineSwaggerEndpoint voEndpoint, opts
           @Module.context().use voRouter
           return
 
