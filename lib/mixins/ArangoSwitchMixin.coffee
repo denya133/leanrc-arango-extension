@@ -224,6 +224,8 @@ module.exports = (Module)->
         default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag})->
           gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
           voGateway = @facade.retrieveProxy gatewayName
+          unless voGateway?
+            throw new Error "#{gatewayName} is absent in code"
           {
             tags
             headers
