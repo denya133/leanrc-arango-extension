@@ -34,6 +34,12 @@ module.exports = (Module)->
       @inheritProtected()
       # @implements QueryableCollectionMixinInterface
 
+      @public recordMultipleName: Function,
+        default: -> @collectionName()
+
+      @public recordSingleName: Function,
+        default: -> inflect.singularize @recordMultipleName()
+
       @public @async push: Function,
         default: (aoRecord)->
           params = {}
@@ -51,7 +57,8 @@ module.exports = (Module)->
 
           { body } = res
           if body? and body isnt ''
-            voRecord = @normalize body
+            body = JSON.parse body if _.isString body
+            voRecord = @normalize body[@recordSingleName()]
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -91,7 +98,8 @@ module.exports = (Module)->
 
           { body } = res
           if body? and body isnt ''
-            voRecord = @normalize body
+            body = JSON.parse body if _.isString body
+            voRecord = @normalize body[@recordSingleName()]
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -115,7 +123,9 @@ module.exports = (Module)->
 
           { body } = res
           if body? and body isnt ''
-            voCursor = @normalize body
+            body = JSON.parse body if _.isString body
+            vhRecordsData = body[@recordMultipleName()]
+            voCursor = Module::Cursor.new @, vhRecordsData
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -139,7 +149,9 @@ module.exports = (Module)->
 
           { body } = res
           if body? and body isnt ''
-            voCursor = @normalize body
+            body = JSON.parse body if _.isString body
+            vhRecordsData = body[@recordMultipleName()]
+            voCursor = Module::Cursor.new @, vhRecordsData
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -163,7 +175,9 @@ module.exports = (Module)->
 
           { body } = res
           if body? and body isnt ''
-            voCursor = @normalize body
+            body = JSON.parse body if _.isString body
+            vhRecordsData = body[@recordMultipleName()]
+            voCursor = Module::Cursor.new @, vhRecordsData
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -188,7 +202,8 @@ module.exports = (Module)->
 
           { body } = res
           if body? and body isnt ''
-            voRecord = @normalize body
+            body = JSON.parse body if _.isString body
+            voRecord = @normalize body[@recordSingleName()]
           else
             throw new Error "
               Record payload has not existed in response body.
