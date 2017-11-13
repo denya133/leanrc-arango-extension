@@ -226,6 +226,9 @@ module.exports = (Module)->
           voGateway = @facade.retrieveProxy gatewayName
           unless voGateway?
             throw new Error "#{gatewayName} is absent in code"
+          voSwaggerDefinition = voGateway.swaggerDefinitionFor action
+          unless voSwaggerDefinition?
+            throw new Error "#{gatewayName}::#{action} is absent in code"
           {
             tags
             headers
@@ -237,7 +240,7 @@ module.exports = (Module)->
             title
             synopsis
             isDeprecated
-          } = voGateway.swaggerDefinitionFor action
+          } = voSwaggerDefinition
           if resourceTag?
             aoSwaggerEndpoint.tag resourceTag
           if tags?.length
