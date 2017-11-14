@@ -1,7 +1,7 @@
 {
   "name": "leanrc-arango-extension",
   "description": "LeanRC extension for creating application based on ArangoDB platform",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "main": "dist/index.js",
   "private": true,
   "license": "AGPL-3.0",
@@ -68,7 +68,7 @@
     "lodash": "^4.13.1"
   },
   "dependencies": {
-    "LeanRC": "git+ssh://git@bitbucket.org:webbasis/leanrc.git#v3.2.1",
+    "LeanRC": "git+ssh://git@bitbucket.org:webbasis/leanrc.git#v3.2.2",
     "change-case": "3.0.0",
     "commander": "2.9.0",
     "cookie": "^0.3.1",
