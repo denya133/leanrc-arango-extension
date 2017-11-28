@@ -76,7 +76,7 @@ module.exports = (Module)->
         default: (name, options = {})->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
-            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createCollection qualifiedName = #{qualifiedName}, options = #{options}", LEVELS[DEBUG])
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createCollection qualifiedName = #{qualifiedName}, options = #{options.toString()}", LEVELS[DEBUG])
             db._createDocumentCollection qualifiedName, options
           yield return
 
@@ -84,7 +84,7 @@ module.exports = (Module)->
         default: (collection_1, collection_2, options = {})->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           unless db._collection qualifiedName
-            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createEdgeCollection qualifiedName = #{qualifiedName}, options = #{options}", LEVELS[DEBUG])
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createEdgeCollection qualifiedName = #{qualifiedName}, options = #{options.toString()}", LEVELS[DEBUG])
             db._createEdgeCollection qualifiedName, options
           yield return
 
@@ -127,7 +127,7 @@ module.exports = (Module)->
           else
             opts.unique = options.unique ? no
             opts.sparse = options.sparse ? no
-          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::addIndex opts #{opts}", LEVELS[DEBUG])
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::addIndex opts #{opts.toString()}", LEVELS[DEBUG])
           db._collection(qualifiedName).ensureIndex opts
           yield return
 
@@ -147,7 +147,7 @@ module.exports = (Module)->
       @public @async changeCollection: Function,
         default: (name, options)->
           qualifiedName = @collection.collectionFullName name
-          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::changeCollection qualifiedName = #{qualifiedName}, options = #{options}", LEVELS[DEBUG])
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::changeCollection qualifiedName = #{qualifiedName}, options = #{options.toString()}", LEVELS[DEBUG])
           db._collection(qualifiedName).properties options
           yield return
 
@@ -264,10 +264,20 @@ module.exports = (Module)->
             opts.unique = options.unique ? no
             opts.sparse = options.sparse ? no
 
-          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeIndex opts #{opts}", LEVELS[DEBUG])
-          index = db._collection(qualifiedName).ensureIndex opts
-          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeIndex index #{index}", LEVELS[DEBUG])
-          db._collection(qualifiedName).dropIndex index
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeIndex opts #{opts.toString()}", LEVELS[DEBUG])
+          index = null
+          db._collection(qualifiedName).getIndexes().forEach (item)->
+            if (
+              item.fields is opts.fields and
+              item.type is opts.type and
+              item.unique is opts.unique and
+              item.sparse is opts.sparse
+            )
+              index = item
+          # index = db._collection(qualifiedName).ensureIndex opts
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeIndex index #{index.toString()}", LEVELS[DEBUG])
+          if index?
+            db._collection(qualifiedName).dropIndex index
           yield return
 
       @public @async removeTimestamps: Function,
