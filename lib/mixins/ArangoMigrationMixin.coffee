@@ -233,11 +233,16 @@ module.exports = (Module)->
       @public @async removeIndex: Function,
         default: (collection_name, field_names, options)->
           qualifiedName = @collection.collectionFullName collection_name
-          index = db._collection(qualifiedName).ensureIndex
-            type: options.type
-            fields: field_names
-            unique: options.unique
-            sparse: options.sparse
+          opts =
+            type: options.type ? 'hash'
+            fields: field_names ? []
+          if opts.type is 'fulltext'
+            opts.minLength = 3
+          else
+            opts.unique = options.unique ? no
+            opts.sparse = options.sparse ? no
+
+          index = db._collection(qualifiedName).ensureIndex opts
           db._collection(qualifiedName).dropIndex index
           yield return
 
