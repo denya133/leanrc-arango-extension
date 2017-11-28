@@ -60,6 +60,11 @@ module.exports = (Module)->
 module.exports = (Module)->
   {
     Migration
+    LogMessage: {
+      SEND_TO_LOG
+      LEVELS
+      DEBUG
+    }
     Utils: { extend, forEach }
   } = Module::
 
@@ -71,6 +76,7 @@ module.exports = (Module)->
         default: (name, options = {})->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createCollection qualifiedName = #{qualifiedName}, options = #{options}", LEVELS[DEBUG])
             db._createDocumentCollection qualifiedName, options
           yield return
 
@@ -78,6 +84,7 @@ module.exports = (Module)->
         default: (collection_1, collection_2, options = {})->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           unless db._collection qualifiedName
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createEdgeCollection qualifiedName = #{qualifiedName}, options = #{options}", LEVELS[DEBUG])
             db._createEdgeCollection qualifiedName, options
           yield return
 
@@ -100,10 +107,12 @@ module.exports = (Module)->
           else
             initial = null
           if initial?
-            db._query "
+            vsQuery = "
               FOR doc IN #{qualifiedName}
                 UPDATE doc._key WITH {#{field_name}: #{initial}} IN #{qualifiedName}
             "
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::addField vsQuery #{vsQuery}", LEVELS[DEBUG])
+            db._query vsQuery
           yield return
 
       @public @async addIndex: Function,
@@ -118,23 +127,27 @@ module.exports = (Module)->
           else
             opts.unique = options.unique ? no
             opts.sparse = options.sparse ? no
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::addIndex opts #{opts}", LEVELS[DEBUG])
           db._collection(qualifiedName).ensureIndex opts
           yield return
 
       @public @async addTimestamps: Function,
         default: (collection_name, options)->
           qualifiedName = @collection.collectionFullName collection_name
-          db._query "
+          vsQuery = "
             FOR doc IN #{qualifiedName}
               UPDATE doc._key
                 WITH {createdAt: null, updatedAt: null, deletedAt: null}
               IN #{qualifiedName}
           "
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::addTimestamps vsQuery #{vsQuery}", LEVELS[DEBUG])
+          db._query vsQuery
           yield return
 
       @public @async changeCollection: Function,
         default: (name, options)->
           qualifiedName = @collection.collectionFullName name
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::changeCollection qualifiedName = #{qualifiedName}, options = #{options}", LEVELS[DEBUG])
           db._collection(qualifiedName).properties options
           yield return
 
@@ -173,18 +186,20 @@ module.exports = (Module)->
             when time, timestamp
               "DATE_TIMESTAMP(doc.#{field_name})"
           qualifiedName = @collection.collectionFullName collection_name
-          db._query "
+          vsQuery = "
             FOR doc IN #{qualifiedName}
               UPDATE doc._key
                 WITH {#{field_name}: #{typeCast}}
               IN #{qualifiedName}
           "
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::changeField vsQuery #{vsQuery}", LEVELS[DEBUG])
+          db._query vsQuery
           yield return
 
       @public @async renameField: Function,
         default: (collection_name, field_name, new_field_name)->
           qualifiedName = @collection.collectionFullName collection_name
-          db._query "
+          vsQuery = "
             FOR doc IN #{qualifiedName}
               LET doc_with_n_field = MERGE(doc, {#{new_field_name}: doc.#{field_name}})
               LET doc_without_o_field = UNSET(doc_with_n_field, '#{field_name}')
@@ -192,6 +207,8 @@ module.exports = (Module)->
                 WITH doc_without_o_field
               IN #{qualifiedName}
           "
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::renameField vsQuery #{vsQuery}", LEVELS[DEBUG])
+          db._query vsQuery
           yield return
 
       @public @async renameIndex: Function,
@@ -203,6 +220,7 @@ module.exports = (Module)->
         default: (collection_name, old_name, new_name)->
           qualifiedName = @collection.collectionFullName collection_name
           newQualifiedName = @collection.collectionFullName new_name
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::renameCollection qualifiedName, newQualifiedName = #{qualifiedName}, #{newQualifiedName}", LEVELS[DEBUG])
           db._collection(qualifiedName).rename newQualifiedName
           yield return
 
@@ -210,6 +228,7 @@ module.exports = (Module)->
         default: (name)->
           qualifiedName = @collection.collectionFullName name
           if db._collection(qualifiedName)?
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::dropCollection qualifiedName = #{qualifiedName}", LEVELS[DEBUG])
             db._drop qualifiedName
           yield return
 
@@ -217,17 +236,20 @@ module.exports = (Module)->
         default: (collection_1, collection_2)->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           if db._collection(qualifiedName)?
+            @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::dropEdgeCollection qualifiedName = #{qualifiedName}", LEVELS[DEBUG])
             db._drop qualifiedName
           yield return
 
       @public @async removeField: Function,
         default: (collection_name, field_name)->
           qualifiedName = @collection.collectionFullName collection_name
-          db._query "
+          vsQuery = "
             FOR doc IN #{qualifiedName}
               LET doc_without_f = UNSET(doc, '#{field_name}')
               REPLACE doc._key WITH doc_without_f IN #{qualifiedName}
           "
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeField vsQuery #{vsQuery}", LEVELS[DEBUG])
+          db._query vsQuery
           yield return
 
       @public @async removeIndex: Function,
@@ -242,18 +264,22 @@ module.exports = (Module)->
             opts.unique = options.unique ? no
             opts.sparse = options.sparse ? no
 
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeIndex opts #{opts}", LEVELS[DEBUG])
           index = db._collection(qualifiedName).ensureIndex opts
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeIndex index #{index}", LEVELS[DEBUG])
           db._collection(qualifiedName).dropIndex index
           yield return
 
       @public @async removeTimestamps: Function,
         default: (collection_name, options)->
           qualifiedName = @collection.collectionFullName collection_name
-          db._query "
+          vsQuery = "
             FOR doc IN #{qualifiedName}
               LET new_doc = UNSET(doc, 'createdAt', 'updatedAt', 'deletedAt')
               REPLACE doc._key WITH new_doc IN #{qualifiedName}
           "
+          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::removeTimestamps vsQuery #{vsQuery}", LEVELS[DEBUG])
+          db._query vsQuery
           yield return
 
       @public customLocks: Function,
