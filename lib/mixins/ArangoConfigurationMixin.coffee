@@ -1,8 +1,5 @@
 
 
-_             = require 'lodash'
-
-
 ###
 ```coffee
 module.exports = (Module)->
@@ -47,7 +44,12 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
-  Module.defineMixin Module::Configuration, (BaseClass) ->
+  {
+    Configuration
+    Utils: { _ }
+  } = Module::
+
+  Module.defineMixin Configuration, (BaseClass) ->
     class ArangoConfigurationMixin extends BaseClass
       @inheritProtected()
 

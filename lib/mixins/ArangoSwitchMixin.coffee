@@ -1,12 +1,9 @@
 # надо реализовать в отдельном модуле (npm-пакете) так как является платформозависимым
 # здесь должна быть реализация интерфейса SwitchInterface работающая с Foxx роутером.
 
-_             = require 'lodash'
-inflect       = do require 'i'
 methods       = require 'methods'
 FoxxRouter    = require '@arangodb/foxx/router'
 { db }        = require '@arangodb'
-statuses      = require 'statuses'
 { errors }    = require '@arangodb'
 EventEmitter  = require 'events'
 pathToRegexp  = require 'path-to-regexp'
@@ -14,8 +11,6 @@ pathToRegexp  = require 'path-to-regexp'
 ARANGO_NOT_FOUND  = errors.ERROR_ARANGO_DOCUMENT_NOT_FOUND.code
 ARANGO_DUPLICATE  = errors.ERROR_ARANGO_UNIQUE_CONSTRAINT_VIOLATED.code
 ARANGO_CONFLICT   = errors.ERROR_ARANGO_CONFLICT.code
-HTTP_NOT_FOUND    = statuses 'not found'
-HTTP_CONFLICT     = statuses 'conflict'
 
 
 # здесь (наверху) надо привести пример использования в приложении
@@ -48,10 +43,16 @@ module.exports = (Module)->
     SyntheticResponse
     LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
     Utils: {
+      _
+      inflect
       co
       genRandomAlphaNumbers
+      statuses
     }
   } = Module::
+
+  HTTP_NOT_FOUND    = statuses 'not found'
+  HTTP_CONFLICT     = statuses 'conflict'
 
   Module.defineMixin Module::Switch, (BaseClass) ->
     class ArangoSwitchMixin extends BaseClass

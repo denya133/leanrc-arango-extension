@@ -1,10 +1,8 @@
-_           = require 'lodash'
 net         = require 'net' # will be used only 'isIP' function
 contentType = require 'content-type'
 stringify   = require('url').format
 parse       = require 'parseurl'
 qs          = require 'querystring'
-# typeis      = require 'type-is'
 fresh       = require 'fresh'
 
 ###
@@ -19,6 +17,7 @@ module.exports = (Module)->
     # RequestInterface
     SwitchInterface
     ContextInterface
+    Utils: { _ }
   } = Module::
 
   class ArangoRequest extends CoreObject

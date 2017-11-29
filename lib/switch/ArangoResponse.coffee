@@ -1,6 +1,4 @@
-_                   = require 'lodash'
 typeis              = require('type-is').is
-statuses            = require 'statuses'
 assert              = require 'assert'
 getType             = require('mime-types').contentType
 
@@ -13,6 +11,7 @@ module.exports = (Module)->
     # ResponseInterface
     SwitchInterface
     ContextInterface
+    Utils: { _, statuses }
   } = Module::
 
   class ArangoResponse extends CoreObject
