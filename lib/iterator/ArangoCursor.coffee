@@ -1,21 +1,29 @@
-_  = require 'lodash'
-LeanRC = require 'LeanRC'
+
 
 # TODO: Возможно стоит подумать над тем, чтобы повторно реиспользовать курсор, по которому уже прошлись один раз - например сохранять все итемы в кеш-скрытый массив, чтобы потом итерировать уже по ним.
 
 module.exports = (Module)->
-  class ArangoCursor extends LeanRC::CoreObject
+  {
+    ANY
+
+    CoreObject
+    Collection
+    CursorInterface
+    Utils: { _ }
+  } = Module::
+
+  class ArangoCursor extends CoreObject
     @inheritProtected()
-    # @implements LeanRC::CursorInterface
+    # @implements CursorInterface
 
     @module Module
 
-    ipoCursor = @private cursor: LeanRC::ANY
-    ipoCollection = @private collection: Module::Collection
+    ipoCursor = @private cursor: ANY
+    ipoCollection = @private collection: Collection
 
     @public setIterable: Function,
-      args: [LeanRC::ANY]
-      return: LeanRC::CursorInterface
+      args: [ANY]
+      return: CursorInterface
       default: (aoCursor)->
         @[ipoCursor] = aoCursor
         return @
@@ -32,7 +40,7 @@ module.exports = (Module)->
 
     @public @async next: Function,
       default: ->
-        data = yield LeanRC::Promise.resolve @[ipoCursor].next()
+        data = yield Module::Promise.resolve @[ipoCursor].next()
         switch
           when not data?
             yield return data
@@ -42,13 +50,13 @@ module.exports = (Module)->
             yield return data
 
     @public @async hasNext: Function,
-      default: -> yield LeanRC::Promise.resolve @[ipoCursor].hasNext()
+      default: -> yield Module::Promise.resolve @[ipoCursor].hasNext()
 
     @public @async close: Function,
-      default: -> yield LeanRC::Promise.resolve @[ipoCursor].dispose()
+      default: -> yield Module::Promise.resolve @[ipoCursor].dispose()
 
     @public @async count: Function,
-      default: -> yield LeanRC::Promise.resolve @[ipoCursor].count arguments...
+      default: -> yield Module::Promise.resolve @[ipoCursor].count arguments...
 
     @public @async forEach: Function,
       default: (lambda)->
@@ -106,7 +114,7 @@ module.exports = (Module)->
         results = []
         try
           while yield @hasNext()
-            rawResult = yield LeanRC::Promise.resolve @[ipoCursor].next()
+            rawResult = yield Module::Promise.resolve @[ipoCursor].next()
             unless _.isEmpty rawResult
               result = switch
                 when @[ipoCollection]?

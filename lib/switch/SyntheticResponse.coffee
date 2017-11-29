@@ -2,9 +2,7 @@
 # однако этот класс будет использоваться при формировании запросов между сервисами вместо http (в ArangoForeignCollectionMixin)
 
 
-_             = require 'lodash'
 crypto        = require '@arangodb/crypto'
-statuses      = require 'statuses'
 httperr       = require 'http-errors'
 mediaTyper    = require 'media-typer'
 mimeTypes     = require 'mime-types'
@@ -18,7 +16,9 @@ module.exports = (Module)->
   {
     ANY
     CoreObject
+    Utils: { _, statuses }
   } = Module::
+
   MIME_JSON = 'application/json; charset=utf-8'
   MIME_BINARY = 'application/octet-stream'
 

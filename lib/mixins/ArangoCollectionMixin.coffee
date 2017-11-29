@@ -3,11 +3,9 @@
 # последний должен возврашать результат с интерфейсом CursorInterface
 # но для хранения и получения данных должна обращаться к ArangoDB коллекциям.
 
-_             = require 'lodash'
 { db }        = require '@arangodb'
 qb            = require 'aqb'
 Parser        = require 'mongo-parse' #mongo-parse@2.0.2
-moment        = require 'moment'
 
 
 module.exports = (Module)->
@@ -22,6 +20,7 @@ module.exports = (Module)->
       LEVELS
       DEBUG
     }
+    Utils: { _, moment }
   } = Module::
 
   Module.defineMixin Collection, (BaseClass) ->

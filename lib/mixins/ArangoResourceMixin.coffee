@@ -3,8 +3,6 @@
 # TODO: в контексте надо зарезервировать transactionId, чтобы когда понадобтся - им можно было воспользоваться.
 
 
-_             = require 'lodash'
-inflect       = do require 'i'
 semver        = require 'semver'
 { db }        = require '@arangodb'
 queues        = require '@arangodb/foxx/queues'
@@ -13,7 +11,7 @@ queues        = require '@arangodb/foxx/queues'
 module.exports = (Module)->
   {
     Resource
-    Utils: { extend }
+    Utils: { _, inflect, extend }
   } = Module::
 
   Module.defineMixin Resource, (BaseClass) ->
