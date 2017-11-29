@@ -10,10 +10,6 @@
 # TODO: !!!! Поначалу было опасно начинать этот миксин, т.к. можно было закопаться с вычислением локов (т.к. транзакция открывалась в switch классе), но после того, как открытие транзакции было перенесено в ресурс. можно за это не переживать. Т.е. можно при появлении свободного времени взяться за реализацию этого миксина
 
 
-_             = require 'lodash'
-inflect       = do require 'i'
-
-
 module.exports = (Module)->
   {
     NILL
@@ -27,6 +23,7 @@ module.exports = (Module)->
       LEVELS
       DEBUG
     }
+    Utils: { _, inflect }
   } = Module::
 
   Module.defineMixin Collection, (BaseClass) ->
@@ -125,7 +122,7 @@ module.exports = (Module)->
           if body? and body isnt ''
             body = JSON.parse body if _.isString body
             vhRecordsData = body[@recordMultipleName()]
-            voCursor = Module::Cursor.new @, vhRecordsData
+            voCursor = Cursor.new @, vhRecordsData
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -151,7 +148,7 @@ module.exports = (Module)->
           if body? and body isnt ''
             body = JSON.parse body if _.isString body
             vhRecordsData = body[@recordMultipleName()]
-            voCursor = Module::Cursor.new @, vhRecordsData
+            voCursor = Cursor.new @, vhRecordsData
           else
             throw new Error "
               Record payload has not existed in response body.
@@ -177,7 +174,7 @@ module.exports = (Module)->
           if body? and body isnt ''
             body = JSON.parse body if _.isString body
             vhRecordsData = body[@recordMultipleName()]
-            voCursor = Module::Cursor.new @, vhRecordsData
+            voCursor = Cursor.new @, vhRecordsData
           else
             throw new Error "
               Record payload has not existed in response body.

@@ -1,7 +1,5 @@
 
 
-_             = require 'lodash'
-inflect       = do require 'i'
 { db }        = require '@arangodb'
 Queues        = require '@arangodb/foxx/queues'
 
@@ -21,8 +19,14 @@ module.exports = (Module)->
 
 
 module.exports = (Module)->
+  {
+    Resque
+    Utils: { _, inflect }
+  } = Module::
+
   ARANGO_SCRIPT = 'resque_executor'
-  Module.defineMixin Module::Resque, (BaseClass) ->
+
+  Module.defineMixin Resque, (BaseClass) ->
     class ArangoResqueMixin extends BaseClass
       @inheritProtected()
 

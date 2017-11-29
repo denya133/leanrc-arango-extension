@@ -1,6 +1,4 @@
-_             = require 'lodash'
 assert        = require 'assert'
-statuses      = require 'statuses'
 createError   = require 'http-errors'
 
 
@@ -18,6 +16,7 @@ module.exports = (Module)->
     ArangoRequest
     ArangoResponse
     Cookies
+    Utils: { _, statuses }
   } = Module::
 
   class ArangoContext extends CoreObject

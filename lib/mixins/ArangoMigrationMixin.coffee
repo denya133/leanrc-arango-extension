@@ -1,9 +1,4 @@
-
-
-_             = require 'lodash'
-inflect       = do require 'i'
 { db }        = require '@arangodb'
-
 
 
 ###
@@ -65,7 +60,7 @@ module.exports = (Module)->
       LEVELS
       DEBUG
     }
-    Utils: { extend, forEach, jsonStringify }
+    Utils: { _, inflect, extend, forEach, jsonStringify }
   } = Module::
 
   Module.defineMixin Migration, (BaseClass) ->

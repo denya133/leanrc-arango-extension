@@ -2,7 +2,6 @@
 # однако этот класс будет использоваться при формировании запросов между сервисами вместо http (в ArangoForeignCollectionMixin)
 
 
-_             = require 'lodash'
 accepts       = require 'accepts'
 typeIs        = require 'type-is'
 parseRange    = require 'range-parser'
@@ -17,6 +16,7 @@ module.exports = (Module)->
   {
     ANY
     CoreObject
+    Utils: { _ }
   } = Module::
 
   class SyntheticRequest extends CoreObject

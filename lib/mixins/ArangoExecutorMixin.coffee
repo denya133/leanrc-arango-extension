@@ -4,13 +4,20 @@ queues        = require '@arangodb/foxx/queues'
 
 
 module.exports = (Module)->
-  Module.defineMixin Module::Mediator, (BaseClass) ->
+  {
+    NILL
+    START_RESQUE
+
+    Mediator
+  } = Module::
+
+  Module.defineMixin Mediator, (BaseClass) ->
     class ArangoExecutorMixin extends BaseClass
       @inheritProtected()
 
       @public listNotificationInterests: Function,
         default: -> [
-          Module::START_RESQUE
+          START_RESQUE
         ]
 
       @public handleNotification: Function,
@@ -19,20 +26,20 @@ module.exports = (Module)->
           voBody = aoNotification.getBody()
           vsType = aoNotification.getType()
           switch vsName
-            when Module::START_RESQUE
+            when START_RESQUE
               @start()
           return
 
       @public @async start: Function,
         args: []
-        return: Module::NILL
+        return: NILL
         default: ->
           queues._updateQueueDelay()
           yield return
 
       @public @async stop: Function,
         args: []
-        return: Module::NILL
+        return: NILL
         default: ->
           yield return
 
