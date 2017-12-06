@@ -263,7 +263,7 @@ module.exports = (Module)->
           index = null
           db._collection(qualifiedName).getIndexes().forEach (item)->
             if (
-              item.fields is opts.fields and
+              _.isEqual(item.fields, opts.fields) and
               item.type is opts.type and
               item.unique is opts.unique and
               item.sparse is opts.sparse
