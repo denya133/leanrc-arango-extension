@@ -104,11 +104,14 @@ module.exports = (Module)->
           yield return voRecord
 
       @public @async takeBy: Function,
-        default: (query)->
+        default: (query, options = {})->
           params = {}
           params.requestType = 'takeBy'
           params.recordName = @delegate.name
           params.query = $filter: query
+          params.query.$sort = options.$sort if options.$sort?
+          params.query.$limit = options.$limit if options.$limit?
+          params.query.$offset = options.$offset if options.$offset?
 
           request = @requestFor params
           res = yield @makeRequest request
