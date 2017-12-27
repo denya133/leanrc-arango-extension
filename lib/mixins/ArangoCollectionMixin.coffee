@@ -30,6 +30,12 @@ module.exports = (Module)->
 
       # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 
+      wrapReference = (value)->
+        if _.isString(value) and /^[@]/.test value
+          qb.ref value.replace '@', ''
+        else
+          qb value
+
       @public @async push: Function,
         default: (aoRecord)->
           vhObjectForInsert = @serialize aoRecord
@@ -71,11 +77,20 @@ module.exports = (Module)->
             yield return
 
       @public @async takeBy: Function,
-        default: (query)->
+        default: (query, options = {})->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
             .filter @parseFilter Parser.parse query
-            .return qb.ref 'doc'
+          if (voSort = options.$sort)?
+            for sortObj in voSort
+              for own asRef, asSortDirect of sortObj
+                voQuery = voQuery.sort wrapReference(asRef), asSortDirect
+          if (vnLimit = options.$limit)?
+            if (vnOffset = options.$offset)?
+              voQuery = voQuery.limit vnOffset, vnLimit
+            else
+              voQuery = voQuery.limit vnLimit
+          voQuery = voQuery.return qb.ref 'doc'
           vsQuery = voQuery.toAQL()
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::takeBy vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
@@ -155,12 +170,6 @@ module.exports = (Module)->
           # yield return voNativeCursor.next()
           collection = db._collection @collectionFullName()
           yield return collection.figures().alive.count
-
-      wrapReference = (value)->
-        if _.isString(value) and /^[@]/.test value
-          qb.ref value.replace '@', ''
-        else
-          qb value
 
       @public operatorsMap: Object,
         default:
@@ -428,11 +437,9 @@ module.exports = (Module)->
               if (voHaving = aoQuery.$having)?
                 voQuery = voQuery.filter @parseFilter Parser.parse voHaving
               if (voSort = aoQuery.$sort)?
-                for sortObj in aoQuery.$sort
-                  do (sortObj)->
-                    for own asRef, asSortDirect of sortObj
-                      do (asRef, asSortDirect)->
-                        voQuery = voQuery.sort qb.ref(asRef.replace '@', ''), asSortDirect
+                for sortObj in voSort
+                  for own asRef, asSortDirect of sortObj
+                    voQuery = voQuery.sort wrapReference(asRef), asSortDirect
 
               if (vnLimit = aoQuery.$limit)?
                 if (vnOffset = aoQuery.$offset)?

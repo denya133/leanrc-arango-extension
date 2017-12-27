@@ -4,15 +4,20 @@
 
 
 semver        = require 'semver'
-{ db }        = require '@arangodb'
+{db, errors}  = require '@arangodb'
 queues        = require '@arangodb/foxx/queues'
 
+ARANGO_NOT_FOUND  = errors.ERROR_ARANGO_DOCUMENT_NOT_FOUND.code
+ARANGO_CONFLICT   = errors.ERROR_ARANGO_CONFLICT.code
 
 module.exports = (Module)->
   {
     Resource
-    Utils: { _, inflect, extend }
+    Utils: { _, inflect, extend, statuses }
   } = Module::
+
+  HTTP_NOT_FOUND    = statuses 'not found'
+  HTTP_CONFLICT     = statuses 'conflict'
 
   Module.defineMixin Resource, (BaseClass) ->
     class ArangoResourceMixin extends BaseClass
@@ -66,33 +71,74 @@ module.exports = (Module)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
           {read, write} = extend {}, @getLocks(), (@[locksMethodName]?() ? {})
-          self = @
+
           writeTransaction = yield @writeTransaction action, context
-          voResult = if @nonPerformExecution context
-            if isTransactionables and writeTransaction
-              promise = db._executeTransaction
-                waitForSync: yes
-                collections:
-                  read: read
-                  write: write
-                  allowImplicit: no
-                action: @wrap (params)->
-                  params.self.super params.action, params.context
-                params: {self, action, context}
-              yield promise
-            else
-              promise = db._executeTransaction
-                waitForSync: yes
-                collections:
-                  read: read
-                  write: write
-                  allowImplicit: no
-                action: @wrap (params)->
-                  params.self.super params.action, params.context
-                params: {self, action, context}
-              yield promise
+          unless @nonPerformExecution context
+            voResult = yield @super action, context
+            queues._updateQueueDelay()
+            yield return voResult
+
+          if isTransactionables and writeTransaction
+            voResult = db._executeTransaction
+              waitForSync: yes
+              collections:
+                read: read
+                write: write
+                allowImplicit: no
+              action: @wrap (params)->
+                res = null
+                error = null
+                @super params.action, params.context
+                  .then (data)->
+                    res = data
+                  .catch (err)->
+                    error = err
+                if error?
+                  if error.isArangoError and error.errorNum is ARANGO_NOT_FOUND
+                    params.context.throw HTTP_NOT_FOUND, error.message
+                    return
+                  if error.isArangoError and error.errorNum is ARANGO_CONFLICT
+                    params.context.throw HTTP_CONFLICT, error.message
+                    return
+                  else if error.statusCode?
+                    params.context.throw error.statusCode, error.message
+                  else
+                    params.context.throw 500, error.message, error.stack
+                    return
+                else
+                  return res
+              params: {action, context}
           else
-            yield self.super action, context
+            voResult = db._executeTransaction
+              waitForSync: yes
+              collections:
+                read: read
+                write: write
+                allowImplicit: no
+              action: @wrap (params)->
+                res = null
+                error = null
+                @super params.action, params.context
+                  .then (data)->
+                    res = data
+                  .catch (err)->
+                    error = err
+                if error?
+                  if error.isArangoError and error.errorNum is ARANGO_NOT_FOUND
+                    params.context.throw HTTP_NOT_FOUND, error.message
+                    return
+                  if error.isArangoError and error.errorNum is ARANGO_CONFLICT
+                    params.context.throw HTTP_CONFLICT, error.message
+                    return
+                  else if error.statusCode?
+                    params.context.throw error.statusCode, error.message
+                  else
+                    params.context.throw 500, error.message, error.stack
+                    return
+                else
+                  return res
+              params: {action, context}
+
           queues._updateQueueDelay()
           yield return voResult
 
