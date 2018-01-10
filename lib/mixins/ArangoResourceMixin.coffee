@@ -73,71 +73,64 @@ module.exports = (Module)->
           {read, write} = extend {}, @getLocks(), (@[locksMethodName]?() ? {})
 
           writeTransaction = yield @writeTransaction action, context
+
           unless @nonPerformExecution context
             voResult = yield @super action, context
             queues._updateQueueDelay()
             yield return voResult
 
-          if isTransactionables and writeTransaction
-            voResult = db._executeTransaction
-              waitForSync: yes
-              collections:
-                read: read
-                write: write
-                allowImplicit: no
-              action: @wrap (params)->
-                res = null
-                error = null
-                @super params.action, params.context
-                  .then (data)->
-                    res = data
-                  .catch (err)->
-                    error = err
-                if error?
-                  if error.isArangoError and error.errorNum is ARANGO_NOT_FOUND
-                    params.context.throw HTTP_NOT_FOUND, error.message
-                    return
-                  if error.isArangoError and error.errorNum is ARANGO_CONFLICT
-                    params.context.throw HTTP_CONFLICT, error.message
-                    return
-                  else if error.statusCode?
-                    params.context.throw error.statusCode, error.message
+          voResult = null
+          voError = null
+
+          try
+            if isTransactionables
+              voResult = db._executeTransaction
+                waitForSync: yes
+                collections:
+                  read: read
+                  write: write
+                  allowImplicit: no
+                action: @wrap (params)->
+                  res = null
+                  error = null
+                  @super params.action, params.context
+                    .then (data)->
+                      res = data
+                    .catch (err)->
+                      voError = err
+                      error = err
+                  if error?
+                    throw error
                   else
-                    params.context.throw 500, error.message, error.stack
-                    return
-                else
-                  return res
-              params: {action, context}
-          else
-            voResult = db._executeTransaction
-              waitForSync: yes
-              collections:
-                read: read
-                write: write
-                allowImplicit: no
-              action: @wrap (params)->
-                res = null
-                error = null
-                @super params.action, params.context
-                  .then (data)->
-                    res = data
-                  .catch (err)->
-                    error = err
-                if error?
-                  if error.isArangoError and error.errorNum is ARANGO_NOT_FOUND
-                    params.context.throw HTTP_NOT_FOUND, error.message
-                    return
-                  if error.isArangoError and error.errorNum is ARANGO_CONFLICT
-                    params.context.throw HTTP_CONFLICT, error.message
-                    return
-                  else if error.statusCode?
-                    params.context.throw error.statusCode, error.message
-                  else
-                    params.context.throw 500, error.message, error.stack
-                    return
-                else
-                  return res
-              params: {action, context}
+                    return res
+                params: {action, context}
+            else
+              res = null
+              error = null
+              @super action, context
+                .then (data)->
+                  res = data
+                .catch (err)->
+                  voError = err
+                  error = err
+              if error?
+                throw error
+              else
+                voResult = res
+          catch err
+            voError ?= err
+          if voError?
+            if voError.isArangoError and voError.errorNum is ARANGO_NOT_FOUND
+              context.throw HTTP_NOT_FOUND, voError.message, voError.stack
+              return
+            if voError.isArangoError and voError.errorNum is ARANGO_CONFLICT
+              context.throw HTTP_CONFLICT, voError.message, voError.stack
+              return
+            else if voError.statusCode?
+              context.throw voError.statusCode, voError.message, voError.stack
+            else
+              context.throw 500, voError.message, voError.stack
+              return
 
           queues._updateQueueDelay()
           yield return voResult
