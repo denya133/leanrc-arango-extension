@@ -437,9 +437,14 @@ module.exports = (Module)->
               if (voHaving = aoQuery.$having)?
                 voQuery = voQuery.filter @parseFilter Parser.parse voHaving
               if (voSort = aoQuery.$sort)?
-                for sortObj in voSort
-                  for own asRef, asSortDirect of sortObj
-                    voQuery = voQuery.sort wrapReference(asRef), asSortDirect
+                voQuery = voQuery.sort (do ->
+                  vlSort = []
+                  for sortObj in voSort
+                    for own asRef, asSortDirect of sortObj
+                      vlSort.push wrapReference asRef
+                      vlSort.push asSortDirect
+                  vlSort
+                )...
 
               if (vnLimit = aoQuery.$limit)?
                 if (vnOffset = aoQuery.$offset)?
