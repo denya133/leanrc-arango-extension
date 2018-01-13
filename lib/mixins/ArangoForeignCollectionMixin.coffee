@@ -450,10 +450,14 @@ module.exports = (Module)->
         args: [Object]
         return: Object
         default: ({method, url, options})->
+          @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>>>>>>> FOREIGN MAKE OR CREATE', LEVELS[DEBUG]
+          t1 = Date.now()
           foreignApp = @Module.context().dependencies[@dependencyName]
+          @sendNotification SEND_TO_LOG, ">>>>>>>>>>>>>>>>>>>>>>>>> FOREIGN START after #{Date.now() - t1}", LEVELS[DEBUG]
           foreignSwitch = foreignApp.facade.retrieveMediator APPLICATION_SWITCH
           foreignRes = yield foreignSwitch.perform method, url, options
           @sendNotification(SEND_TO_LOG, "ArangoForeignCollectionMixin::sendRequest <result> #{JSON.stringify foreignRes}", LEVELS[DEBUG])
+          @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>>>>>>> FOREIGN END', LEVELS[DEBUG]
           yield return foreignRes
 
       @public requestToHash: Function,

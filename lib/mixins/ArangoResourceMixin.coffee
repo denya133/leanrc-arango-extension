@@ -13,6 +13,7 @@ ARANGO_CONFLICT   = errors.ERROR_ARANGO_CONFLICT.code
 module.exports = (Module)->
   {
     Resource
+    LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
     Utils: { _, inflect, extend, statuses }
   } = Module::
 
@@ -75,7 +76,9 @@ module.exports = (Module)->
           writeTransaction = yield @writeTransaction action, context
 
           unless @nonPerformExecution context
+            @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>> PERFORM-EXECUTION OPEN', LEVELS[DEBUG]
             voResult = yield @super action, context
+            @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>> PERFORM-EXECUTION CLOSE', LEVELS[DEBUG]
             queues._updateQueueDelay()
             yield return voResult
 
@@ -84,6 +87,7 @@ module.exports = (Module)->
 
           try
             if isTransactionables
+              @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>> TRANSACTION OPEN', LEVELS[DEBUG]
               voResult = db._executeTransaction
                 waitForSync: yes
                 collections:
@@ -104,7 +108,9 @@ module.exports = (Module)->
                   else
                     return res
                 params: {action, context}
+              @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>> TRANSACTION CLOSE', LEVELS[DEBUG]
             else
+              @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>> NON-TRANSACTION OPEN', LEVELS[DEBUG]
               res = null
               error = null
               @super action, context
@@ -117,6 +123,7 @@ module.exports = (Module)->
                 throw error
               else
                 voResult = res
+              @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>> NON-TRANSACTION CLOSE', LEVELS[DEBUG]
           catch err
             voError ?= err
           if voError?
