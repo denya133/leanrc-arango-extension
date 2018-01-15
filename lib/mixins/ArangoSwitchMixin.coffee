@@ -89,7 +89,7 @@ module.exports = (Module)->
               keys = []
               re = pathToRegexp path, keys
 
-              @facade.sendNotification SEND_TO_LOG, "
+              @sendNotification SEND_TO_LOG, "
                 #{method ? 'ALL'} #{path} -> #{re} has been defined
               ", LEVELS[DEBUG]
 
@@ -105,23 +105,25 @@ module.exports = (Module)->
                       prev
                     , {}
                   ctx.routePath = path
-                  @facade.sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
+                  @sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
                   ctx.pathParams = pathParams
                   ctx.req.pathParams = pathParams
                   return yield routeFunc.call @, ctx
                 yield return
 
               voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)=>
+                @sendNotification SEND_TO_LOG, '>>>>>> START REQUEST HANDLING', LEVELS[DEBUG]
                 res.statusCode = 404
                 voContext = ArangoContext.new req, res, @
                 voContext.routePath = path
-                @facade.sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
+                @sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
                 voContext.pathParams = req.pathParams
                 try
                   yield routeFunc.call @, voContext
                   @respond voContext
                 catch err
                   voContext.onerror err
+                @sendNotification SEND_TO_LOG, '>>>>>> END REQUEST HANDLING', LEVELS[DEBUG]
                 yield return
               return [voRouter, voEndpoint]
           return
@@ -152,6 +154,7 @@ module.exports = (Module)->
 
       @public @async perform: Function,
         default: (method, url, options)->
+          @sendNotification SEND_TO_LOG, '>>>>>> START PERFORM-REQUEST HANDLING', LEVELS[DEBUG]
           req = SyntheticRequest.new @Module.context()
           res = SyntheticResponse.new @Module.context()
           req.method = method
@@ -169,6 +172,7 @@ module.exports = (Module)->
             headers
             cookies
           } = res
+          @sendNotification SEND_TO_LOG, '>>>>>> END PERFORM-REQUEST HANDLING', LEVELS[DEBUG]
           yield return {status, message, headers, cookies, body}
 
       @public onRegister: Function,
@@ -295,7 +299,7 @@ module.exports = (Module)->
               try
                 reverse = genRandomAlphaNumbers 32
                 @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
-                  @facade.sendNotification SEND_TO_LOG, "
+                  @sendNotification SEND_TO_LOG, "
                     ArangoSwitchMixin::createNativeRoute <result from resource>
                     isError #{error?} #{if error? then error.stack}
                     result: #{JSON.stringify result}
