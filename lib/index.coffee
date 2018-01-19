@@ -1,7 +1,5 @@
 
 
-LeanRC = require 'LeanRC'
-
 ###
 Example of use
 
@@ -35,7 +33,7 @@ module.exports = TestApp.initialize().freeze()
 ###
 
 Extension = (BaseClass) ->
-  class ArangoExtension extends BaseClass
+  class extends BaseClass
     @inheritProtected()
 
     coContext = module.context
@@ -59,11 +57,10 @@ Extension = (BaseClass) ->
     require('./mixins/ArangoResqueMixin') @Module
     require('./mixins/ArangoSerializerMixin') @Module
     require('./mixins/ArangoExecutorMixin') @Module
-  ArangoExtension.initializeMixin()
+    @initializeMixin()
 
-sample = Extension LeanRC
-Reflect.defineProperty Extension, 'reification',
-  value: sample
+Reflect.defineProperty Extension, 'name',
+  value: 'ArangoExtension'
 
 
 module.exports = Extension
