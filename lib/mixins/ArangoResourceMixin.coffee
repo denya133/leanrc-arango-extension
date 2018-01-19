@@ -20,8 +20,8 @@ module.exports = (Module)->
   HTTP_NOT_FOUND    = statuses 'not found'
   HTTP_CONFLICT     = statuses 'conflict'
 
-  Module.defineMixin Resource, (BaseClass) ->
-    class ArangoResourceMixin extends BaseClass
+  Module.defineMixin 'ArangoResourceMixin', (BaseClass = Resource) ->
+    class extends BaseClass
       @inheritProtected()
 
       @initialHook 'checkDependencies'
@@ -143,4 +143,4 @@ module.exports = (Module)->
           yield return voResult
 
 
-    ArangoResourceMixin.initializeMixin()
+      @initializeMixin()

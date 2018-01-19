@@ -49,8 +49,8 @@ module.exports = (Module)->
     Utils: { _ }
   } = Module::
 
-  Module.defineMixin Configuration, (BaseClass) ->
-    class ArangoConfigurationMixin extends BaseClass
+  Module.defineMixin 'ArangoConfigurationMixin', (BaseClass = Configuration) ->
+    class extends BaseClass
       @inheritProtected()
 
       @public defineConfigProperties: Function,
@@ -92,4 +92,4 @@ module.exports = (Module)->
           return
 
 
-    ArangoConfigurationMixin.initializeMixin()
+      @initializeMixin()

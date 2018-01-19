@@ -1,8 +1,10 @@
 
 
 module.exports = (Module)->
-  Module.defineMixin Module::Serializer, (BaseClass) ->
-    class ArangoSerializerMixin extends BaseClass
+  { Serializer } = Module::
+
+  Module.defineMixin 'ArangoSerializerMixin', (BaseClass = Serializer) ->
+    class extends BaseClass
       @inheritProtected()
 
       @public normalize: Function,
@@ -23,4 +25,4 @@ module.exports = (Module)->
           serialized
 
 
-    ArangoSerializerMixin.initializeMixin()
+      @initializeMixin()

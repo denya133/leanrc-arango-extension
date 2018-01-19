@@ -38,6 +38,7 @@ module.exports = (Module)->
     NILL
     LAMBDA
 
+    Switch
     ArangoContext
     SyntheticRequest
     SyntheticResponse
@@ -54,8 +55,8 @@ module.exports = (Module)->
   HTTP_NOT_FOUND    = statuses 'not found'
   HTTP_CONFLICT     = statuses 'conflict'
 
-  Module.defineMixin Module::Switch, (BaseClass) ->
-    class ArangoSwitchMixin extends BaseClass
+  Module.defineMixin 'ArangoSwitchMixin', (BaseClass = Switch) ->
+    class extends BaseClass
       @inheritProtected()
       iphEventNames = @private 'eventNames': Object
       @public middlewaresHandler: LAMBDA
@@ -93,7 +94,8 @@ module.exports = (Module)->
                 #{method ? 'ALL'} #{path} -> #{re} has been defined
               ", LEVELS[DEBUG]
 
-              @use co.wrap (ctx)=>
+              self = @
+              @use co.wrap (ctx)->
                 unless matches ctx, method
                   yield return
                 m = re.exec ctx.path
@@ -105,25 +107,25 @@ module.exports = (Module)->
                       prev
                     , {}
                   ctx.routePath = path
-                  @sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
+                  self.sendNotification SEND_TO_LOG, "#{ctx.method} #{path} matches #{ctx.path} #{JSON.stringify pathParams}", LEVELS[DEBUG]
                   ctx.pathParams = pathParams
                   ctx.req.pathParams = pathParams
-                  return yield routeFunc.call @, ctx
+                  return yield routeFunc.call self, ctx
                 yield return
 
-              voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)=>
-                @sendNotification SEND_TO_LOG, '>>>>>> START REQUEST HANDLING', LEVELS[DEBUG]
+              voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)->
+                self.sendNotification SEND_TO_LOG, '>>>>>> START REQUEST HANDLING', LEVELS[DEBUG]
                 res.statusCode = 404
-                voContext = ArangoContext.new req, res, @
+                voContext = ArangoContext.new req, res, self
                 voContext.routePath = path
-                @sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
+                self.sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
                 voContext.pathParams = req.pathParams
                 try
-                  yield routeFunc.call @, voContext
-                  @respond voContext
+                  yield routeFunc.call self, voContext
+                  self.respond voContext
                 catch err
                   voContext.onerror err
-                @sendNotification SEND_TO_LOG, '>>>>>> END REQUEST HANDLING', LEVELS[DEBUG]
+                self.sendNotification SEND_TO_LOG, '>>>>>> END REQUEST HANDLING', LEVELS[DEBUG]
                 yield return
               return [voRouter, voEndpoint]
           return
@@ -293,13 +295,13 @@ module.exports = (Module)->
         default: (opts)->
           {method, path} = opts
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
-
-          [voRouter, voEndpoint] = @[method]? path, co.wrap (context)=>
-            yield Module::Promise.new (resolve, reject)=>
+          self = @
+          [voRouter, voEndpoint] = @[method]? path, co.wrap (context)->
+            yield Module::Promise.new (resolve, reject)->
               try
                 reverse = genRandomAlphaNumbers 32
-                @getViewComponent().once reverse, co.wrap ({error, result, resource})=>
-                  @sendNotification SEND_TO_LOG, "
+                self.getViewComponent().once reverse, co.wrap ({error, result, resource})->
+                  self.sendNotification SEND_TO_LOG, "
                     ArangoSwitchMixin::createNativeRoute <result from resource>
                     isError #{error?} #{if error? then error.stack}
                     result: #{JSON.stringify result}
@@ -309,13 +311,13 @@ module.exports = (Module)->
                     reject error
                     yield return
                   try
-                    yield @sendHttpResponse context, result, resource, opts
+                    yield self.sendHttpResponse context, result, resource, opts
                     resolve()
                     yield return
                   catch err
                     reject err
                     yield return
-                @sender resourceName, {context, reverse}, opts
+                self.sender resourceName, {context, reverse}, opts
               catch err
                 reject err
               return
@@ -324,4 +326,4 @@ module.exports = (Module)->
           @Module.context().use voRouter
           return
 
-    ArangoSwitchMixin.initializeMixin()
+      @initializeMixin()
