@@ -130,8 +130,9 @@ module.exports = (Module)->
               return [voRouter, voEndpoint]
           return
 
-      methods.forEach (method)=>
-        @createMethod method
+      self = @
+      methods.forEach (method)->
+        self.createMethod method
 
       @public del: Function,
         default: (args...)->
