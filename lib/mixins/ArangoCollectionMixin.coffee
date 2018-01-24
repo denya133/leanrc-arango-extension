@@ -23,8 +23,8 @@ module.exports = (Module)->
     Utils: { _, moment }
   } = Module::
 
-  Module.defineMixin Collection, (BaseClass) ->
-    class ArangoCollectionMixin extends BaseClass
+  Module.defineMixin 'ArangoCollectionMixin', (BaseClass = Collection) ->
+    class extends BaseClass
       @inheritProtected()
       # @implements QueryableCollectionMixinInterface
 
@@ -512,4 +512,4 @@ module.exports = (Module)->
           yield return voCursor
 
 
-    ArangoCollectionMixin.initializeMixin()
+      @initializeMixin()

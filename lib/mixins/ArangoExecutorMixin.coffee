@@ -11,8 +11,8 @@ module.exports = (Module)->
     Mediator
   } = Module::
 
-  Module.defineMixin Mediator, (BaseClass) ->
-    class ArangoExecutorMixin extends BaseClass
+  Module.defineMixin 'ArangoExecutorMixin', (BaseClass = Mediator) ->
+    class extends BaseClass
       @inheritProtected()
 
       @public listNotificationInterests: Function,
@@ -44,4 +44,4 @@ module.exports = (Module)->
           yield return
 
 
-    ArangoExecutorMixin.initializeMixin()
+      @initializeMixin()

@@ -63,8 +63,8 @@ module.exports = (Module)->
     Utils: { _, inflect, extend, forEach, jsonStringify }
   } = Module::
 
-  Module.defineMixin Migration, (BaseClass) ->
-    class ArangoMigrationMixin extends BaseClass
+  Module.defineMixin 'ArangoMigrationMixin', (BaseClass = Migration) ->
+    class extends BaseClass
       @inheritProtected()
 
       @public @async createCollection: Function,
@@ -419,4 +419,4 @@ module.exports = (Module)->
           yield return
 
 
-    ArangoMigrationMixin.initializeMixin()
+      @initializeMixin()

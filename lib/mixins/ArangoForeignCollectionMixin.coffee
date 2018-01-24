@@ -26,8 +26,8 @@ module.exports = (Module)->
     Utils: { _, inflect }
   } = Module::
 
-  Module.defineMixin Collection, (BaseClass) ->
-    class ArangoForeignCollectionMixin extends BaseClass
+  Module.defineMixin 'ArangoForeignCollectionMixin', (BaseClass = Collection) ->
+    class extends BaseClass
       @inheritProtected()
       # @implements QueryableCollectionMixinInterface
 
@@ -543,4 +543,4 @@ module.exports = (Module)->
             return Cursor.new null, []
 
 
-    ArangoForeignCollectionMixin.initializeMixin()
+      @initializeMixin()

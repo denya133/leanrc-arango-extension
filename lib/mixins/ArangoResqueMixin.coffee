@@ -26,8 +26,8 @@ module.exports = (Module)->
 
   ARANGO_SCRIPT = 'resque_executor'
 
-  Module.defineMixin Resque, (BaseClass) ->
-    class ArangoResqueMixin extends BaseClass
+  Module.defineMixin 'ArangoResqueMixin', (BaseClass = Resque) ->
+    class extends BaseClass
       @inheritProtected()
 
       @public fullQueueName: Function,
@@ -160,4 +160,4 @@ module.exports = (Module)->
             yield return queue.failed()
 
 
-    ArangoResqueMixin.initializeMixin()
+      @initializeMixin()
