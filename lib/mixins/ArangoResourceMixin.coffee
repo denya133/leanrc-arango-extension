@@ -3,7 +3,6 @@
 # TODO: в контексте надо зарезервировать transactionId, чтобы когда понадобтся - им можно было воспользоваться.
 
 
-semver        = require 'semver'
 {db, errors}  = require '@arangodb'
 queues        = require '@arangodb/foxx/queues'
 
@@ -23,29 +22,6 @@ module.exports = (Module)->
   Module.defineMixin 'ArangoResourceMixin', (BaseClass = Resource) ->
     class extends BaseClass
       @inheritProtected()
-
-      @initialHook 'checkDependencies'
-
-      @public checkDependencies: Function,
-        args: []
-        return: Array
-        default: (args...)->
-          if (dependencies = @Module.context().manifest.dependencies)?
-            for own dependencyName, dependencyDefinition of dependencies
-              do ({name, version, required}=dependencyDefinition)=>
-                required ?= no
-                if required
-                  voApp = @Module.context().dependencies[dependencyName]
-                  depModuleName = voApp.Module.name
-                  depModuleVersion = voApp.Module.context().manifest.version
-                  unless semver.satisfies depModuleVersion, version
-                    throw new Error "
-                      Dependent module #{depModuleName} not compatible.
-                      This module required version #{version} but #{depModuleName} version is #{depModuleVersion}.
-                    "
-                    return
-                return
-          return args
 
       @public getLocks: Function,
         args: []
