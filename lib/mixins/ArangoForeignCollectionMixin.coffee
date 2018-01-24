@@ -8,6 +8,7 @@
 # TODO: надо переадаптировать этот миксин в ...CollectionMixin чтобы за данными обращаться из коллекции сквозь прослойки аранги напрямую к работающему сервису.
 
 # TODO: !!!! Поначалу было опасно начинать этот миксин, т.к. можно было закопаться с вычислением локов (т.к. транзакция открывалась в switch классе), но после того, как открытие транзакции было перенесено в ресурс. можно за это не переживать. Т.е. можно при появлении свободного времени взяться за реализацию этого миксина
+semver        = require 'semver'
 
 
 module.exports = (Module)->
@@ -452,7 +453,15 @@ module.exports = (Module)->
         default: ({method, url, options})->
           @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>>>>>>> FOREIGN MAKE OR CREATE', LEVELS[DEBUG]
           t1 = Date.now()
+          {version} = @Module.context().manifest.dependencies[@dependencyName]
           foreignApp = @Module.context().dependencies[@dependencyName]
+          depModuleName = foreignApp.Module.name
+          depModuleVersion = foreignApp.Module.context().manifest.version
+          unless semver.satisfies depModuleVersion, version
+            throw new Error "
+              Dependent module #{depModuleName} not compatible.
+              This module required version #{version} but #{depModuleName} version is #{depModuleVersion}.
+            "
           @sendNotification SEND_TO_LOG, ">>>>>>>>>>>>>>>>>>>>>>>>> FOREIGN START after #{Date.now() - t1}", LEVELS[DEBUG]
           foreignSwitch = foreignApp.facade.retrieveMediator APPLICATION_SWITCH
           foreignRes = yield foreignSwitch.perform method, url, options
