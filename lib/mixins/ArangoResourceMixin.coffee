@@ -33,7 +33,7 @@ module.exports = (Module)->
               alResults.push name unless /migrations$/.test name
             alResults
           , []
-          write = vlCollectionNames
+          write = vlCollectionNames.concat ['_jobs']
           read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues', '_jobs']
           return {read, write}
 
