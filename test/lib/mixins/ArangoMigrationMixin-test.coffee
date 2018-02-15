@@ -10,6 +10,10 @@ ArangoExtension = require '../../..'
 
 
 describe 'ArangoMigrationMixin', ->
+  before ->
+    db._create 'test_migrations'
+  after ->
+    db._drop 'test_migrations'
   describe '.new', ->
     it 'should create migration instance', ->
       co ->
@@ -49,6 +53,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         collection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        collection.initializeNotifier 'TEST'
         migration = collection.build {}
         spyCreateCollection = sinon.spy migration, 'createCollection'
         yield migration.up()
@@ -80,6 +85,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         collection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        collection.initializeNotifier 'TEST'
         migration = collection.build {}
         spyCreateCollection = sinon.spy migration, 'createEdgeCollection'
         yield migration.up()
@@ -106,7 +112,7 @@ describe 'ArangoMigrationMixin', ->
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'TestRecord'
+              @type = 'Test::TestRecord'
         TestRecord.initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
@@ -136,10 +142,11 @@ describe 'ArangoMigrationMixin', ->
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoTestCollection.initialize()
-        facade.registerProxy ArangoTestCollection.new 'TestCollection',
-          delegate: TestRecord
+        # facade.registerProxy ArangoTestCollection.new 'TestCollection',
+        #   delegate: TestRecord
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        facade.registerProxy migrationsCollection
         migration1 = Migration1.new {}, migrationsCollection
         yield migration1.up()
         facade.registerProxy ArangoTestCollection.new 'TestCollection',
@@ -182,6 +189,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST'
         migration = BaseMigration.new {}, migrationsCollection
         spyAddIndex = sinon.spy migration, 'addIndex'
         yield migration.up()
@@ -228,6 +236,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoTestCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        facade.registerProxy migrationsCollection
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
         for doc in db._collection('test_tests').all().toArray()
@@ -264,6 +273,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         spyChangeCollection = sinon.spy migration, 'changeCollection'
         assert.propertyVal db._collection('test_tests').properties(), 'waitForSync', no
@@ -301,6 +311,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
         for doc in db._collection('test_tests').all().toArray()
@@ -336,6 +347,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
         for doc in db._collection('test_tests').all().toArray()
@@ -373,7 +385,8 @@ describe 'ArangoMigrationMixin', ->
     before ->
       db._createDocumentCollection 'test_tests'
     after ->
-      db._drop 'test_new_tests'
+      try db._drop 'test_tests'
+      try db._drop 'test_new_tests'
     it 'should apply step to rename collection', ->
       co ->
         class Test extends LeanRC
@@ -395,6 +408,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         spyRenameCollection = sinon.spy migration, 'renameCollection'
         assert.isNotNull db._collection 'test_tests'
@@ -433,6 +447,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
         assert.isNull db._collection 'test_tests'
@@ -463,6 +478,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
         assert.isNull db._collection 'test_tests_tests'
@@ -506,6 +522,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
         for doc in db._collection('test_tests').all().toArray()
@@ -541,6 +558,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         spyRemoveIndex = sinon.spy migration, 'removeIndex'
         indexes = db.test_tests.getIndexes()
@@ -583,6 +601,7 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         for doc in db._collection('test_tests').all().toArray()
           assert.property doc, 'createdAt'
