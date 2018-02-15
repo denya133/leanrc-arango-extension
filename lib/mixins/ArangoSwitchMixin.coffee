@@ -229,12 +229,15 @@ module.exports = (Module)->
       @public defineSwaggerEndpoint: Function,
         args: [Object, Object]
         return: NILL
-        default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag})->
+        default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options})->
           gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
           voGateway = @facade.retrieveProxy gatewayName
           unless voGateway?
             throw new Error "#{gatewayName} is absent in code"
           voSwaggerDefinition = voGateway.swaggerDefinitionFor action
+          ###
+          voSwaggerDefinition = voGateway.swaggerDefinitionFor resource, action, options.crud
+          ###
           unless voSwaggerDefinition?
             throw new Error "#{gatewayName}::#{action} is absent in code"
           {
@@ -248,7 +251,7 @@ module.exports = (Module)->
             title
             synopsis
             isDeprecated
-          } = voSwaggerDefinition
+          } = voSwaggerDefinition#options.swaggerDefinitions
           if resourceTag?
             aoSwaggerEndpoint.tag resourceTag
           if tags?.length
@@ -262,7 +265,9 @@ module.exports = (Module)->
           if payload?
             aoSwaggerEndpoint.body payload.schema, payload.mimes, payload.description
           responses?.forEach ({status, schema, mimes, description})->
+          # responses?.forEach (args)->
             aoSwaggerEndpoint.response status, schema, mimes, description
+            # aoSwaggerEndpoint.response args...
           errors?.forEach ({status, description})->
             aoSwaggerEndpoint.error status, description
           aoSwaggerEndpoint.summary title            if title?

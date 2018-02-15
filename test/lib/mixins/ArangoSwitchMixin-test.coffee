@@ -32,6 +32,7 @@ describe 'ArangoSwitchMixin', ->
         testSwitch = TestSwitch.new()
         assert.instanceOf testSwitch, TestSwitch
         yield return
+  ### TODO: Move to ArangoResourceMixin
   describe '#getLocks', ->
     before ->
       db._createDocumentCollection 'test_tests1'
@@ -61,6 +62,7 @@ describe 'ArangoSwitchMixin', ->
           read: [ 'test_tests1', 'test_tests2', 'test_tests3', 'test_tests4' ]
           write: [ 'test_tests1', 'test_tests2', 'test_tests3', 'test_tests4' ]
         yield return
+  ###
   describe '#del', ->
     it 'should alias to #delete', ->
       co ->
@@ -146,7 +148,7 @@ describe 'ArangoSwitchMixin', ->
           trigger.once 'end', resolve
         switchMediator.respond context
         data = yield endPromise
-        assert.equal data, '{"test":"test"}'
+        assert.deepEqual data, test: 'test'
         yield return
   describe '#sender', ->
     facade = null
