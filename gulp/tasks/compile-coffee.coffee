@@ -1,22 +1,24 @@
 # including plugins
 gulp    = require 'gulp'
+fs      = require 'fs-extra'
 coffee  = require 'gulp-coffee'
 { tests = [] }  = require '../../manifest.json'
 
+compileFiles = (originDir, destinationDir, mask = '**/*.coffee') ->
+  new Promise (resolve, reject) ->
+    opts = cwd: originDir
+    fs.ensureDirSync destinationDir
+    gulp.src mask, opts
+      .pipe coffee()
+      .pipe gulp.dest destinationDir
+      .on 'error', reject
+      .on 'end', resolve
+    return
+
 # task 'compile-coffee'
 gulp.task 'compile_coffee', ->
-  gulp.src './lib/**/*.coffee'
-  .pipe coffee()
-  .pipe gulp.dest './dist'
-  .on 'end', ->
-    # gulp.src './lib/migrations/*.coffee'
-    # .pipe coffee()
-    # .pipe gulp.dest './dist/migrations'
-    # .on 'end', ->
-    gulp.src './test/**/*.coffee'
-    .pipe coffee()
-    .pipe gulp.dest './dist/test'
-    .on 'end', ->
-      gulp.src './index.coffee'
-      .pipe coffee()
-      .pipe gulp.dest './'
+  Promise.resolve()
+    .then -> compileFiles './lib', './dist'
+    # .then -> compileFiles './lib/migrations', './dist/migrations'
+    .then -> compileFiles './test/lib', './dist/test/lib'
+    .then -> compileFiles './test/scripts', './dist/scripts'
