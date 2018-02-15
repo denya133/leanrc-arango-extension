@@ -900,7 +900,7 @@ describe 'ArangoContext', ->
         context.body = 'TEST'
         assert.equal context.status, 200
         assert.equal context.message, 'OK'
-        assert.equal context.response.get('Content-Type'), 'text/plain'
+        assert.equal context.response.get('Content-Type'), 'text/plain; charset=utf-8'
         assert.equal context.response.length, '4'
         context.body = null
         assert.equal context.status, 204
@@ -918,14 +918,14 @@ describe 'ArangoContext', ->
         context.body = '<html></html>'
         assert.equal context.status, 200
         assert.equal context.message, 'OK'
-        assert.equal context.response.get('Content-Type'), 'text/html'
+        assert.equal context.response.get('Content-Type'), 'text/html; charset=utf-8'
         assert.equal context.response.length, '13'
         context.body = null
         context.response._explicitStatus = no
         context.body = { test: 'TEST' }
         assert.equal context.status, 200
         assert.equal context.message, 'OK'
-        assert.equal context.response.get('Content-Type'), 'application/json'
+        assert.equal context.response.get('Content-Type'), 'application/json; charset=utf-8'
         assert.equal context.response.length, '15'
         yield return
   describe '#status', ->
@@ -1104,14 +1104,14 @@ describe 'ArangoContext', ->
         context = TestContext.new req, res, switchInstance
         assert.equal context.type, ''
         context.type = 'markdown'
-        assert.equal context.type, 'text/x-markdown'
-        assert.equal res.headers['content-type'], 'text/x-markdown'
+        assert.equal context.type, 'text/markdown'
+        assert.equal res.headers['content-type'], 'text/markdown; charset=utf-8'
         context.type = 'file.json'
         assert.equal context.type, 'application/json'
-        assert.equal res.headers['content-type'], 'application/json'
+        assert.equal res.headers['content-type'], 'application/json; charset=utf-8'
         context.type = 'text/html'
         assert.equal context.type, 'text/html'
-        assert.equal res.headers['content-type'], 'text/html'
+        assert.equal res.headers['content-type'], 'text/html; charset=utf-8'
         context.type = null
         assert.equal context.type, ''
         assert.isUndefined res.headers['content-type']
@@ -1555,7 +1555,11 @@ describe 'ArangoContext', ->
         assert.instanceOf err, Error
         assert.equal err.message, 'non-error thrown: TEST_ERROR'
         assert.equal err.status, 500
-        assert.equal data, 'Internal Server Error'
+        assert.deepEqual data,
+          error: yes
+          errorNum: 500
+          errorMessage: 'Internal Server Error'
+          code: 'Internal Server Error'
         context = TestContext.new req, res, switchInstance
         errorPromise = LeanRC::Promise.new (resolve) ->
           trigger.once 'error', resolve
@@ -1567,7 +1571,11 @@ describe 'ArangoContext', ->
         assert.instanceOf err, Error
         assert.equal err.message, 'TEST_ERROR'
         assert.equal err.status, 500
-        assert.equal data, 'Internal Server Error'
+        assert.deepEqual data,
+          error: yes
+          errorNum: 500
+          errorMessage: 'Internal Server Error'
+          code: 'Internal Server Error'
         context = TestContext.new req, res, switchInstance
         errorPromise = LeanRC::Promise.new (resolve) ->
           trigger.once 'error', resolve
@@ -1580,5 +1588,9 @@ describe 'ArangoContext', ->
         assert.isTrue err.expose
         assert.equal err.message, 'TEST_ERROR'
         assert.equal err.status, 400
-        assert.equal data, 'TEST_ERROR'
+        assert.deepEqual data,
+          error: yes
+          errorNum: 400
+          errorMessage: 'TEST_ERROR'
+          code: 'Bad Request'
         yield return

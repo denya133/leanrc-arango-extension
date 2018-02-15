@@ -23,6 +23,6 @@ describe 'ArangoConfigurationMixin', ->
         assert.propertyVal config, 'test2', 42.42
         assert.propertyVal config, 'test3', true
         assert.propertyVal config, 'test4', 42
-        assert.deepPropertyVal config, 'test5.test', 'test'
+        assert.deepPropertyVal config, 'test5', '{"test":"test"}'
         assert.propertyVal config, 'test6', 'testpassword'
         yield return

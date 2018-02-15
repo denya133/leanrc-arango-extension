@@ -403,14 +403,14 @@ describe 'ArangoResponse', ->
         response = Response.new context
         assert.equal response.type, ''
         response.type = 'markdown'
-        assert.equal response.type, 'text/x-markdown'
-        assert.equal res.headers['content-type'], 'text/x-markdown'
+        assert.equal response.type, 'text/markdown'
+        assert.equal res.headers['content-type'], 'text/markdown; charset=utf-8'
         response.type = 'file.json'
         assert.equal response.type, 'application/json'
-        assert.equal res.headers['content-type'], 'application/json'
+        assert.equal res.headers['content-type'], 'application/json; charset=utf-8'
         response.type = 'text/html'
         assert.equal response.type, 'text/html'
-        assert.equal res.headers['content-type'], 'text/html'
+        assert.equal res.headers['content-type'], 'text/html; charset=utf-8'
         response.type = null
         assert.equal response.type, ''
         assert.isUndefined res.headers['content-type']
@@ -540,7 +540,7 @@ describe 'ArangoResponse', ->
         response.body = 'TEST'
         assert.equal response.status, 200
         assert.equal response.message, 'OK'
-        assert.equal response.get('Content-Type'), 'text/plain'
+        assert.equal response.get('Content-Type'), 'text/plain; charset=utf-8'
         assert.equal response.length, 4
         response.body = null
         assert.equal response.status, 204
@@ -558,14 +558,14 @@ describe 'ArangoResponse', ->
         response.body = '<html></html>'
         assert.equal response.status, 200
         assert.equal response.message, 'OK'
-        assert.equal response.get('Content-Type'), 'text/html'
+        assert.equal response.get('Content-Type'), 'text/html; charset=utf-8'
         assert.equal response.length, 13
         response.body = null
         response._explicitStatus = no
         response.body = { test: 'TEST' }
         assert.equal response.status, 200
         assert.equal response.message, 'OK'
-        assert.equal response.get('Content-Type'), 'application/json'
+        assert.equal response.get('Content-Type'), 'application/json; charset=utf-8'
         assert.equal response.length, 15
         yield return
   describe '#length', ->
