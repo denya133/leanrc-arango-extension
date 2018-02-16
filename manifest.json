@@ -10,7 +10,7 @@
     "arangodb": "^3.2.9"
   },
 
-  "main": "index.js",
+  "main": "app/index.js",
   "defaultDocument": "index.html",
 
   "contributors": [

@@ -19,6 +19,7 @@ compileFiles = (originDir, destinationDir, mask = '**/*.coffee') ->
 gulp.task 'compile_coffee', ->
   Promise.resolve()
     .then -> compileFiles './lib', './dist'
+    .then -> compileFiles './test/integrational', './dist/app'
     # .then -> compileFiles './lib/migrations', './dist/migrations'
     .then -> compileFiles './test/lib', './dist/test/lib'
     .then -> compileFiles './test/scripts', './dist/scripts'
