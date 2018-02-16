@@ -6,6 +6,7 @@ module.exports = (Module) ->
     RESQUE
     APPLICATION_RENDERER
     APPLICATION_ROUTER
+    APPLICATION_GATEWAY
     USERS
     SPACES
     SESSIONS
@@ -79,10 +80,13 @@ module.exports = (Module) ->
           serializer: ApplicationSerializer
 
         @facade.registerProxy ApplicationRouter.new APPLICATION_ROUTER
+        ###
 
         unless voApplication.isLightweight
-          @facade.registerProxy MainRenderer.new APPLICATION_RENDERER
+          @facade.registerProxy ApplicationGateway.new APPLICATION_GATEWAY
+          # @facade.registerProxy MainRenderer.new APPLICATION_RENDERER
 
+        ###
           # trackering
           @facade.registerProxy ApplicationGateway.new 'TrackeringClientsGateway',
             entityName: 'client'

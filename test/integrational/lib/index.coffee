@@ -11,6 +11,8 @@ class Test extends LeanRC
 
   require('./ApplicationRouter') @Module
 
+  require('./proxies/ApplicationGateway') @Module
+
   require('./commands/PrepareControllerCommand') @Module
   require('./commands/PrepareViewCommand') @Module
   require('./commands/PrepareModelCommand') @Module
