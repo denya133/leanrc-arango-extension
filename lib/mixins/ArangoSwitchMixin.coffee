@@ -37,6 +37,7 @@ module.exports = (Module)->
     ANY
     NILL
     LAMBDA
+    APPLICATION_GATEWAY
 
     Switch
     ArangoContext
@@ -230,16 +231,17 @@ module.exports = (Module)->
         args: [Object, Object]
         return: NILL
         default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options})->
-          gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
-          voGateway = @facade.retrieveProxy gatewayName
+          # gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
+          # voGateway = @facade.retrieveProxy gatewayName
+          voGateway = @facade.retrieveProxy APPLICATION_GATEWAY
           unless voGateway?
-            throw new Error "#{gatewayName} is absent in code"
-          voSwaggerDefinition = voGateway.swaggerDefinitionFor action
-          ###
-          voSwaggerDefinition = voGateway.swaggerDefinitionFor resource, action, options.crud
-          ###
+            # throw new Error "#{gatewayName} is absent in code"
+            throw new Error "#{APPLICATION_GATEWAY} is absent in code"
+          # voSwaggerDefinition = voGateway.swaggerDefinitionFor action
+          voSwaggerDefinition = voGateway.swaggerDefinitionFor resource, action
           unless voSwaggerDefinition?
-            throw new Error "#{gatewayName}::#{action} is absent in code"
+            # throw new Error "#{gatewayName}::#{action} is absent in code"
+            throw new Error "Endpoint for #{resource}##{action} is absent in code"
           {
             tags
             headers
@@ -251,7 +253,7 @@ module.exports = (Module)->
             title
             synopsis
             isDeprecated
-          } = voSwaggerDefinition#options.swaggerDefinitions
+          } = voSwaggerDefinition
           if resourceTag?
             aoSwaggerEndpoint.tag resourceTag
           if tags?.length
