@@ -7,6 +7,8 @@ ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 Queues = require '@arangodb/foxx/queues'
 
+PREFIX = module.context.collectionPrefix
+
 
 describe 'ArangoResqueMixin', ->
   describe '.new', ->
@@ -39,10 +41,10 @@ describe 'ArangoResqueMixin', ->
           @module Test
         TestResque.initialize()
         resque = TestResque.new 'TEST_ARANGO_RESQUE_MIXIN'
-        assert.equal resque.fullQueueName('TEST_QUEUE'), 'test__test_queue'
+        assert.equal resque.fullQueueName('TEST_QUEUE'), "#{PREFIX}_test_queue"
         yield return
   describe '#ensureQueue', ->
-    after -> Queues.delete 'test__test_queue'
+    after -> Queues.delete "#{PREFIX}_test_queue"
     it 'should create queue config', ->
       co ->
         class Test extends LeanRC
@@ -59,14 +61,14 @@ describe 'ArangoResqueMixin', ->
         resque.onRegister()
         { name, concurrency } = yield resque.ensureQueue 'TEST_QUEUE', 5
         queue = Queues.get name
-        assert.propertyVal queue, 'name', 'test__test_queue'
+        assert.propertyVal queue, 'name', "#{PREFIX}_test_queue"
         data = db._queues.document queue.name
         assert.propertyVal data, 'maxWorkers', 5
         yield return
   describe '#getQueue', ->
     after ->
       Queues.delete 'default'
-      Queues.delete 'test__test_queue'
+      Queues.delete "#{PREFIX}_test_queue"
     it 'should get queue', ->
       co ->
         class Test extends LeanRC
@@ -83,13 +85,13 @@ describe 'ArangoResqueMixin', ->
         resque.onRegister()
         resque.ensureQueue 'TEST_QUEUE', 5
         queue = yield resque.getQueue 'TEST_QUEUE'
-        assert.propertyVal queue, 'name', 'test__test_queue'
+        assert.propertyVal queue, 'name', "#{PREFIX}_test_queue"
         assert.propertyVal queue, 'concurrency', 5
         yield return
   describe '#removeQueue', ->
     after ->
       Queues.delete 'default'
-      Queues.delete 'test__test_queue'
+      Queues.delete "#{PREFIX}_test_queue"
     it 'should remove queue', ->
       co ->
         class Test extends LeanRC
@@ -114,12 +116,12 @@ describe 'ArangoResqueMixin', ->
   describe '#allQueues', ->
     after ->
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
-      Queues.delete 'test__test_queue_2'
-      Queues.delete 'test__test_queue_3'
-      Queues.delete 'test__test_queue_4'
-      Queues.delete 'test__test_queue_5'
-      Queues.delete 'test__test_queue_6'
+      Queues.delete "#{PREFIX}_test_queue_1"
+      Queues.delete "#{PREFIX}_test_queue_2"
+      Queues.delete "#{PREFIX}_test_queue_3"
+      Queues.delete "#{PREFIX}_test_queue_4"
+      Queues.delete "#{PREFIX}_test_queue_5"
+      Queues.delete "#{PREFIX}_test_queue_6"
     it 'should get all queues', ->
       co ->
         class Test extends LeanRC
@@ -141,18 +143,32 @@ describe 'ArangoResqueMixin', ->
         resque.ensureQueue 'TEST_QUEUE_5', 5
         resque.ensureQueue 'TEST_QUEUE_6', 6
         queues = yield resque.allQueues()
+        console.log 'QUEUES (all):', JSON.stringify queues
+        console.log 'QUEUES:', JSON.stringify [
+          name: "#{PREFIX}_test_queue_1", concurrency: 1
+        ,
+          name: "#{PREFIX}_test_queue_2", concurrency: 2
+        ,
+          name: "#{PREFIX}_test_queue_3", concurrency: 3
+        ,
+          name: "#{PREFIX}_test_queue_4", concurrency: 4
+        ,
+          name: "#{PREFIX}_test_queue_5", concurrency: 5
+        ,
+          name: "#{PREFIX}_test_queue_6", concurrency: 6
+        ]
         assert.includeDeepMembers queues, [
-          name: 'test__test_queue_1', concurrency: 1
+          name: "#{PREFIX}_test_queue_1", concurrency: 1
         ,
-          name: 'test__test_queue_2', concurrency: 2
+          name: "#{PREFIX}_test_queue_2", concurrency: 2
         ,
-          name: 'test__test_queue_3', concurrency: 3
+          name: "#{PREFIX}_test_queue_3", concurrency: 3
         ,
-          name: 'test__test_queue_4', concurrency: 4
+          name: "#{PREFIX}_test_queue_4", concurrency: 4
         ,
-          name: 'test__test_queue_5', concurrency: 5
+          name: "#{PREFIX}_test_queue_5", concurrency: 5
         ,
-          name: 'test__test_queue_6', concurrency: 6
+          name: "#{PREFIX}_test_queue_6", concurrency: 6
         ]
         yield return
   describe '#pushJob', ->
@@ -160,7 +176,7 @@ describe 'ArangoResqueMixin', ->
     after ->
       db._jobs.remove jobId  if jobId?
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
+      Queues.delete "#{PREFIX}_test_queue_1"
     it 'should save new job', ->
       co ->
         class Test extends LeanRC
@@ -184,7 +200,7 @@ describe 'ArangoResqueMixin', ->
           _key: jobId.replace /^_jobs\//, ''
           _id: jobId
           status: 'pending'
-          queue: 'test__test_queue_1'
+          queue: "#{PREFIX}_test_queue_1"
           runs: 0
           delayUntil: DATE.getTime()
           maxFailures: 0
@@ -200,7 +216,7 @@ describe 'ArangoResqueMixin', ->
     after ->
       db._jobs.remove jobId  if jobId?
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
+      Queues.delete "#{PREFIX}_test_queue_1"
     it 'should get saved job', ->
       co ->
         class Test extends LeanRC
@@ -224,7 +240,7 @@ describe 'ArangoResqueMixin', ->
           _key: jobId.replace /^_jobs\//, ''
           _id: jobId
           status: 'pending'
-          queue: 'test__test_queue_1'
+          queue: "#{PREFIX}_test_queue_1"
           runs: 0
           delayUntil: DATE.getTime()
           maxFailures: 0
@@ -241,7 +257,7 @@ describe 'ArangoResqueMixin', ->
       if jobId? and (try db._jobs.document jobId)
         db._jobs.remove jobId
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
+      Queues.delete "#{PREFIX}_test_queue_1"
     it 'should remove saved job', ->
       co ->
         class Test extends LeanRC
@@ -265,7 +281,7 @@ describe 'ArangoResqueMixin', ->
           _key: jobId.replace /^_jobs\//, ''
           _id: jobId
           status: 'pending'
-          queue: 'test__test_queue_1'
+          queue: "#{PREFIX}_test_queue_1"
           runs: 0
           delayUntil: DATE.getTime()
           maxFailures: 0
@@ -284,7 +300,7 @@ describe 'ArangoResqueMixin', ->
       if jobId? and (try db._jobs.document jobId)
         db._jobs.remove jobId
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
+      Queues.delete "#{PREFIX}_test_queue_1"
     it 'should discard job', ->
       co ->
         class Test extends LeanRC
@@ -308,7 +324,7 @@ describe 'ArangoResqueMixin', ->
           _key: jobId.replace /^_jobs\//, ''
           _id: jobId
           status: 'pending'
-          queue: 'test__test_queue_1'
+          queue: "#{PREFIX}_test_queue_1"
           runs: 0
           delayUntil: DATE.getTime()
           maxFailures: 0
@@ -324,7 +340,7 @@ describe 'ArangoResqueMixin', ->
           _key: jobId.replace /^_jobs\//, ''
           _id: jobId
           status: 'failed'
-          queue: 'test__test_queue_1'
+          queue: "#{PREFIX}_test_queue_1"
           runs: 0
           delayUntil: DATE.getTime()
           maxFailures: 0
@@ -344,8 +360,8 @@ describe 'ArangoResqueMixin', ->
         if id? and (try db._jobs.document id)
           db._jobs.remove id
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
-      Queues.delete 'test__test_queue_2'
+      Queues.delete "#{PREFIX}_test_queue_1"
+      Queues.delete "#{PREFIX}_test_queue_2"
     it 'should list all jobs', ->
       co ->
         class Test extends LeanRC
@@ -383,8 +399,8 @@ describe 'ArangoResqueMixin', ->
         if id? and (try db._jobs.document id)
           db._jobs.remove id
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
-      Queues.delete 'test__test_queue_2'
+      Queues.delete "#{PREFIX}_test_queue_1"
+      Queues.delete "#{PREFIX}_test_queue_2"
     it 'should list pending jobs', ->
       co ->
         class Test extends LeanRC
@@ -421,8 +437,8 @@ describe 'ArangoResqueMixin', ->
         if id? and (try db._jobs.document id)
           db._jobs.remove id
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
-      Queues.delete 'test__test_queue_2'
+      Queues.delete "#{PREFIX}_test_queue_1"
+      Queues.delete "#{PREFIX}_test_queue_2"
     it 'should list runnning jobs', ->
       co ->
         class Test extends LeanRC
@@ -459,8 +475,8 @@ describe 'ArangoResqueMixin', ->
         if id? and (try db._jobs.document id)
           db._jobs.remove id
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
-      Queues.delete 'test__test_queue_2'
+      Queues.delete "#{PREFIX}_test_queue_1"
+      Queues.delete "#{PREFIX}_test_queue_2"
     it 'should list complete jobs', ->
       co ->
         class Test extends LeanRC
@@ -497,8 +513,8 @@ describe 'ArangoResqueMixin', ->
         if id? and (try db._jobs.document id)
           db._jobs.remove id
       Queues.delete 'default'
-      Queues.delete 'test__test_queue_1'
-      Queues.delete 'test__test_queue_2'
+      Queues.delete "#{PREFIX}_test_queue_1"
+      Queues.delete "#{PREFIX}_test_queue_2"
     it 'should list failed jobs', ->
       co ->
         class Test extends LeanRC

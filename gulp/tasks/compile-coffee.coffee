@@ -2,7 +2,7 @@
 gulp    = require 'gulp'
 fs      = require 'fs-extra'
 coffee  = require 'gulp-coffee'
-{ tests = [] }  = require '../../manifest.json'
+# { tests = [] }  = require '../../manifest.json'
 
 compileFiles = (originDir, destinationDir, mask = '**/*.coffee') ->
   new Promise (resolve, reject) ->

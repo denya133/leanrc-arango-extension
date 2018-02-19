@@ -6,12 +6,35 @@ ArangoExtensionMixin = require '../..'
 class Test extends LeanRC
   @inheritProtected()
   @include ArangoExtensionMixin
+  @include LeanRC::SchemaModuleMixin
+  @include LeanRC::TemplatableModuleMixin
 
   @root __dirname
 
+  require('./serializers/ApplicationSerializer') @Module
+  # require('./serializers/HttpSerializer') @Module
+
+  require('./migrations/BaseMigration') @Module
+  @loadMigrations()
+
+  require('./resources/ItselfResource') @Module
+
   require('./ApplicationRouter') @Module
 
+  @loadTemplates()
+
+  require('./mediators/ResqueExecutor') @Module
+  require('./mediators/MainSwitch') @Module
+  require('./mediators/LoggerModuleMediator') @Module
+  require('./mediators/ShellJunctionMediator') @Module
+  require('./mediators/ApplicationMediator') @Module
+
+  require('./proxies/MainConfiguration') @Module
+  require('./proxies/MainCollection') @Module
+  require('./proxies/MainResque') @Module
+  require('./proxies/MigrationsCollection') @Module
   require('./proxies/ApplicationGateway') @Module
+  require('./proxies/MainRenderer') @Module
 
   require('./commands/PrepareControllerCommand') @Module
   require('./commands/PrepareViewCommand') @Module

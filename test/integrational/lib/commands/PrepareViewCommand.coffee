@@ -28,7 +28,7 @@ module.exports = (Module) ->
     @public execute: Function,
       default: (aoNotification)->
         voApplication = aoNotification.getBody()
-        ###
+
         @facade.registerMediator LoggerModuleMediator.new()
         @facade.registerMediator ShellJunctionMediator.new()
 
@@ -36,7 +36,6 @@ module.exports = (Module) ->
         unless voApplication.isLightweight
           @facade.registerMediator MainSwitch.new APPLICATION_SWITCH
           @facade.registerMediator ResqueExecutor.new RESQUE_EXECUTOR
-        ###
 
         # other = OtherServiceApplication.new()
         # @sendNotification CONNECT_MODULE_TO_LOGGER, other

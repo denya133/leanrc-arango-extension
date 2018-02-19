@@ -10,8 +10,8 @@ module.exports = (Module)->
     @module Module
 
     @map ->
-      @get '/static/*',     to: 'itself#static'
-      @get '/info',         to: 'itself#info'
+      @get '/static/*',     to: 'itself#static',  recordName: null
+      @get '/info',         to: 'itself#info',    recordName: null
       @namespace 'version', module: '', prefix: ':v', ->
         ###
         @namespace 'modeling',

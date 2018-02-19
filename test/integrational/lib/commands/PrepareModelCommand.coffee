@@ -23,7 +23,7 @@ module.exports = (Module) ->
     GridHttpCollection
     MainCollection
     ModelingGateway
-    ApplicationGateway
+    Gateway
     StatisticsGateway
     BaseMigration
     MainRenderer
@@ -37,13 +37,14 @@ module.exports = (Module) ->
     @public execute: Function,
       default: (aoNotification)->
         voApplication = aoNotification.getBody()
-        ###
+
         @facade.registerProxy MainConfiguration.new CONFIGURATION, @Module::ROOT
         @facade.registerProxy MainResque.new RESQUE
         @facade.registerProxy MigrationsCollection.new MIGRATIONS,
           delegate: BaseMigration
           serializer: ApplicationSerializer
 
+        ###
         @facade.registerProxy AuthForeignCollection.new USERS,
           delegate: Module::UserRecord
           serializer: HttpSerializer
@@ -79,12 +80,12 @@ module.exports = (Module) ->
           delegate: Module::PeriodUploadRecord
           serializer: ApplicationSerializer
 
-        @facade.registerProxy ApplicationRouter.new APPLICATION_ROUTER
         ###
+        @facade.registerProxy ApplicationRouter.new APPLICATION_ROUTER
 
         unless voApplication.isLightweight
-          @facade.registerProxy ApplicationGateway.new APPLICATION_GATEWAY
-          # @facade.registerProxy MainRenderer.new APPLICATION_RENDERER
+          @facade.registerProxy Gateway.new APPLICATION_GATEWAY
+          @facade.registerProxy MainRenderer.new APPLICATION_RENDERER
 
         ###
           # trackering

@@ -10,13 +10,15 @@ LeanRC = require 'LeanRC'
 ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 
+PREFIX = module.context.collectionPrefix
+
 
 describe 'ArangoSwitchMixin', ->
   describe '.new', ->
     before ->
-      db._createDocumentCollection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should create switch instance', ->
       co ->
         class Test extends LeanRC

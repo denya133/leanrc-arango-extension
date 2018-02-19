@@ -18,7 +18,9 @@ server = commonServerInitializer fixture: 'ArangoCollectionMixin'
 
 ARANGODB_DUPLICATE_NAME = 1207
 
-COL_NAME = 'test_samples'
+PREFIX = module.context.collectionPrefix
+
+COL_NAME = "#{PREFIX}samples"
 
 describe 'ArangoCollectionMixin', ->
   before ->
@@ -1076,9 +1078,9 @@ describe 'ArangoCollectionMixin', ->
         yield return
   describe '#takeAll', ->
     before ->
-      db._create 'test_items'
+      db._create "#{PREFIX}items"
     after ->
-      db._drop 'test_items'
+      db._drop "#{PREFIX}items"
     it 'should get all data items from collection', ->
       co ->
         KEY = 'FACADE_TEST_ARANGO_COLLECTION_006'
@@ -1256,9 +1258,9 @@ describe 'ArangoCollectionMixin', ->
         yield return
   describe '#length', ->
     before ->
-      db._create 'test_items'
+      db._create "#{PREFIX}items"
     after ->
-      db._drop 'test_items'
+      db._drop "#{PREFIX}items"
     it 'should count items in the collection', ->
       co ->
         KEY = 'FACADE_TEST_ARANGO_COLLECTION_010'

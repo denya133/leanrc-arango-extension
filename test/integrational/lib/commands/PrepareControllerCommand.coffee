@@ -170,8 +170,10 @@ module.exports = (Module) ->
           'ReportsResource'
           Module::ReportsResource
         )
+        ###
 
         @facade.registerCommand 'ItselfResource', Module::ItselfResource
+        ###
         @facade.registerCommand(
           'SharingPermitablesResource'
           Module::SharingPermitablesResource
