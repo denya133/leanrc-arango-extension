@@ -231,18 +231,12 @@ module.exports = (Module)->
         args: [Object, Object]
         return: NILL
         default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options, keyName, entityName, recordName})->
-          # gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
-          # voGateway = @facade.retrieveProxy gatewayName
           voGateway = @facade.retrieveProxy APPLICATION_GATEWAY
           unless voGateway?
-            # throw new Error "#{gatewayName} is absent in code"
             throw new Error "#{APPLICATION_GATEWAY} is absent in code"
-          # voSwaggerDefinition = voGateway.swaggerDefinitionFor action
-          console.log 'ENDPOINT (input):', resource, action, { keyName, entityName, recordName }
           voSwaggerDefinition = voGateway.swaggerDefinitionFor resource, action, {
             keyName, entityName, recordName
           }
-          console.log 'ENDPOINT (output):', voSwaggerDefinition
           unless voSwaggerDefinition?
             # throw new Error "#{gatewayName}::#{action} is absent in code"
             throw new Error "Endpoint for #{resource}##{action} is absent in code"

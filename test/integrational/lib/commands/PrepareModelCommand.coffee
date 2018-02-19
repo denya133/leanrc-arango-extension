@@ -23,7 +23,7 @@ module.exports = (Module) ->
     GridHttpCollection
     MainCollection
     ModelingGateway
-    Gateway
+    ApplicationGateway
     StatisticsGateway
     BaseMigration
     MainRenderer
@@ -84,7 +84,7 @@ module.exports = (Module) ->
         @facade.registerProxy ApplicationRouter.new APPLICATION_ROUTER
 
         unless voApplication.isLightweight
-          @facade.registerProxy Gateway.new APPLICATION_GATEWAY
+          @facade.registerProxy ApplicationGateway.new APPLICATION_GATEWAY
           @facade.registerProxy MainRenderer.new APPLICATION_RENDERER
 
         ###

@@ -143,20 +143,6 @@ describe 'ArangoResqueMixin', ->
         resque.ensureQueue 'TEST_QUEUE_5', 5
         resque.ensureQueue 'TEST_QUEUE_6', 6
         queues = yield resque.allQueues()
-        console.log 'QUEUES (all):', JSON.stringify queues
-        console.log 'QUEUES:', JSON.stringify [
-          name: "#{PREFIX}_test_queue_1", concurrency: 1
-        ,
-          name: "#{PREFIX}_test_queue_2", concurrency: 2
-        ,
-          name: "#{PREFIX}_test_queue_3", concurrency: 3
-        ,
-          name: "#{PREFIX}_test_queue_4", concurrency: 4
-        ,
-          name: "#{PREFIX}_test_queue_5", concurrency: 5
-        ,
-          name: "#{PREFIX}_test_queue_6", concurrency: 6
-        ]
         assert.includeDeepMembers queues, [
           name: "#{PREFIX}_test_queue_1", concurrency: 1
         ,
