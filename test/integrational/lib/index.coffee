@@ -11,11 +11,23 @@ class Test extends LeanRC
 
   @root __dirname
 
+  require('./transforms/TimestampsArrayTransform') @Module
+
+  require('./mixins/GetPermitablesMixin') @Module
+  require('./mixins/ExtendReportFromClientsMixin') @Module
+
   require('./serializers/ApplicationSerializer') @Module
   # require('./serializers/HttpSerializer') @Module
 
+  require('./records/ReportRecord') @Module
+  require('./records/LoggedReportRecord') @Module
+
   require('./migrations/BaseMigration') @Module
   @loadMigrations()
+
+  prefix = './resources/sharing/'
+  require("#{prefix}SharingPermitablesResource") @Module
+  require("#{prefix}SharingLoggedReportsResource") @Module
 
   require('./resources/ItselfResource') @Module
 

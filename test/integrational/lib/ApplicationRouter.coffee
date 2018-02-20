@@ -13,6 +13,20 @@ module.exports = (Module)->
       @get '/static/*',     to: 'itself#static',  recordName: null
       @get '/info',         to: 'itself#info',    recordName: null
       @namespace 'version', module: '', prefix: ':v', ->
+        @namespace 'sharing',
+          # module: 'sharing'
+          prefix: 'sharing/:space'
+          templates: 'modeling'
+          tag: 'sharing'
+        , ->
+          @resource 'permitables', only: ['list'], above:
+            recordName: null
+          @resource 'logged_reports',   only: ['list', 'detail'], above:
+            permitable: ['list', 'detail', 'remove']
+            accessible: []
+            chargeable: []
+          , ->
+            @put 'remove', at: 'member'
         ###
         @namespace 'modeling',
           module: ''
