@@ -3,12 +3,12 @@
 module.exports = (Module)->
   {
     Gateway
-    # CrudGatewayMixin
+    NamespacedGatewayMixin
   } = Module::
 
   class ApplicationGateway extends Gateway
     @inheritProtected()
-    # @include CrudGatewayMixin
+    @include NamespacedGatewayMixin
     @module Module
 
 

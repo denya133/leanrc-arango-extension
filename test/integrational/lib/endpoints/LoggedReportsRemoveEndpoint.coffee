@@ -10,7 +10,7 @@ module.exports = (Module)->
   UNAUTHORIZED      = statuses 'unauthorized'
   UPGRADE_REQUIRED  = statuses 'upgrade required'
 
-  class SharingLoggedReportsRemoveEndpoint extends Endpoint
+  class LoggedReportsRemoveEndpoint extends Endpoint
     @inheritProtected()
     @include CrudEndpointMixin
     @module Module
@@ -41,5 +41,4 @@ module.exports = (Module)->
           An #{@itemEntityName} will been RemovedReport type
         "
 
-
-  SharingLoggedReportsRemoveEndpoint.initialize()
+    @initialize()

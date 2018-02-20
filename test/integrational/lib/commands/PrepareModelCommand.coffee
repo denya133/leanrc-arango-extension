@@ -79,8 +79,8 @@ module.exports = (Module) ->
         @facade.registerProxy MainCollection.new 'PeriodUploadsCollection',
           delegate: Module::PeriodUploadRecord
           serializer: ApplicationSerializer
-
         ###
+        
         @facade.registerProxy ApplicationRouter.new APPLICATION_ROUTER
 
         unless voApplication.isLightweight

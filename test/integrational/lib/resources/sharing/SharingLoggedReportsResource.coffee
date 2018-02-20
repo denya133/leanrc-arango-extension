@@ -159,5 +159,4 @@ module.exports = (Module)->
         ]
         write: ['auth_sessions']
 
-
-  SharingLoggedReportsResource.initialize()
+    @initialize()
