@@ -13,6 +13,14 @@ module.exports = (Module)->
       @get '/static/*',     to: 'itself#static',  recordName: null
       @get '/info',         to: 'itself#info',    recordName: null
       @namespace 'version', module: '', prefix: ':v', ->
+        @namespace 'modeling',
+          # module: ''
+          prefix: 'modeling'
+          templates: 'modeling'
+          tag: 'modeling'
+        , ->
+          @resource 'clients', ->
+            @post 'query', at: 'collection'
         @namespace 'sharing',
           # module: 'sharing'
           prefix: 'sharing/:space'

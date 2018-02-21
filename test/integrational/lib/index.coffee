@@ -21,9 +21,13 @@ class Test extends LeanRC
 
   require('./records/ReportRecord') @Module
   require('./records/LoggedReportRecord') @Module
+  require('./records/ClientRecord') @Module
 
   require('./migrations/BaseMigration') @Module
   @loadMigrations()
+
+  prefix = './resources/modeling/'
+  require("#{prefix}ClientsResource") @Module
 
   prefix = './resources/sharing/'
   require("#{prefix}SharingPermitablesResource") @Module

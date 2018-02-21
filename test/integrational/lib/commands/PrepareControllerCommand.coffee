@@ -125,11 +125,13 @@ module.exports = (Module) ->
           'AdminingStatisticsResource'
           Module::AdminingStatisticsResource
         )
+        ###
 
         @facade.registerCommand(
-          'ClientsResource'
+          'ModelingClientsResource'
           Module::ClientsResource
         )
+        ###
         @facade.registerCommand(
           'LabelsResource'
           Module::LabelsResource
