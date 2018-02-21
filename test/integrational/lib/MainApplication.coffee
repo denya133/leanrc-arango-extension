@@ -28,7 +28,6 @@ module.exports = (Module) ->
       default: (args...)->
         @super args...
         @setLogLevelMethod LogMessage.DEBUG
-        console.log 'STARTED'
         return
 
 
