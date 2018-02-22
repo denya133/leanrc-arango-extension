@@ -8,8 +8,14 @@ LeanRC = require 'LeanRC'
 ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 
+PREFIX = module.context.collectionPrefix
+
 
 describe 'ArangoMigrationMixin', ->
+  # before ->
+  #   db._create "#{PREFIX}migrations"
+  after ->
+    db._truncate "#{PREFIX}migrations"
   describe '.new', ->
     it 'should create migration instance', ->
       co ->
@@ -27,7 +33,7 @@ describe 'ArangoMigrationMixin', ->
         yield return
   describe '#createCollection', ->
     after ->
-      db._drop 'test_TestCollection'
+      db._drop "#{PREFIX}TestCollection"
     it 'should apply step for create collection', ->
       co ->
         class Test extends LeanRC
@@ -49,6 +55,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         collection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        collection.initializeNotifier 'TEST'
         migration = collection.build {}
         spyCreateCollection = sinon.spy migration, 'createCollection'
         yield migration.up()
@@ -58,7 +65,7 @@ describe 'ArangoMigrationMixin', ->
         yield return
   describe '#createEdgeCollection', ->
     after ->
-      db._drop 'test_TestCollection1_TestCollection2'
+      db._drop "#{PREFIX}TestCollection1_TestCollection2"
     it 'should apply step for create edge collection', ->
       co ->
         class Test extends LeanRC
@@ -80,6 +87,7 @@ describe 'ArangoMigrationMixin', ->
         BaseMigration.initialize()
         collection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        collection.initializeNotifier 'TEST'
         migration = collection.build {}
         spyCreateCollection = sinon.spy migration, 'createEdgeCollection'
         yield migration.up()
@@ -89,7 +97,7 @@ describe 'ArangoMigrationMixin', ->
         yield return
   describe '#addField', ->
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to add field in record at collection', ->
       co ->
         KEY = 'TEST_ARANGO_MIGRATION_MIXIN_001'
@@ -106,7 +114,7 @@ describe 'ArangoMigrationMixin', ->
           @public init: Function,
             default: ->
               @super arguments...
-              @type = 'TestRecord'
+              @type = 'Test::TestRecord'
         TestRecord.initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
@@ -136,10 +144,11 @@ describe 'ArangoMigrationMixin', ->
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoTestCollection.initialize()
-        facade.registerProxy ArangoTestCollection.new 'TestCollection',
-          delegate: TestRecord
+        # facade.registerProxy ArangoTestCollection.new 'TestCollection',
+        #   delegate: TestRecord
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        facade.registerProxy migrationsCollection
         migration1 = Migration1.new {}, migrationsCollection
         yield migration1.up()
         facade.registerProxy ArangoTestCollection.new 'TestCollection',
@@ -151,14 +160,14 @@ describe 'ArangoMigrationMixin', ->
         yield collection.create id: 3
         migration2 = Migration2.new {}, migrationsCollection
         yield migration2.up()
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.propertyVal doc, 'test', 'Test1'
         yield return
   describe '#addIndex', ->
     before ->
-      db._createDocumentCollection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to add index in collection', ->
       co ->
         class Test extends LeanRC
@@ -182,23 +191,24 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST'
         migration = BaseMigration.new {}, migrationsCollection
         spyAddIndex = sinon.spy migration, 'addIndex'
         yield migration.up()
         assert.isTrue spyAddIndex.calledWith 'tests', fields, options
-        indexes = db.test_tests.getIndexes()
+        indexes = db["#{PREFIX}tests"].getIndexes()
         assert.isTrue indexes.some ({ type, fields, unique, sparse }) ->
           type is 'hash' and 'test' in fields and unique and sparse
         yield return
   describe '#addTimestamps', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       collection.save {}
       collection.save {}
       collection.save {}
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to add timesteps in collection', ->
       co ->
         KEY = 'TEST_ARANGO_MIGRATION_MIXIN_002'
@@ -228,19 +238,20 @@ describe 'ArangoMigrationMixin', ->
         ArangoTestCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        facade.registerProxy migrationsCollection
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.property doc, 'createdAt'
           assert.property doc, 'updatedAt'
           assert.property doc, 'updatedAt'
         yield return
   describe '#changeCollection', ->
     before ->
-      db._createDocumentCollection 'test_tests',
+      db._createDocumentCollection "#{PREFIX}tests",
         waitForSync: no
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to change collection', ->
       co ->
         class Test extends LeanRC
@@ -264,22 +275,23 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         spyChangeCollection = sinon.spy migration, 'changeCollection'
-        assert.propertyVal db._collection('test_tests').properties(), 'waitForSync', no
+        assert.propertyVal db._collection("#{PREFIX}tests").properties(), 'waitForSync', no
         yield migration.up()
         assert.isTrue spyChangeCollection.calledWith 'tests', options
-        assert.propertyVal db._collection('test_tests').properties(), 'waitForSync', yes
+        assert.propertyVal db._collection("#{PREFIX}tests").properties(), 'waitForSync', yes
         yield return
   describe '#changeField', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       collection.save test: '42'
       collection.save test: '42'
       collection.save test: '42'
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to change field in collection', ->
       co ->
         class Test extends LeanRC
@@ -301,20 +313,21 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.propertyVal doc, 'test', 42
         yield return
   describe '#renameField', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       collection.save test: '42'
       collection.save test: '42'
       collection.save test: '42'
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to rename field in collection', ->
       co ->
         class Test extends LeanRC
@@ -336,9 +349,10 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.notProperty doc, 'test'
           assert.property doc, 'test1'
         yield return
@@ -371,9 +385,10 @@ describe 'ArangoMigrationMixin', ->
         yield return
   describe '#renameCollection', ->
     before ->
-      db._createDocumentCollection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
     after ->
-      db._drop 'test_new_tests'
+      try db._drop "#{PREFIX}tests"
+      try db._drop "#{PREFIX}new_tests"
     it 'should apply step to rename collection', ->
       co ->
         class Test extends LeanRC
@@ -395,23 +410,24 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         spyRenameCollection = sinon.spy migration, 'renameCollection'
-        assert.isNotNull db._collection 'test_tests'
+        assert.isNotNull db._collection "#{PREFIX}tests"
         yield migration.up()
         assert.isTrue spyRenameCollection.calledWith 'tests', 'tests', 'new_tests'
-        assert.isNull db._collection 'test_tests'
-        assert.isNotNull db._collection 'test_new_tests'
+        assert.isNull db._collection "#{PREFIX}tests"
+        assert.isNotNull db._collection "#{PREFIX}new_tests"
         yield return
   describe '#dropCollection', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       collection.save test: '42'
       collection.save test: '42'
       collection.save test: '42'
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to drop collection', ->
       co ->
         class Test extends LeanRC
@@ -433,15 +449,16 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        assert.isNull db._collection 'test_tests'
+        assert.isNull db._collection "#{PREFIX}tests"
         yield return
   describe '#dropEdgeCollection', ->
     before ->
-      db._createEdgeCollection 'test_tests_tests'
+      db._createEdgeCollection "#{PREFIX}tests_tests"
     after ->
-      db._drop 'test_tests_tests'
+      db._drop "#{PREFIX}tests_tests"
     it 'should apply step to drop edge collection', ->
       co ->
         class Test extends LeanRC
@@ -463,19 +480,20 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        assert.isNull db._collection 'test_tests_tests'
+        assert.isNull db._collection "#{PREFIX}tests_tests"
         yield return
   describe '#removeField', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       collection.save test: '42'
       collection.save test: '42'
       collection.save test: '42'
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to remove field in collection', ->
       co ->
         class Test extends LeanRC
@@ -506,18 +524,19 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         yield migration.up()
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.notProperty doc, 'test'
         yield return
   describe '#removeIndex', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       collection.ensureIndex type: 'hash', fields: [ 'test' ], unique: yes,  sparse: yes
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to remove index in collection', ->
       co ->
         class Test extends LeanRC
@@ -541,27 +560,28 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
         spyRemoveIndex = sinon.spy migration, 'removeIndex'
-        indexes = db.test_tests.getIndexes()
+        indexes = db["#{PREFIX}tests"].getIndexes()
         assert.isTrue indexes.some ({ type, fields, unique, sparse }) ->
           type is 'hash' and 'test' in fields and unique and sparse
         yield migration.up()
         assert.isTrue spyRemoveIndex.calledWith 'tests', fields, options
-        indexes = db.test_tests.getIndexes()
+        indexes = db["#{PREFIX}tests"].getIndexes()
         assert.isFalse indexes.some ({ type, fields, unique, sparse }) ->
           type is 'hash' and 'test' in fields and unique and sparse
         yield return
   describe '#removeTimestamps', ->
     before ->
-      db._createDocumentCollection 'test_tests'
-      collection = db._collection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
+      collection = db._collection "#{PREFIX}tests"
       DATE = new Date()
       collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
       collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
       collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should apply step to remove timestamps in collection', ->
       co ->
         class Test extends LeanRC
@@ -583,13 +603,14 @@ describe 'ArangoMigrationMixin', ->
         ArangoMigrationCollection.initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
           delegate: BaseMigration
+        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
         migration = BaseMigration.new {}, migrationsCollection
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.property doc, 'createdAt'
           assert.property doc, 'updatedAt'
           assert.property doc, 'deletedAt'
         yield migration.up()
-        for doc in db._collection('test_tests').all().toArray()
+        for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.notProperty doc, 'createdAt'
           assert.notProperty doc, 'updatedAt'
           assert.notProperty doc, 'deletedAt'

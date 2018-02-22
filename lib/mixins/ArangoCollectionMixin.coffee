@@ -169,7 +169,7 @@ module.exports = (Module)->
           # voNativeCursor = db._query "#{vsQuery}"
           # yield return voNativeCursor.next()
           collection = db._collection @collectionFullName()
-          yield return collection.figures().alive.count
+          yield return collection.count()
 
       @public operatorsMap: Object,
         default:
@@ -361,7 +361,7 @@ module.exports = (Module)->
           intoUsed = intoPartial = finAggUsed = finAggPartial = null
           isCustomReturn = no
           if aoQuery.$remove?
-            do =>
+            yield do @wrap ->
               if aoQuery.$forIn?
                 for own asItemRef, asCollectionFullName of aoQuery.$forIn
                   voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
@@ -378,13 +378,15 @@ module.exports = (Module)->
                   voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                 if (voLet = aoQuery.$let)?
                   for own asRef, aoValue of voLet
-                    voQuery = (voQuery ? qb).let wrapReference(asRef), qb.expr @parseQuery Query.new aoValue
+                    vsValue = String yield @parseQuery Query.new aoValue
+                    voQuery = (voQuery ? qb).let asRef, qb.expr vsValue
                 isCustomReturn = yes
                 voQuery = (voQuery ? qb).remove _key: wrapReference "@doc._key"
                 if aoQuery.$into?
                   voQuery = voQuery.into aoQuery.$into
+              yield return
           else if aoQuery.$patch?
-            do =>
+            yield do @wrap ->
               if aoQuery.$into?
                 if aoQuery.$forIn?
                   for own asItemRef, asCollectionFullName of aoQuery.$forIn
@@ -402,14 +404,16 @@ module.exports = (Module)->
                     voQuery = voQuery.filter @parseFilter Parser.parse voFilter
                   if (voLet = aoQuery.$let)?
                     for own asRef, aoValue of voLet
-                      voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Query.new aoValue
+                      vsValue = String yield @parseQuery Query.new aoValue
+                      voQuery = (voQuery ? qb).let asRef, qb.expr vsValue
                 vhObjectForUpdate = _.omit aoQuery.$patch, ['id', '_key']
                 isCustomReturn = yes
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
                   .with qb vhObjectForUpdate
                   .into aoQuery.$into
+              yield return
           else if aoQuery.$forIn?
-            do =>
+            yield do @wrap ->
               for own asItemRef, asCollectionFullName of aoQuery.$forIn
                 voQuery = (voQuery ? qb).for qb.ref asItemRef.replace '@', ''
                   .in asCollectionFullName
@@ -425,11 +429,13 @@ module.exports = (Module)->
                 voQuery = voQuery.filter @parseFilter Parser.parse voFilter
               if (voLet = aoQuery.$let)?
                 for own asRef, aoValue of voLet
-                  voQuery = (voQuery ? qb).let qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Query.new aoValue
+                  vsValue = String yield @parseQuery Query.new aoValue
+                  voQuery = (voQuery ? qb).let asRef, qb.expr vsValue
               if (voCollect = aoQuery.$collect)?
                 isCustomReturn = yes
                 for own asRef, aoValue of voCollect
-                  voQuery = voQuery.collect qb.ref(asRef.replace '@', ''), qb.expr @parseQuery Query.new aoValue
+                  vsValue = String yield @parseQuery Query.new aoValue
+                  voQuery = voQuery.collect asRef, qb.expr vsValue
               if (vsInto = aoQuery.$into)?
                 intoUsed = _.escapeRegExp "FILTER {{INTO #{vsInto}}}"
                 intoPartial = "INTO #{vsInto}"
@@ -491,6 +497,7 @@ module.exports = (Module)->
                     voQuery = voQuery.returnDistinct voReturn
                   else
                     voQuery = voQuery.return voReturn
+              yield return
           vsQuery = voQuery?.toAQL()
 
           if intoUsed and new RegExp(intoUsed).test vsQuery
