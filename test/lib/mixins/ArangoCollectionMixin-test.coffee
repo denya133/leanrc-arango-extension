@@ -16,9 +16,17 @@ commonServerInitializer = require.main.require 'test/common/server'
 server = commonServerInitializer fixture: 'ArangoCollectionMixin'
 ###
 
+ARANGODB_DUPLICATE_NAME = 1207
+
+PREFIX = module.context.collectionPrefix
+
+COL_NAME = "#{PREFIX}samples"
+
 describe 'ArangoCollectionMixin', ->
   before ->
-    collection = db._create 'test_samples'
+    if (db._collection COL_NAME)?
+      db._drop COL_NAME
+    collection = db._create COL_NAME
     date = new Date()
     collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
     date = new Date()
@@ -28,7 +36,7 @@ describe 'ArangoCollectionMixin', ->
     date = new Date()
     collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
   after ->
-    db._drop 'test_samples'
+    try db._drop COL_NAME
   describe '.new', ->
     it 'should create ArangoDB collection instance', ->
       co ->
@@ -40,6 +48,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -68,6 +77,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -170,7 +180,7 @@ describe 'ArangoCollectionMixin', ->
           qb.in qb('b'), qb('a')
           qb.in qb('c'), qb('a')
           qb.in qb('d'), qb('a')
-        ]
+        ]...
         queryOperator = operatorsMap['$elemMatch'] '@a', ['b', 'c', 'd']
         assert.deepEqual queryOperator
         , qb.gt qb.expr('LENGTH(a[* FILTER b && c && d])'), qb 0
@@ -269,6 +279,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -339,7 +350,7 @@ describe 'ArangoCollectionMixin', ->
         assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (CURRENT.b == "c")])'), qb 0
         yield return
   describe '#parseQuery', ->
-    it 'should get parse query for `insert`', ->
+    it 'should get parse query for `patch`', ->
       co ->
         class Test extends LeanRC
           @inheritProtected()
@@ -349,6 +360,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -365,47 +377,11 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
-          '$insert': SampleRecord.new
-            id: '1'
-            createdAt: date
-            updatedAt: date
-            test: 'test'
-          , collection
-          '$into': 'test_samples'
-        assert.equal result, 'INSERT {"id": "1", "rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} INTO test_samples'
-        yield return
-    it 'should get parse query for `update`', ->
-      co ->
-        class Test extends LeanRC
-          @inheritProtected()
-          @include ArangoExtension
-          @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableCollectionMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
-          @inheritProtected()
-          @module Test
-          @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
-        date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
-          '$update': SampleRecord.new
+            'doc': COL_NAME
+          '$into': COL_NAME
+          '$patch': SampleRecord.serialize SampleRecord.new
             createdAt: date
             updatedAt: date
             test: 'test'
@@ -430,72 +406,12 @@ describe 'ArangoCollectionMixin', ->
           '$let':
             k:
               '$forIn':
-                'doc1': 'test_samples'
+                'doc1': COL_NAME
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples LET new_doc = `NEW` RETURN new_doc'
-        yield return
-    it 'should get parse query for `replace`', ->
-      co ->
-        class Test extends LeanRC
-          @inheritProtected()
-          @include ArangoExtension
-          @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableCollectionMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
-          @inheritProtected()
-          @module Test
-          @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
-        date = new Date
-        result = collection.parseQuery
-          '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
-          '$replace': SampleRecord.new
-            createdAt: date
-            updatedAt: date
-            test: 'test'
-          , collection
-          '$join':
-            '$and': [
-              '@doc.tomatoId': '$eq': '@tomato._key'
-            ,
-              '@tomato.active': '$eq': yes
-            ]
-          '$filter':
-            '$and': [
-              '$or': [
-                'c': '$eq': '1'
-              ,
-                '@doc.b': '$eq': '2'
-              ]
-            ,
-              '@doc.b':
-                '$not': '$eq': '2'
-            ]
-          '$let':
-            k:
-              '$forIn':
-                'doc1': 'test_samples'
-              '$filter':
-                '@doc1.test': 'test'
-              '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 REPLACE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN test_samples LET new_doc = `NEW` RETURN new_doc'
+          '$return': '@doc'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN ' + COL_NAME + ' FILTER ((doc1.test == "test")) RETURN doc1 UPDATE doc WITH {"rev": null, "type": "Test::SampleRecord", "isHidden": false, "createdAt": "' + date.toISOString() + '", "updatedAt": "' + date.toISOString() + '", "deletedAt": null, "test": "test"} IN ' + COL_NAME
         yield return
     it 'should get parse query for `remove`', ->
       co ->
@@ -507,6 +423,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -523,10 +440,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$remove': 'id': '1'
           '$join':
             '$and': [
@@ -548,11 +465,11 @@ describe 'ArangoCollectionMixin', ->
           '$let':
             k:
               '$forIn':
-                'doc1': 'test_samples'
+                'doc1': COL_NAME
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 REMOVE {id: 1} IN test_samples'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN ' + COL_NAME + ' FILTER ((doc1.test == "test")) RETURN doc1 REMOVE {_key: doc._key} IN ' + COL_NAME
         yield return
     it 'should get parse query for other with distinct return', ->
       co ->
@@ -564,6 +481,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -580,10 +498,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -604,14 +522,14 @@ describe 'ArangoCollectionMixin', ->
           '$let':
             k:
               '$forIn':
-                'doc1': 'test_samples'
+                'doc1': COL_NAME
               '$filter':
                 '@doc1.test': 'test'
               '$return': 'doc1'
           '$collect':
             l:
               '$forIn':
-                'doc2': 'test_samples'
+                'doc2': COL_NAME
               '$filter':
                 '@doc2.test': 'test'
               '$return': 'doc2'
@@ -626,14 +544,16 @@ describe 'ArangoCollectionMixin', ->
               '@doc.h':
                 '$not': '$eq': '2'
             ]
-          '$sort':
+          '$sort': [
             '@doc.field1': 'ASC'
+          ,
             '@doc.field2': 'DESC'
+          ]
           '$limit': 100
           '$offset': 50
           '$distinct': yes
           '$return': '@doc'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN test_samples FILTER ((doc1.test == "test")) RETURN doc1 COLLECT l = FOR doc2 IN test_samples FILTER ((doc2.test == "test")) RETURN doc2 INTO test_samples FILTER (((((("f" == "1")) || ((doc.g == "2")))) && (!(doc.h == "2")))) SORT doc.field1 ASC SORT doc.field2 DESC LIMIT 50, 100 RETURN DISTINCT doc'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) LET k = FOR doc1 IN ' + COL_NAME + ' FILTER ((doc1.test == "test")) RETURN doc1 COLLECT l = FOR doc2 IN ' + COL_NAME + ' FILTER ((doc2.test == "test")) RETURN doc2 INTO ' + COL_NAME + ' FILTER (((((("f" == "1")) || ((doc.g == "2")))) && (!(doc.h == "2")))) SORT doc.field1 ASC, doc.field2 DESC LIMIT 50, 100 RETURN DISTINCT doc'
         yield return
     it 'should get parse query for other with count', ->
       co ->
@@ -645,6 +565,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -661,10 +582,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -683,7 +604,7 @@ describe 'ArangoCollectionMixin', ->
                 '$not': '$eq': '2'
             ]
           '$count': yes
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples COLLECT WITH COUNT INTO counter RETURN (counter ? counter : 0)'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' COLLECT WITH COUNT INTO counter RETURN (counter ? counter : 0)'
         yield return
     it 'should get parse query for other with sum', ->
       co ->
@@ -695,6 +616,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -711,10 +633,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -733,7 +655,7 @@ describe 'ArangoCollectionMixin', ->
                 '$not': '$eq': '2'
             ]
           '$sum': '@doc.test'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples COLLECT AGGREGATE result = SUM(TO_NUMBER(doc.test)) RETURN result'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' COLLECT AGGREGATE result = SUM(TO_NUMBER(doc.test)) RETURN result'
         yield return
     it 'should get parse query for other with min', ->
       co ->
@@ -745,6 +667,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -761,10 +684,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -783,7 +706,7 @@ describe 'ArangoCollectionMixin', ->
                 '$not': '$eq': '2'
             ]
           '$min': '@doc.test'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples SORT doc.test LIMIT 1 RETURN doc.test'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' SORT doc.test LIMIT 1 RETURN doc.test'
         yield return
     it 'should get parse query for other with max', ->
       co ->
@@ -795,6 +718,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -811,10 +735,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -833,7 +757,7 @@ describe 'ArangoCollectionMixin', ->
                 '$not': '$eq': '2'
             ]
           '$max': '@doc.test'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples SORT doc.test DESC LIMIT 1 RETURN doc.test'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' SORT doc.test DESC LIMIT 1 RETURN doc.test'
         yield return
     it 'should get parse query for other with average', ->
       co ->
@@ -845,6 +769,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -861,10 +786,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -883,7 +808,7 @@ describe 'ArangoCollectionMixin', ->
                 '$not': '$eq': '2'
             ]
           '$avg': '@doc.test'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples COLLECT AGGREGATE result = AVG(TO_NUMBER(doc.test)) RETURN result'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' COLLECT AGGREGATE result = AVG(TO_NUMBER(doc.test)) RETURN result'
         yield return
     it 'should get parse query for other with return', ->
       co ->
@@ -895,6 +820,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -911,10 +837,10 @@ describe 'ArangoCollectionMixin', ->
           delegate: SampleRecord
           serializer: Test::Serializer
         date = new Date
-        result = collection.parseQuery
+        result = yield collection.parseQuery
           '$forIn':
-            'doc': 'test_samples'
-          '$into': 'test_samples'
+            'doc': COL_NAME
+          '$into': COL_NAME
           '$join':
             '$and': [
               '@doc.tomatoId': '$eq': '@tomato._key'
@@ -934,7 +860,7 @@ describe 'ArangoCollectionMixin', ->
             ]
           '$return':
             'doc': '@doc'
-        assert.equal result, 'FOR doc IN test_samples FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO test_samples RETURN {doc: doc}'
+        assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' RETURN {doc: doc}'
         yield return
   describe '#executeQuery', ->
     it 'should send query to ArangoDB', ->
@@ -947,6 +873,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -962,8 +889,9 @@ describe 'ArangoCollectionMixin', ->
         collection = ArangoCollection.new 'TEST_COLLECTION',
           delegate: SampleRecord
           serializer: Test::Serializer
+        collection.initializeNotifier 'TEST'
         samples = yield collection.executeQuery '
-          FOR doc IN test_samples
+          FOR doc IN ' + COL_NAME + ' ' + '
           SORT doc._key
           RETURN doc
         '
@@ -972,7 +900,7 @@ describe 'ArangoCollectionMixin', ->
         for item in items
           assert.instanceOf item, SampleRecord
         items = yield collection.executeQuery '
-          FOR doc IN test_samples
+          FOR doc IN ' + COL_NAME + ' ' + '
           FILTER doc.data == "a boat"
           RETURN doc
         '
@@ -992,6 +920,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1009,12 +938,11 @@ describe 'ArangoCollectionMixin', ->
           serializer: Test::Serializer
         collection = facade.retrieveProxy KEY
         spyPush = sinon.spy collection, 'push'
-        spyQuery = sinon.spy collection, 'query'
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         assert.equal record, spyPush.args[0][0]
-        assert.equal spyQuery.args[1][0].$insert, record
-        assert.equal spyQuery.args[1][0].$into, collection.collectionFullName()
+        testRecord = db._collection(COL_NAME).firstExample id: record.id
+        assert.isNotNull testRecord
         yield return
   describe '#remove', ->
     it 'should remove data from collection', ->
@@ -1029,6 +957,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1043,18 +972,8 @@ describe 'ArangoCollectionMixin', ->
         SampleRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
@@ -1063,10 +982,10 @@ describe 'ArangoCollectionMixin', ->
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         spyQuery = sinon.spy collection, 'query'
+        recordId = record.id
         yield record.destroy()
-        assert.deepEqual spyQuery.args[1][0].$forIn, { '@doc': 'test_samples' }
-        assert.deepEqual spyQuery.args[1][0].$filter, { '@doc._key': { '$eq': record.id } }
-        assert.deepEqual spyQuery.args[1][0].$remove, _key: 'doc._key'
+        testRecord = db._collection(COL_NAME).firstExample id: recordId
+        assert.isNull testRecord
         yield return
   describe '#take', ->
     it 'should get data item by id from collection', ->
@@ -1081,6 +1000,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1095,18 +1015,8 @@ describe 'ArangoCollectionMixin', ->
         SampleRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
@@ -1132,6 +1042,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1146,18 +1057,8 @@ describe 'ArangoCollectionMixin', ->
         SampleRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
@@ -1177,9 +1078,9 @@ describe 'ArangoCollectionMixin', ->
         yield return
   describe '#takeAll', ->
     before ->
-      db._create 'test_items'
+      db._create "#{PREFIX}items"
     after ->
-      db._drop 'test_items'
+      db._drop "#{PREFIX}items"
     it 'should get all data items from collection', ->
       co ->
         KEY = 'FACADE_TEST_ARANGO_COLLECTION_006'
@@ -1192,6 +1093,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1206,18 +1108,8 @@ describe 'ArangoCollectionMixin', ->
         ItemRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: ItemRecord
@@ -1248,6 +1140,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1262,18 +1155,8 @@ describe 'ArangoCollectionMixin', ->
         SampleRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
@@ -1287,6 +1170,7 @@ describe 'ArangoCollectionMixin', ->
         assert.propertyVal record, 'test', 'test1'
         assert.propertyVal updatedRecord, 'test', 'test2'
         yield return
+  ###
   describe '#patch', ->
     it 'should update data item by id in collection', ->
       co ->
@@ -1300,6 +1184,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1314,18 +1199,8 @@ describe 'ArangoCollectionMixin', ->
         SampleRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
@@ -1339,6 +1214,7 @@ describe 'ArangoCollectionMixin', ->
         assert.propertyVal record, 'test', 'test1'
         assert.propertyVal updatedRecord, 'test', 'test2'
         yield return
+  ###
   describe '#includes', ->
     it 'should test if item is included in the collection', ->
       co ->
@@ -1352,6 +1228,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1366,18 +1243,8 @@ describe 'ArangoCollectionMixin', ->
         SampleRecord.initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         SampleSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: SampleRecord
@@ -1391,9 +1258,9 @@ describe 'ArangoCollectionMixin', ->
         yield return
   describe '#length', ->
     before ->
-      db._create 'test_items'
+      db._create "#{PREFIX}items"
     after ->
-      db._drop 'test_items'
+      db._drop "#{PREFIX}items"
     it 'should count items in the collection', ->
       co ->
         KEY = 'FACADE_TEST_ARANGO_COLLECTION_010'
@@ -1406,6 +1273,7 @@ describe 'ArangoCollectionMixin', ->
         class ArangoCollection extends Test::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
+          @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
         ArangoCollection.initialize()
@@ -1420,18 +1288,8 @@ describe 'ArangoCollectionMixin', ->
         ItemRecord.initialize()
         class ItemSerializer extends Test::Serializer
           @inheritProtected()
+          @include Test::ArangoSerializerMixin
           @module Test
-          @public normalize: Function,
-            default: (acRecord, ahPayload) ->
-              result = @super acRecord, ahPayload
-              result.id = ahPayload._key
-              result
-          @public serialize: Function,
-            default: (aoRecord, options = null) ->
-              result = @super aoRecord, options
-              result = _.omit result, [ 'id' ]
-              result._key = aoRecord.id
-              result
         ItemSerializer.initialize()
         facade.registerProxy ArangoCollection.new KEY,
           delegate: ItemRecord

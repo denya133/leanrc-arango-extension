@@ -37,6 +37,7 @@ module.exports = (Module)->
     ANY
     NILL
     LAMBDA
+    APPLICATION_GATEWAY
 
     Switch
     ArangoContext
@@ -229,14 +230,16 @@ module.exports = (Module)->
       @public defineSwaggerEndpoint: Function,
         args: [Object, Object]
         return: NILL
-        default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag})->
-          gatewayName = inflect.camelize inflect.underscore "#{resource.replace /[/]/g, '_'}Gateway"
-          voGateway = @facade.retrieveProxy gatewayName
+        default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options, keyName, entityName, recordName})->
+          voGateway = @facade.retrieveProxy APPLICATION_GATEWAY
           unless voGateway?
-            throw new Error "#{gatewayName} is absent in code"
-          voSwaggerDefinition = voGateway.swaggerDefinitionFor action
+            throw new Error "#{APPLICATION_GATEWAY} is absent in code"
+          voSwaggerDefinition = voGateway.swaggerDefinitionFor resource, action, {
+            keyName, entityName, recordName
+          }
           unless voSwaggerDefinition?
-            throw new Error "#{gatewayName}::#{action} is absent in code"
+            # throw new Error "#{gatewayName}::#{action} is absent in code"
+            throw new Error "Endpoint for #{resource}##{action} is absent in code"
           {
             tags
             headers
@@ -262,7 +265,9 @@ module.exports = (Module)->
           if payload?
             aoSwaggerEndpoint.body payload.schema, payload.mimes, payload.description
           responses?.forEach ({status, schema, mimes, description})->
+          # responses?.forEach (args)->
             aoSwaggerEndpoint.response status, schema, mimes, description
+            # aoSwaggerEndpoint.response args...
           errors?.forEach ({status, description})->
             aoSwaggerEndpoint.error status, description
           aoSwaggerEndpoint.summary title            if title?

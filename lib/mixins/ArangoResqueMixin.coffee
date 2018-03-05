@@ -106,6 +106,7 @@ module.exports = (Module)->
           if scriptName?
             { mount } = @Module.context()
             allJobs = queue.all { name: ARANGO_SCRIPT, mount }
+              .map (jobId) -> queue.get jobId
               .filter (job) -> job.data.scriptName is scriptName
             yield return allJobs
           else
@@ -118,6 +119,7 @@ module.exports = (Module)->
           if scriptName?
             { mount } = @Module.context()
             pendingJobs = queue.pending { name: ARANGO_SCRIPT, mount }
+              .map (jobId) -> queue.get jobId
               .filter (job) -> job.data.scriptName is scriptName
             yield return pendingJobs
           else
@@ -130,6 +132,7 @@ module.exports = (Module)->
           if scriptName?
             { mount } = @Module.context()
             progressJobs = queue.progress { name: ARANGO_SCRIPT, mount }
+              .map (jobId) -> queue.get jobId
               .filter (job) -> job.data.scriptName is scriptName
             yield return progressJobs
           else
@@ -142,6 +145,7 @@ module.exports = (Module)->
           if scriptName?
             { mount } = @Module.context()
             completeJobs = queue.complete { name: ARANGO_SCRIPT, mount }
+              .map (jobId) -> queue.get jobId
               .filter (job) -> job.data.scriptName is scriptName
             yield return completeJobs
           else
@@ -154,6 +158,7 @@ module.exports = (Module)->
           if scriptName?
             { mount } = @Module.context()
             failedJobs = queue.failed { name: ARANGO_SCRIPT, mount }
+              .map (jobId) -> queue.get jobId
               .filter (job) -> job.data.scriptName is scriptName
             yield return failedJobs
           else
