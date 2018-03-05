@@ -6,10 +6,11 @@ LeanRC = require 'LeanRC'
 ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 
+PREFIX = module.context.collectionPrefix
 
 describe 'ArangoCursor', ->
   before ->
-    collection = db._create 'test_thames_travel'
+    collection = db._create "#{PREFIX}_thames_travel"
     date = new Date()
     collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
     date = new Date()
@@ -19,7 +20,7 @@ describe 'ArangoCursor', ->
     date = new Date()
     collection.save id: 4, data: 'a boat', createdAt: date, updatedAt: date
   after ->
-    db._drop 'test_thames_travel'
+    db._drop "#{PREFIX}_thames_travel"
   describe '.new', ->
     it 'should create cursor instance', ->
       co ->
@@ -34,7 +35,7 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        collection = db.test_thames_travel
+        collection = db["#{PREFIX}_thames_travel"]
         cursor = Test::ArangoCursor.new collectionInstance, collection.all()
         yield return
   describe '#setCollection', ->
@@ -70,7 +71,7 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        collection = db.test_thames_travel
+        collection = db["#{PREFIX}_thames_travel"]
         cursor = Test::ArangoCursor.new collectionInstance
         cursor.setIterable collection.all()
         yield return
@@ -89,9 +90,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         assert.equal (yield cursor.next()).data, 'three', 'First item is incorrect'
         assert.equal (yield cursor.next()).data, 'men', 'Second item is incorrect'
         assert.equal (yield cursor.next()).data, 'in', 'Third item is incorrect'
@@ -99,11 +100,11 @@ describe 'ArangoCursor', ->
         assert.isUndefined (yield cursor.next()), 'Uncoed item is present'
   describe '#hasNext', ->
     before ->
-      collection = db._create 'test_collection'
+      collection = db._create "#{PREFIX}_collection"
       date = new Date()
       collection.save id: 1, data: 'data', createdAt: date, updatedAt: date
     after ->
-      db._drop 'test_collection'
+      db._drop "#{PREFIX}_collection"
     it 'should check if next value is present', ->
       co ->
         class Test extends LeanRC
@@ -118,7 +119,7 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        collection = db.test_collection
+        collection = db["#{PREFIX}_collection"]
         cursor = Test::ArangoCursor.new collectionInstance, collection.all()
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         data = yield cursor.next()
@@ -138,11 +139,11 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        array = db._query 'FOR item IN test_thames_travel SORT item._key RETURN item'
+        array = db._query "FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item"
         .toArray()
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         records = yield cursor.toArray()
         assert.equal records.length, array.length, 'Counts of input and output data are different'
         for record, index in records
@@ -164,9 +165,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         assert.isTrue (yield cursor.hasNext()), 'There is no next value'
         yield cursor.close()
         assert.isFalse (yield cursor.hasNext()), 'There is something else'
@@ -186,9 +187,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         assert.equal (yield cursor.count()), 4, 'Count works incorrectly'
         return
   describe '#forEach', ->
@@ -206,9 +207,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         spyLambda = sinon.spy -> yield return
         yield cursor.forEach spyLambda
         assert.isTrue spyLambda.called, 'Lambda never called'
@@ -233,9 +234,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         records = yield cursor.map (record) ->
           record.data = '+' + record.data + '+'
           yield Test::Promise.resolve record
@@ -260,9 +261,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         records = yield cursor.filter (record) ->
           yield Test::Promise.resolve record.data.length > 3
         assert.lengthOf records, 2, 'Records count is not match'
@@ -271,7 +272,7 @@ describe 'ArangoCursor', ->
         return
   describe '#find', ->
     before ->
-      collection = db._create 'test_collection'
+      collection = db._create "#{PREFIX}_collection"
       date = new Date()
       collection.save id: 1, name: 'Jerome', createdAt: date, updatedAt: date
       date = new Date()
@@ -279,7 +280,7 @@ describe 'ArangoCursor', ->
       date = new Date()
       collection.save id: 1, name: 'Harris', createdAt: date, updatedAt: date
     after ->
-      db._drop 'test_collection'
+      db._drop "#{PREFIX}_collection"
     it 'should find record using lambda', ->
       co ->
         class Test extends LeanRC
@@ -294,7 +295,7 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db.test_collection.all()
+        cursor = Test::ArangoCursor.new collectionInstance, db["#{PREFIX}_collection"].all()
         record = yield cursor.find (record) ->
           yield Test::Promise.resolve record.name is 'George'
         assert.equal record.name, 'George', 'Record is not match'
@@ -304,7 +305,7 @@ describe 'ArangoCursor', ->
         return
   describe '#compact', ->
     before ->
-      collection = db._create 'test_collection'
+      collection = db._create "#{PREFIX}_collection"
       date = new Date()
       collection.save id: 1, data: 'men', createdAt: date, updatedAt: date
       date = new Date()
@@ -312,7 +313,7 @@ describe 'ArangoCursor', ->
       date = new Date()
       collection.save id: 1, data: 'a boat', createdAt: date, updatedAt: date
     after ->
-      db._drop 'test_collection'
+      db._drop "#{PREFIX}_collection"
     it 'should get non-empty records from cursor', ->
       co ->
         class Test extends LeanRC
@@ -327,9 +328,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_collection SORT item._key RETURN item.data ? item : null
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_collection SORT item._key RETURN item.data ? item : null
+        """
         records = yield cursor.compact()
         assert.lengthOf records, 2, 'Records count not match'
         assert.equal records[0].data, 'men', '1st record is not match'
@@ -350,9 +351,9 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         records = yield cursor.reduce (accumulator, item) ->
           accumulator[item.data] = item
           yield Test::Promise.resolve accumulator
@@ -364,7 +365,7 @@ describe 'ArangoCursor', ->
         return
   describe '#first', ->
     before ->
-      collection = db._create 'test_collection'
+      collection = db._create "#{PREFIX}_collection"
       date = new Date()
       collection.save id: 1, data: 'Jerome', createdAt: date, updatedAt: date
       date = new Date()
@@ -372,7 +373,7 @@ describe 'ArangoCursor', ->
       date = new Date()
       collection.save id: 1, data: 'Harris', createdAt: date, updatedAt: date
     after ->
-      db._drop 'test_collection'
+      db._drop "#{PREFIX}_collection"
     it 'should get first record from cursor', ->
       co ->
         class Test extends LeanRC
@@ -387,14 +388,14 @@ describe 'ArangoCursor', ->
         TestRecord.initialize()
         collectionInstance = Test::Collection.new 'TEST_COLLECTION',
           delegate: TestRecord
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_thames_travel SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_thames_travel SORT item._key RETURN item
+        """
         record = yield cursor.first()
         assert.equal record.data, 'three', '1st record is not match'
-        cursor = Test::ArangoCursor.new collectionInstance, db._query '''
-          FOR item IN test_collection SORT item._key RETURN item
-        '''
+        cursor = Test::ArangoCursor.new collectionInstance, db._query """
+          FOR item IN #{PREFIX}_collection SORT item._key RETURN item
+        """
         record = yield cursor.first()
         assert.equal record.data, 'Jerome', 'Another 1st record is not match'
         return

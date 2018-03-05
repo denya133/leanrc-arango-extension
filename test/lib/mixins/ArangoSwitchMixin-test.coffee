@@ -10,13 +10,15 @@ LeanRC = require 'LeanRC'
 ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 
+PREFIX = module.context.collectionPrefix
+
 
 describe 'ArangoSwitchMixin', ->
   describe '.new', ->
     before ->
-      db._createDocumentCollection 'test_tests'
+      db._createDocumentCollection "#{PREFIX}tests"
     after ->
-      db._drop 'test_tests'
+      db._drop "#{PREFIX}tests"
     it 'should create switch instance', ->
       co ->
         class Test extends LeanRC
@@ -32,6 +34,7 @@ describe 'ArangoSwitchMixin', ->
         testSwitch = TestSwitch.new()
         assert.instanceOf testSwitch, TestSwitch
         yield return
+  ### TODO: Move to ArangoResourceMixin
   describe '#getLocks', ->
     before ->
       db._createDocumentCollection 'test_tests1'
@@ -61,6 +64,7 @@ describe 'ArangoSwitchMixin', ->
           read: [ 'test_tests1', 'test_tests2', 'test_tests3', 'test_tests4' ]
           write: [ 'test_tests1', 'test_tests2', 'test_tests3', 'test_tests4' ]
         yield return
+  ###
   describe '#del', ->
     it 'should alias to #delete', ->
       co ->
@@ -146,7 +150,7 @@ describe 'ArangoSwitchMixin', ->
           trigger.once 'end', resolve
         switchMediator.respond context
         data = yield endPromise
-        assert.equal data, '{"test":"test"}'
+        assert.deepEqual data, test: 'test'
         yield return
   describe '#sender', ->
     facade = null
