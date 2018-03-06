@@ -225,12 +225,9 @@ module.exports = (Module)->
             qb.eq qb.mod(wrapReference(aoFirst), qb divisor), qb remainder
           $regex: (aoFirst, aoSecond)-> # value must be string. ckeck it by RegExp.
             [full, regexp, params] = /^\/([\s\S]*)\/(i?)$/i.exec aoSecond
-            qb.expr "
-            REGEX_TEST(
-              #{wrapReference aoFirst},
+            qb.expr "REGEX_TEST(#{aoFirst.replace '@', ''},
               \"#{String regexp}\",
-              #{params is 'i'}
-            )"
+              #{params is 'i'})"
 
           # Datetime Query Operators
           $td: (aoFirst, aoSecond)-> # this day (today)
