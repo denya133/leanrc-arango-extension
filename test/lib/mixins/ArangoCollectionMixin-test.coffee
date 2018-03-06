@@ -202,10 +202,10 @@ describe 'ArangoCollectionMixin', ->
         assert.deepEqual queryOperator, qb.eq qb.mod(qb.ref('a'), qb('b')), qb 'c'
         queryOperator = operatorsMap['$mod'] 'a', ['b', 'c']
         assert.deepEqual queryOperator, qb.eq qb.mod(qb('a'), qb('b')), qb 'c'
-        queryOperator = operatorsMap['$regex'] '@a', 'b'
-        assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "b")'
-        queryOperator = operatorsMap['$regex'] 'a', 'b'
-        assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "b")'
+        queryOperator = operatorsMap['$regex'] '@a', '/^beep/'
+        assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "^beep", false)'
+        queryOperator = operatorsMap['$regex'] 'a', '/^beep/i'
+        assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "^beep", true)'
 
         date = new Date()
 

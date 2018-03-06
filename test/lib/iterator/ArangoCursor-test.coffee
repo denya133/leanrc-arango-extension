@@ -10,6 +10,7 @@ PREFIX = module.context.collectionPrefix
 
 describe 'ArangoCursor', ->
   before ->
+    try db._drop "#{PREFIX}_thames_travel"
     collection = db._create "#{PREFIX}_thames_travel"
     date = new Date()
     collection.save id: 1, data: 'three', createdAt: date, updatedAt: date
