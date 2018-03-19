@@ -224,7 +224,10 @@ module.exports = (Module)->
           $mod: (aoFirst, [divisor, remainder])->
             qb.eq qb.mod(wrapReference(aoFirst), qb divisor), qb remainder
           $regex: (aoFirst, aoSecond)-> # value must be string. ckeck it by RegExp.
-            [full, regexp, params] = /^\/([\s\S]*)\/(i?)$/i.exec aoSecond
+            regExpDefinitions = /^\/([\s\S]*)\/(i?)$/i.exec aoSecond
+            unless regExpDefinitions?
+              throw new Error "Invalid Regular Expression"
+            [full, regexp, params] = regExpDefinitions
             qb.expr "REGEX_TEST(#{aoFirst.replace '@', ''},
               \"#{String regexp}\",
               #{params is 'i'})"
