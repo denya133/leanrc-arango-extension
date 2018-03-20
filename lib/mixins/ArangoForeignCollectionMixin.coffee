@@ -32,11 +32,16 @@ module.exports = (Module)->
       @inheritProtected()
       # @implements QueryableCollectionMixinInterface
 
+      ipsRecordMultipleName = @private recordMultipleName: String
+      ipsRecordSingleName = @private recordSingleName: String
+
       @public recordMultipleName: Function,
-        default: -> @collectionName()
+        default: ->
+          @[ipsRecordMultipleName] ?= inflect.pluralize @recordSingleName()
 
       @public recordSingleName: Function,
-        default: -> inflect.singularize @recordMultipleName()
+        default: ->
+          @[ipsRecordSingleName] ?= inflect.underscore @delegate.name.replace /Record$/, ''
 
       @public @async push: Function,
         default: (aoRecord)->
