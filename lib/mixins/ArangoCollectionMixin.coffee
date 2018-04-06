@@ -386,6 +386,21 @@ module.exports = (Module)->
                   for own asRef, aoValue of voLet
                     vsValue = String yield @parseQuery Query.new aoValue
                     voQuery = (voQuery ? qb).let asRef, qb.expr vsValue
+                if (voSort = aoQuery.$sort)?
+                  voQuery = voQuery.sort (do ->
+                    vlSort = []
+                    for sortObj in voSort
+                      for own asRef, asSortDirect of sortObj
+                        vlSort.push wrapReference asRef
+                        vlSort.push asSortDirect
+                    vlSort
+                  )...
+
+                if (vnLimit = aoQuery.$limit)?
+                  if (vnOffset = aoQuery.$offset)?
+                    voQuery = voQuery.limit vnOffset, vnLimit
+                  else
+                    voQuery = voQuery.limit vnLimit
                 isCustomReturn = yes
                 voQuery = (voQuery ? qb).remove _key: wrapReference "@doc._key"
                 if aoQuery.$into?
@@ -412,6 +427,21 @@ module.exports = (Module)->
                     for own asRef, aoValue of voLet
                       vsValue = String yield @parseQuery Query.new aoValue
                       voQuery = (voQuery ? qb).let asRef, qb.expr vsValue
+                  if (voSort = aoQuery.$sort)?
+                    voQuery = voQuery.sort (do ->
+                      vlSort = []
+                      for sortObj in voSort
+                        for own asRef, asSortDirect of sortObj
+                          vlSort.push wrapReference asRef
+                          vlSort.push asSortDirect
+                      vlSort
+                    )...
+
+                  if (vnLimit = aoQuery.$limit)?
+                    if (vnOffset = aoQuery.$offset)?
+                      voQuery = voQuery.limit vnOffset, vnLimit
+                    else
+                      voQuery = voQuery.limit vnLimit
                 vhObjectForUpdate = _.omit aoQuery.$patch, ['id', '_key']
                 isCustomReturn = yes
                 voQuery = (voQuery ? qb).update qb.ref 'doc'
