@@ -96,7 +96,7 @@ module.exports = (Module)->
               ", LEVELS[DEBUG]
 
               self = @
-              @use co.wrap (ctx)->
+              @use keys.length, co.wrap (ctx)->
                 unless matches ctx, method
                   yield return
                 m = re.exec ctx.path
@@ -182,7 +182,7 @@ module.exports = (Module)->
       @public onRegister: Function,
         default: -> # super не вызываем
           voEmitter = new EventEmitter()
-          @middlewaresHandler = @constructor.compose @middlewares
+          @middlewaresHandler = @constructor.compose @middlewares, @handlers
           unless _.isFunction voEmitter.eventNames
             eventNames = @[iphEventNames] = {}
             FILTER = [ 'newListener', 'removeListener' ]
@@ -327,7 +327,7 @@ module.exports = (Module)->
               catch err
                 reject err
               return
-            yield return
+            yield return yes
           @defineSwaggerEndpoint voEndpoint, opts
           @Module.context().use voRouter
           return
