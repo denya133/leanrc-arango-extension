@@ -47,7 +47,15 @@ module.exports = (Module)->
         default: (action, context)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
-          {read, write} = extend {}, @getLocks(), (@[locksMethodName]?() ? {})
+          {read, write} = extend(
+            {}
+          ,
+            @getLocks()
+          ,
+            (@locksForAny?() ? {})
+          ,
+            (@[locksMethodName]?() ? {})
+          )
 
           writeTransaction = yield @writeTransaction action, context
 
