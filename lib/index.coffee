@@ -52,6 +52,7 @@ Extension = (BaseClass) ->
     require('./mixins/ArangoCollectionMixin') @Module
     require('./mixins/ArangoSwitchMixin') @Module # needs retest
     require('./mixins/ArangoResourceMixin') @Module # needs retest
+    require('./mixins/CommonLocksResourceMixin') @Module # needs retest
     require('./mixins/ArangoMigrationMixin') @Module
     require('./mixins/ArangoConfigurationMixin') @Module
     require('./mixins/ArangoResqueMixin') @Module
