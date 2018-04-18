@@ -3,7 +3,7 @@
 module.exports = (Module)->
   {
     Resource
-  } = Module.NS
+  } = Module::
 
   Module.defineMixin 'CommonLocksResourceMixin', (BaseClass = Resource) ->
     class extends BaseClass
