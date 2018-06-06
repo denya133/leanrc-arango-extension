@@ -38,7 +38,7 @@ module.exports = (Module)->
 
       @public @async push: Function,
         default: (aoRecord)->
-          vhObjectForInsert = @serialize aoRecord
+          vhObjectForInsert = yield @serialize aoRecord
           voQuery = qb.insert qb vhObjectForInsert
             .into @collectionFullName()
             .returnNew 'doc'
@@ -46,7 +46,7 @@ module.exports = (Module)->
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::push vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           if voNativeCursor.hasNext()
-            yield return @normalize voNativeCursor.next()
+            return yield @normalize voNativeCursor.next()
           else
             yield return
 
@@ -72,7 +72,7 @@ module.exports = (Module)->
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::take vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           if voNativeCursor.hasNext()
-            yield return @normalize voNativeCursor.next()
+            return yield @normalize voNativeCursor.next()
           else
             yield return
 
@@ -119,7 +119,7 @@ module.exports = (Module)->
 
       @public @async override: Function,
         default: (id, aoRecord)->
-          vhObjectForUpdate = _.omit @serialize(aoRecord), ['id', '_key']
+          vhObjectForUpdate = _.omit (yield @serialize aoRecord), ['id', '_key']
           voQuery = qb.for 'doc'
             .in @collectionFullName()
             .filter qb.eq qb.ref('doc.id'), qb(id)
@@ -131,7 +131,7 @@ module.exports = (Module)->
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::override vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
           if voNativeCursor.hasNext()
-            yield return @normalize voNativeCursor.next()
+            return yield @normalize voNativeCursor.next()
           else
             yield return
 
