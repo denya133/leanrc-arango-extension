@@ -45,7 +45,7 @@ module.exports = (Module)->
           when not data?
             yield return data
           when @[ipoCollection]?
-            yield return @[ipoCollection].normalize data
+            return yield @[ipoCollection].normalize data
           else
             yield return data
 
@@ -118,7 +118,7 @@ module.exports = (Module)->
             unless _.isEmpty rawResult
               result = switch
                 when @[ipoCollection]?
-                  @[ipoCollection].normalize rawResult
+                  yield @[ipoCollection].normalize rawResult
                 else
                   rawResult
               results.push result
