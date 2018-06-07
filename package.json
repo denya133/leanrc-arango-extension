@@ -75,7 +75,7 @@
     "lodash": "^4.13.1"
   },
   "dependencies": {
-    "LeanRC": "git+ssh://git@bitbucket.org:webbasis/leanrc.git#feature/86-method-for-embeding-collection-and-record",
+    "LeanRC": "git+ssh://git@bitbucket.org:webbasis/leanrc.git#v5.3.0",
     "coffeescript": "^2.1.1",
     "change-case": "3.0.0",
     "commander": "2.9.0",
