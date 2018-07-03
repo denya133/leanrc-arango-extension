@@ -171,6 +171,21 @@ module.exports = (Module)->
           collection = db._collection @collectionFullName()
           yield return collection.count()
 
+      buildIntervalQuery = (aoKey, aoInterval, aoIntervalSize, aoDirect)->
+        aoInterval = aoInterval.utc()
+        voIntervalStart = aoInterval.startOf(aoIntervalSize).toISOString()
+        voIntervalEnd = aoInterval.clone().endOf(aoIntervalSize).toISOString()
+        if aoDirect
+          qb.and [
+            qb.gte aoKey, qb voIntervalStart
+            qb.lt aoKey, qb voIntervalEnd
+          ]...
+        else
+          qb.not qb.and [
+            qb.gte aoKey, qb voIntervalStart
+            qb.lt aoKey, qb voIntervalEnd
+          ]...
+
       @public operatorsMap: Object,
         default:
           # Logical Query Operators
@@ -234,109 +249,21 @@ module.exports = (Module)->
 
           # Datetime Query Operators
           $td: (aoFirst, aoSecond)-> # this day (today)
-            todayStart = moment().startOf 'day'
-            todayEnd = moment().endOf 'day'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb todayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb todayEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb todayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb todayEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment(), 'day', aoSecond
           $ld: (aoFirst, aoSecond)-> # last day (yesterday)
-            yesterdayStart = moment().subtract(1, 'days').startOf 'day'
-            yesterdayEnd = moment().subtract(1, 'days').endOf 'day'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst),qb  yesterdayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb yesterdayEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb yesterdayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb yesterdayEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment().subtract(1, 'days'), 'day', aoSecond
           $tw: (aoFirst, aoSecond)-> # this week
-            weekStart = moment().startOf 'week'
-            weekEnd = moment().endOf 'week'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment(), 'week', aoSecond
           $lw: (aoFirst, aoSecond)-> # last week
-            weekStart = moment().subtract(1, 'weeks').startOf 'week'
-            weekEnd = weekStart.clone().endOf 'week'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb weekStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb weekEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment().subtract(1, 'weeks'), 'week', aoSecond
           $tm: (aoFirst, aoSecond)-> # this month
-            firstDayStart = moment().startOf 'month'
-            lastDayEnd = moment().endOf 'month'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment(), 'month', aoSecond
           $lm: (aoFirst, aoSecond)-> # last month
-            firstDayStart = moment().subtract(1, 'months').startOf 'month'
-            lastDayEnd = firstDayStart.clone().endOf 'month'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment().subtract(1, 'months'), 'month', aoSecond
           $ty: (aoFirst, aoSecond)-> # this year
-            firstDayStart = moment().startOf 'year'
-            lastDayEnd = firstDayStart.clone().endOf 'year'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment(), 'year', aoSecond
           $ly: (aoFirst, aoSecond)-> # last year
-            firstDayStart = moment().subtract(1, 'years').startOf 'year'
-            lastDayEnd = firstDayStart.clone().endOf 'year'
-            if aoSecond
-              qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
-            else
-              qb.not qb.and [
-                qb.gte wrapReference(aoFirst), qb firstDayStart.toISOString()
-                qb.lt wrapReference(aoFirst), qb lastDayEnd.toISOString()
-              ]...
+            buildIntervalQuery wrapReference(aoFirst), moment().subtract(1, 'years'), 'year', aoSecond
 
       @public parseFilter: Function,
         args: [Object]
