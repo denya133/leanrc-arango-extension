@@ -75,7 +75,7 @@
     "lodash": "^4.13.1"
   },
   "dependencies": {
-    "LeanRC": "git+ssh://git@bitbucket.org:webbasis/leanrc.git#v5.3.2",
+    "LeanRC": "git+ssh://git@bitbucket.org:webbasis/leanrc.git#v5.3.3",
     "coffeescript": "^2.1.1",
     "change-case": "3.0.0",
     "commander": "2.9.0",
