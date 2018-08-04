@@ -546,7 +546,7 @@ describe 'ArangoResponse', ->
         assert.equal response.status, 204
         assert.equal response.message, 'No Content'
         assert.equal response.get('Content-Type'), ''
-        assert.isUndefined response.length
+        assert.equal response.length, 0
         response._explicitStatus = no
         response.body = new Buffer '7468697320697320612074c3a97374', 'hex'
         assert.equal response.status, 200
@@ -597,7 +597,7 @@ describe 'ArangoResponse', ->
           removeHeader: (field) -> delete @headers[field.toLowerCase()]
         context = { res }
         response = Response.new context
-        assert.isUndefined response.length
+        assert.equal response.length, 0
         response.length = 10
         assert.equal response.length, 10
         response.remove 'Content-Length'

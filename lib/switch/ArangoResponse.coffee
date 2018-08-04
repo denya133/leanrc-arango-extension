@@ -84,14 +84,14 @@ module.exports = (Module)->
       get: ->
         len = @headers['content-length']
         unless len?
-          return unless @body
+          return 0 unless @body
           if _.isString @body
             return Buffer.byteLength @body
           if _.isBuffer @body
             return @body.length
           if _.isObjectLike @body
             return Buffer.byteLength JSON.stringify @body
-          return
+          return 0
         ~~Number len
       set: (n)-> @set 'Content-Length', n
 

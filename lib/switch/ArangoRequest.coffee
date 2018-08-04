@@ -139,8 +139,10 @@ module.exports = (Module)->
     @public length: Number,
       get: ->
         if (contentLength = @get 'Content-Length')?
-          return if contentLength is ''
+          return 0 if contentLength is ''
           ~~Number contentLength
+        else
+          0
 
     @public protocol: String,
       get: -> @req.protocol

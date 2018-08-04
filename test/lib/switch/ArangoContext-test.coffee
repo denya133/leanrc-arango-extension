@@ -906,7 +906,7 @@ describe 'ArangoContext', ->
         assert.equal context.status, 204
         assert.equal context.message, 'No Content'
         assert.equal context.response.get('Content-Type'), ''
-        assert.isUndefined context.response.length
+        assert.equal context.response.length, 0
         context.response._explicitStatus = no
         context.body = new Buffer '7468697320697320612074c3a97374', 'hex'
         assert.equal context.status, 200
@@ -1026,7 +1026,7 @@ describe 'ArangoContext', ->
           setHeader: (field, value) -> @headers[field.toLowerCase()] = value
           removeHeader: (field) -> delete @headers[field.toLowerCase()]
         context = TestContext.new req, res, switchInstance
-        assert.isUndefined context.length
+        assert.equal context.length, 0
         context.length = 10
         assert.equal context.length, 10
         context.response.remove 'Content-Length'

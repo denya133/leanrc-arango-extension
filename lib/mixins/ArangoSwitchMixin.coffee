@@ -114,26 +114,13 @@ module.exports = (Module)->
                   return yield routeFunc.call self, ctx
                 yield return
 
-              voEndpoint = voRouter[originMethodName]? path, co.wrap (req, res)->
-                self.sendNotification SEND_TO_LOG, '>>>>>> START REQUEST HANDLING', LEVELS[DEBUG]
-                res.statusCode = 404
-                voContext = ArangoContext.new req, res, self
-                voContext.routePath = path
-                self.sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
-                voContext.pathParams = req.pathParams
-                try
-                  yield routeFunc.call self, voContext
-                  self.respond voContext
-                catch err
-                  voContext.onerror err
-                self.sendNotification SEND_TO_LOG, '>>>>>> END REQUEST HANDLING', LEVELS[DEBUG]
-                yield return
+              voEndpoint = voRouter[originMethodName]? path, @callback path, routeFunc
               return [voRouter, voEndpoint]
           return
 
-      self = @
+      Class = @
       methods.forEach (method)->
-        self.createMethod method
+        Class.createMethod method
 
       @public del: Function,
         default: (args...)->
@@ -141,20 +128,6 @@ module.exports = (Module)->
 
       @createMethod() # create @public all:...
       ##########################################################################
-
-      @public @async callback: Function,
-        args: []
-        return: LAMBDA
-        default: (req, res)->
-          res.statusCode = 404
-          voContext = ArangoContext.new req, res, @
-          voContext.isPerformExecution = yes
-          try
-            yield @middlewaresHandler voContext
-            @respond voContext
-          catch err
-            voContext.onerror err
-          yield return
 
       @public @async perform: Function,
         default: (method, url, options)->
@@ -168,7 +141,16 @@ module.exports = (Module)->
           if options.body?
             req.body = options.body
             req.rawBody = new Buffer JSON.stringify options.body
-          yield @callback req, res
+
+          res.statusCode = 404
+          voContext = ArangoContext.new req, res, @
+          voContext.isPerformExecution = yes
+          try
+            yield @middlewaresHandler voContext
+            @respond voContext
+          catch err
+            voContext.onerror err
+
           {
             statusCode: status
             statusMessage: message
@@ -182,7 +164,6 @@ module.exports = (Module)->
       @public onRegister: Function,
         default: -> # super не вызываем
           voEmitter = new EventEmitter()
-          @middlewaresHandler = @constructor.compose @middlewares, @handlers
           unless _.isFunction voEmitter.eventNames
             eventNames = @[iphEventNames] = {}
             FILTER = [ 'newListener', 'removeListener' ]
@@ -200,6 +181,7 @@ module.exports = (Module)->
             voEmitter.on 'error', @onerror.bind @
           @setViewComponent voEmitter
           @defineRoutes()
+          @serverListen()
           return
 
       @public onRemove: Function,
@@ -209,6 +191,36 @@ module.exports = (Module)->
           eventNames.forEach (eventName)->
             voEmitter.removeAllListeners eventName
           return
+
+      @public serverListen: Function,
+        default: ->
+          @middlewaresHandler = @constructor.compose @middlewares, @handlers
+          return
+
+      @public callback: Function,
+        default: (path, routeFunc)->
+          self = @
+          handleRequest = co.wrap (req, res)->
+            t1 = Date.now()
+            { ERROR, DEBUG, LEVELS, SEND_TO_LOG } = Module::LogMessage
+            self.sendNotification SEND_TO_LOG, '>>>>>> START REQUEST HANDLING', LEVELS[DEBUG]
+            res.statusCode = 404
+            voContext = ArangoContext.new req, res, self
+            voContext.routePath = path
+            self.sendNotification SEND_TO_LOG, "#{voContext.method} #{path} matches #{voContext.path} #{JSON.stringify req.pathParams}", LEVELS[DEBUG]
+            voContext.pathParams = req.pathParams
+            try
+              yield routeFunc.call self, voContext
+              self.respond voContext
+            catch err
+              voContext.onerror err
+            self.sendNotification SEND_TO_LOG, '>>>>>> END REQUEST HANDLING', LEVELS[DEBUG]
+            reqLength = voContext.request.length
+            resLength = voContext.response.length
+            time = Date.now() - t1
+            yield self.handleStatistics reqLength, resLength, time, voContext
+            yield return
+          handleRequest
 
       @public respond: Function,
         default: (ctx)->
