@@ -335,7 +335,7 @@ module.exports = (Module)->
           if nonTransactionableSteps.length > 0
             for {method,args} in nonTransactionableSteps
               yield self[method] args...
-            yield return
+
             # yield forEach nonTransactionableSteps, ({method,args})->
             #   yield @[method] args...
             # , @
