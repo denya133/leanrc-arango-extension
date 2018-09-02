@@ -60,7 +60,7 @@ module.exports = (Module)->
       LEVELS
       DEBUG
     }
-    Utils: { _, inflect, extend, forEach, jsonStringify }
+    Utils: { _, inflect, extend, co, jsonStringify }
   } = Module::
 
   Module.defineMixin 'ArangoMigrationMixin', (BaseClass = Migration) ->
@@ -331,10 +331,14 @@ module.exports = (Module)->
               trans.push current
             [nonTrans, trans]
           , [[], []]
+          self = @
           if nonTransactionableSteps.length > 0
-            yield forEach nonTransactionableSteps, ({method,args})->
-              yield @[method] args...
-            , @
+            for {method,args} in nonTransactionableSteps
+              yield self[method] args...
+            yield return
+            # yield forEach nonTransactionableSteps, ({method,args})->
+            #   yield @[method] args...
+            # , @
           if transactionableSteps.length > 0
             yield db._executeTransaction
               waitForSync: yes
@@ -343,17 +347,30 @@ module.exports = (Module)->
                 read: read
                 write: write
                 allowImplicit: no
-              action: @wrap (params)->
-                forEach params.steps, ({ method, args }) ->
+              action: co.wrap (params)->
+                for { method, args } in params.steps
                   if method is 'reversible'
                     [lambda] = args
-                    yield lambda.call @,
+                    yield lambda.call self,
                       up: (f)-> f()
                       down: -> Module::Promise.resolve()
                   else
-                    yield @[method] args...
-                , params.self
-              params: {self: @, steps: transactionableSteps}
+                    yield self[method] args...
+                yield return
+
+              params: {steps: transactionableSteps}
+
+              # action: @wrap (params)->
+              #   forEach params.steps, ({ method, args }) ->
+              #     if method is 'reversible'
+              #       [lambda] = args
+              #       yield lambda.call @,
+              #         up: (f)-> f()
+              #         down: -> Module::Promise.resolve()
+              #     else
+              #       yield @[method] args...
+              #   , params.self
+              # params: {self: @, steps: transactionableSteps}
           yield return
 
       @public @async down: Function,
@@ -383,6 +400,7 @@ module.exports = (Module)->
               trans.push current
             [trans, nonTrans]
           , [[], []]
+          self = @
           if transactionableSteps.length > 0
             yield db._executeTransaction
               waitForSync: yes
@@ -391,22 +409,37 @@ module.exports = (Module)->
                 read: read
                 write: write
                 allowImplicit: no
-              action: @wrap (params)->
-                forEach params.steps, ({ method, args }) ->
+              action: co.wrap (params)->
+                for { method, args } in params.steps
                   if method is 'reversible'
                     [lambda] = args
-                    yield lambda.call @,
+                    yield lambda.call self,
                       up: -> Module::Promise.resolve()
                       down: (f)-> f()
                   else if method is 'renameField'
                     [collectionName, oldName, newName] = args
-                    yield @[method] collectionName, newName, oldName
+                    yield self[method] collectionName, newName, oldName
                   else
-                    yield @[Migration::REVERSE_MAP[method]] args...
-                , params.self
-              params: {self: @, steps: transactionableSteps}
+                    yield self[Migration::REVERSE_MAP[method]] args...
+                yield return
+              params: {steps: transactionableSteps}
+
+              # action: @wrap (params)->
+              #   forEach params.steps, ({ method, args }) ->
+              #     if method is 'reversible'
+              #       [lambda] = args
+              #       yield lambda.call @,
+              #         up: -> Module::Promise.resolve()
+              #         down: (f)-> f()
+              #     else if method is 'renameField'
+              #       [collectionName, oldName, newName] = args
+              #       yield @[method] collectionName, newName, oldName
+              #     else
+              #       yield @[Migration::REVERSE_MAP[method]] args...
+              #   , params.self
+              # params: {self: @, steps: transactionableSteps}
           if nonTransactionableSteps.length > 0
-            yield forEach nonTransactionableSteps, ({method,args})->
+            for {method,args} in nonTransactionableSteps
               if method is 'renameIndex'
                 [collectionName, oldName, newName] = args
                 yield @[method] collectionName, newName, oldName
@@ -415,7 +448,17 @@ module.exports = (Module)->
                 yield @[method] newName, collectionName
               else
                 yield @[Migration::REVERSE_MAP[method]] args...
-            , @
+
+            # yield forEach nonTransactionableSteps, ({method,args})->
+            #   if method is 'renameIndex'
+            #     [collectionName, oldName, newName] = args
+            #     yield @[method] collectionName, newName, oldName
+            #   else if method is 'renameCollection'
+            #     [collectionName, newName] = args
+            #     yield @[method] newName, collectionName
+            #   else
+            #     yield @[Migration::REVERSE_MAP[method]] args...
+            # , @
           yield return
 
 
