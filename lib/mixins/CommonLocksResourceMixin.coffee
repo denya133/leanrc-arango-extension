@@ -17,8 +17,9 @@ module.exports = (Module)->
             'auth_roles',
             'auth_space_users', 'auth_sections', 'auth_rules'
             'auth_permissions', 'auth_role_permissions'
+            'core_migrations'
           ]
-          write: []
+          write: ['core_tasks']
 
 
       @initializeMixin()
