@@ -33,8 +33,10 @@ module.exports = (Module)->
               alResults.push name unless /migrations$/.test name
             alResults
           , []
-          write = vlCollectionNames.concat ['_jobs']
-          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues', '_jobs']
+          # write = vlCollectionNames.concat ['_jobs']
+          # read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues', '_jobs']
+          write = vlCollectionNames
+          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations"]
           return {read, write}
 
       @public listNonTransactionables: Function,
