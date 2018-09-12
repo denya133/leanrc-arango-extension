@@ -550,11 +550,11 @@ module.exports = (Module)->
               body = [body]
 
             if aoQuery.isCustomReturn
-              return Cursor.new null, body
+              yield return Cursor.new null, body
             else
-              return Cursor.new @, body
+              yield return Cursor.new @, body
           else
-            return Cursor.new null, []
+            yield return Cursor.new null, []
 
 
       @initializeMixin()
