@@ -128,15 +128,7 @@ module.exports = (Module)->
 
       @public @async addTimestamps: Function,
         default: (collection_name, options)->
-          qualifiedName = @collection.collectionFullName collection_name
-          vsQuery = "
-            FOR doc IN #{qualifiedName}
-              UPDATE doc._key
-                WITH {createdAt: null, updatedAt: null, deletedAt: null}
-              IN #{qualifiedName}
-          "
-          @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::addTimestamps vsQuery #{vsQuery}", LEVELS[DEBUG])
-          db._query vsQuery
+          # NOTE: нет смысла выполнять запрос, т.к. в addField есть проверка if initial? и если null, то атрибут не добавляется
           yield return
 
       @public @async changeCollection: Function,
