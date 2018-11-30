@@ -45,11 +45,11 @@ module.exports = (Module)->
 
 module.exports = (Module)->
   {
-    Configuration
+    Configuration, Mixin
     Utils: { _ }
   } = Module::
 
-  Module.defineMixin 'ArangoConfigurationMixin', (BaseClass = Configuration) ->
+  Module.defineMixin Mixin 'ArangoConfigurationMixin', (BaseClass = Configuration) ->
     class extends BaseClass
       @inheritProtected()
 

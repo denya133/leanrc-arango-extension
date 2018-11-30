@@ -54,20 +54,25 @@ module.exports = (Module)->
 
 module.exports = (Module)->
   {
+    AnyT, NilT
+    FuncG, ListG, EnumG, MaybeG, UnionG, InterfaceG
     Migration
+    Mixin
     LogMessage: {
       SEND_TO_LOG
       LEVELS
       DEBUG
     }
-    Utils: { _, inflect, extend, co, jsonStringify }
+    Utils: { _, inflect, assign, co, jsonStringify }
   } = Module::
 
-  Module.defineMixin 'ArangoMigrationMixin', (BaseClass = Migration) ->
+  Module.defineMixin Mixin 'ArangoMigrationMixin', (BaseClass = Migration) ->
     class extends BaseClass
       @inheritProtected()
 
-      @public @async createCollection: Function,
+      { UP, DOWN, SUPPORTED_TYPES } = @::
+
+      @public @async createCollection: FuncG([String, MaybeG Object], NilT),
         default: (name, options = {})->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
@@ -75,7 +80,7 @@ module.exports = (Module)->
             db._createDocumentCollection qualifiedName, options
           yield return
 
-      @public @async createEdgeCollection: Function,
+      @public @async createEdgeCollection: FuncG([String, String, MaybeG Object], NilT),
         default: (collection_1, collection_2, options = {})->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           unless db._collection qualifiedName
@@ -83,9 +88,17 @@ module.exports = (Module)->
             db._createEdgeCollection qualifiedName, options
           yield return
 
-      @public @async addField: Function,
+      @public @async addField: FuncG([String, String, UnionG(
+        EnumG SUPPORTED_TYPES
+        InterfaceG {
+          type: EnumG SUPPORTED_TYPES
+          default: AnyT
+        }
+      )], NilT),
         default: (collection_name, field_name, options)->
           qualifiedName = @collection.collectionFullName collection_name
+          if _.isString options
+            yield return
           if options.default?
             if _.isNumber(options.default) or _.isBoolean(options.default)
               initial = options.default
@@ -110,7 +123,11 @@ module.exports = (Module)->
             db._query vsQuery
           yield return
 
-      @public @async addIndex: Function,
+      @public @async addIndex: FuncG([String, ListG(String), InterfaceG {
+        type: EnumG 'hash', 'skiplist', 'persistent', 'geo', 'fulltext'
+        unique: MaybeG Boolean
+        sparse: MaybeG Boolean
+      }], NilT),
         default: (collection_name, field_names, options)->
           # TODO; fulltext индекс вызывает ошибку в аранге - надо дебажить
           qualifiedName = @collection.collectionFullName collection_name
@@ -126,19 +143,24 @@ module.exports = (Module)->
           db._collection(qualifiedName).ensureIndex opts
           yield return
 
-      @public @async addTimestamps: Function,
-        default: (collection_name, options)->
+      @public @async addTimestamps: FuncG([String, MaybeG Object], NilT),
+        default: (collection_name, options = {})->
           # NOTE: нет смысла выполнять запрос, т.к. в addField есть проверка if initial? и если null, то атрибут не добавляется
           yield return
 
-      @public @async changeCollection: Function,
+      @public @async changeCollection: FuncG([String, Object], NilT),
         default: (name, options)->
           qualifiedName = @collection.collectionFullName name
           @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::changeCollection qualifiedName = #{qualifiedName}, options = #{jsonStringify options}", LEVELS[DEBUG])
           db._collection(qualifiedName).properties options
           yield return
 
-      @public @async changeField: Function,
+      @public @async changeField: FuncG([String, String, UnionG(
+        EnumG SUPPORTED_TYPES
+        InterfaceG {
+          type: EnumG SUPPORTED_TYPES
+        }
+      )], NilT),
         default: (collection_name, field_name, options)->
           {
             json
@@ -156,8 +178,12 @@ module.exports = (Module)->
             timestamp
             array
             hash
-          } = Migration::SUPPORTED_TYPES
-          typeCast = switch options.type
+          } = SUPPORTED_TYPES
+          type = if _.isString options
+            options
+          else
+            options.type
+          typeCast = switch type
             when boolean
               "TO_BOOL(doc.#{field_name})"
             when decimal, float, integer
@@ -183,7 +209,7 @@ module.exports = (Module)->
           db._query vsQuery
           yield return
 
-      @public @async renameField: Function,
+      @public @async renameField: FuncG([String, String, String], NilT),
         default: (collection_name, field_name, new_field_name)->
           qualifiedName = @collection.collectionFullName collection_name
           vsQuery = "
@@ -198,20 +224,20 @@ module.exports = (Module)->
           db._query vsQuery
           yield return
 
-      @public @async renameIndex: Function,
+      @public @async renameIndex: FuncG([String, String, String], NilT),
         default: (collection_name, old_name, new_name)->
           # not supported in ArangoDB because index has not name
           yield return
 
-      @public @async renameCollection: Function,
-        default: (collection_name, old_name, new_name)->
-          qualifiedName = @collection.collectionFullName collection_name
-          newQualifiedName = @collection.collectionFullName new_name
+      @public @async renameCollection: FuncG([String, String], NilT),
+        default: (collectionName, newCollectionName)->
+          qualifiedName = @collection.collectionFullName collectionName
+          newQualifiedName = @collection.collectionFullName newCollectionName
           @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::renameCollection qualifiedName, newQualifiedName = #{qualifiedName}, #{newQualifiedName}", LEVELS[DEBUG])
           db._collection(qualifiedName).rename newQualifiedName
           yield return
 
-      @public @async dropCollection: Function,
+      @public @async dropCollection: FuncG(String, NilT),
         default: (name)->
           qualifiedName = @collection.collectionFullName name
           if db._collection(qualifiedName)?
@@ -219,7 +245,7 @@ module.exports = (Module)->
             db._drop qualifiedName
           yield return
 
-      @public @async dropEdgeCollection: Function,
+      @public @async dropEdgeCollection: FuncG([String, String], NilT),
         default: (collection_1, collection_2)->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           if db._collection(qualifiedName)?
@@ -227,7 +253,7 @@ module.exports = (Module)->
             db._drop qualifiedName
           yield return
 
-      @public @async removeField: Function,
+      @public @async removeField: FuncG([String, String], NilT),
         default: (collection_name, field_name)->
           qualifiedName = @collection.collectionFullName collection_name
           vsQuery = "
@@ -239,7 +265,11 @@ module.exports = (Module)->
           db._query vsQuery
           yield return
 
-      @public @async removeIndex: Function,
+      @public @async removeIndex: FuncG([String, ListG(String), InterfaceG {
+        type: EnumG 'hash', 'skiplist', 'persistent', 'geo', 'fulltext'
+        unique: MaybeG Boolean
+        sparse: MaybeG Boolean
+      }], NilT),
         default: (collection_name, field_names, options)->
           qualifiedName = @collection.collectionFullName collection_name
           opts =
@@ -266,8 +296,8 @@ module.exports = (Module)->
             db._collection(qualifiedName).dropIndex index
           yield return
 
-      @public @async removeTimestamps: Function,
-        default: (collection_name, options)->
+      @public @async removeTimestamps: FuncG([String, MaybeG Object], NilT),
+        default: (collection_name, options = {})->
           qualifiedName = @collection.collectionFullName collection_name
           vsQuery = "
             FOR doc IN #{qualifiedName}
@@ -300,7 +330,7 @@ module.exports = (Module)->
       @public @async up: Function,
         default: ->
           iplSteps = @constructor.instanceVariables['_steps'].pointer
-          {read, write} = extend {}, @getLocks(), @customLocks()
+          {read, write} = assign {}, @getLocks(), @customLocks()
           steps = @[iplSteps]?[..] ? []
           [
             nonTransactionableSteps
@@ -368,7 +398,7 @@ module.exports = (Module)->
       @public @async down: Function,
         default: ->
           iplSteps = @constructor.instanceVariables['_steps'].pointer
-          {read, write} = extend {}, @getLocks(), @customLocks()
+          {read, write} = assign {}, @getLocks(), @customLocks()
           steps = @[iplSteps]?[..] ? []
           steps.reverse()
           [
