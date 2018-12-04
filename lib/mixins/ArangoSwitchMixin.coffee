@@ -77,7 +77,7 @@ module.exports = (Module)->
 
       ################
 
-      @public @static createMethod: FuncG(String, NilT),
+      @public @static createMethod: FuncG([MaybeG String], NilT),
         default: (method)->
           originMethodName = method
           if method
@@ -135,9 +135,9 @@ module.exports = (Module)->
       @public @async perform: FuncG(StructG({
         method: String
         url: String
-        options: StructG {
-          json: EnumG yes
-          headers: Object
+        options: InterfaceG {
+          json: EnumG [yes]
+          headers: DictG String, String
           body: MaybeG Object
         }
       }), StructG {
@@ -145,7 +145,6 @@ module.exports = (Module)->
         headers: DictG String, String
         status: Number
         message: MaybeG String
-        cookies: Object
       }),
         default: (method, url, options)->
           @sendNotification SEND_TO_LOG, '>>>>>> START PERFORM-REQUEST HANDLING', LEVELS[DEBUG]

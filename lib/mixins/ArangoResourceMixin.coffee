@@ -12,7 +12,7 @@ ARANGO_CONFLICT   = errors.ERROR_ARANGO_CONFLICT.code
 module.exports = (Module)->
   {
     AnyT
-    FuncG, StructG, ListG
+    FuncG, StructG, ListG, MaybeG
     ContextInterface
     Resource, Mixin
     LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
@@ -47,7 +47,7 @@ module.exports = (Module)->
       @public nonPerformExecution: FuncG(ContextInterface, Boolean),
         default: (context)-> not context.isPerformExecution
 
-      @public @async doAction: FuncG([String, ContextInterface], AnyT),
+      @public @async doAction: FuncG([String, ContextInterface], MaybeG AnyT),
         default: (action, context)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"

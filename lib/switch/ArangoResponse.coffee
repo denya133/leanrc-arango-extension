@@ -5,12 +5,13 @@ getType             = require('mime-types').contentType
 
 module.exports = (Module)->
   {
-    NILL
-
+    AnyT, NilT
+    FuncG, UnionG, MaybeG
+    ResponseInterface, SwitchInterface, ContextInterface
     CoreObject
     # ResponseInterface
-    SwitchInterface
-    ContextInterface
+    # SwitchInterface
+    # ContextInterface
     Utils: { _, statuses }
   } = Module::
 
@@ -27,7 +28,7 @@ module.exports = (Module)->
 
     @public ctx: ContextInterface
 
-    @public socket: Object,
+    @public socket: MaybeG(Object),
       get: ->
 
     @public header: Object,
@@ -53,7 +54,7 @@ module.exports = (Module)->
         @res.statusMessage = msg
         return
 
-    @public body: [String, Buffer, Object, Array, Date, Boolean],
+    @public body: MaybeG(UnionG String, Buffer, Object, Array, Number, Boolean, Stream),
       get: -> @_body
       set: (val)->
         original = @_body
@@ -95,15 +96,15 @@ module.exports = (Module)->
         ~~Number len
       set: (n)-> @set 'Content-Length', n
 
-    @public headerSent: Boolean,
+    @public headerSent: MaybeG(Boolean),
       get: -> no
 
-    @public vary: Function,
+    @public vary: FuncG(String, NilT),
       default: (args...)->
         @res.vary args...
         return
 
-    @public redirect: Function,
+    @public redirect: FuncG([String, MaybeG String], NilT),
       default: (url, alt)->
         if 'back' is url
           url = @ctx.get('Referrer') or alt or '/'
@@ -113,12 +114,12 @@ module.exports = (Module)->
           @res.redirect 302, url
         return
 
-    @public attachment: Function,
+    @public attachment: FuncG(String, NilT),
       default: (filename)->
         @res.attachment filename
         return
 
-    @public lastModified: Date,
+    @public lastModified: MaybeG(Date),
       get: ->
         date = @get 'last-modified'
         if date
@@ -140,7 +141,7 @@ module.exports = (Module)->
     #   set: (type)->
     #     @res.type type
 
-    @public type: String,
+    @public type: MaybeG(String),
       get: ->
         type = @get 'Content-Type'
         return '' unless type
@@ -152,7 +153,7 @@ module.exports = (Module)->
         else
           @remove 'Content-Type'
 
-    @public is: Function,
+    @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
       default: (args...)->
         [types] = args
         return @type or no unless types
@@ -160,11 +161,11 @@ module.exports = (Module)->
           types = args
         typeis @type, types
 
-    @public get: Function,
+    @public get: FuncG(String, UnionG String, Array),
       default: (field)->
         @headers[field.toLowerCase()] ? ''
 
-    @public set: Function,
+    @public set: FuncG([UnionG(String, Object), MaybeG AnyT], NilT),
       default: (args...)->
         [field, val] = args
         if 2 is args.length
@@ -178,7 +179,7 @@ module.exports = (Module)->
             @set key, value
         return
 
-    @public append: Function,
+    @public append: FuncG([String, UnionG String, Array], NilT),
       default: (field, val)->
         prev = @get field
         if prev
@@ -188,7 +189,7 @@ module.exports = (Module)->
             val = [prev].concat val
         @set field, val
 
-    @public remove: Function,
+    @public remove: FuncG(String, NilT),
       default: (field)->
         @res.removeHeader field
         return
@@ -202,11 +203,11 @@ module.exports = (Module)->
     @public writable: Boolean,
       get: -> yes
 
-    @public init: Function,
+    @public init: FuncG(ContextInterface, NilT),
       default: (context)->
         @super()
         @ctx = context
         return
 
 
-  ArangoResponse.initialize()
+    @initialize()

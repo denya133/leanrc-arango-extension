@@ -22,7 +22,7 @@ module.exports = (Module)->
           START_RESQUE
         ]
 
-      @public handleNotification: FuncG(NotificationInterface, NilT),
+      @public handleNotification: FuncG(NotificationInterface),
         default: (aoNotification)->
           vsName = aoNotification.getName()
           voBody = aoNotification.getBody()

@@ -55,7 +55,7 @@ module.exports = (Module)->
 module.exports = (Module)->
   {
     AnyT, NilT
-    FuncG, ListG, EnumG, MaybeG, UnionG, InterfaceG
+    FuncG, ListG, EnumG, MaybeG, UnionG, InterfaceG, StructG
     Migration
     Mixin
     LogMessage: {
@@ -168,6 +168,7 @@ module.exports = (Module)->
             boolean
             date
             datetime
+            number
             decimal
             float
             integer
@@ -186,7 +187,7 @@ module.exports = (Module)->
           typeCast = switch type
             when boolean
               "TO_BOOL(doc.#{field_name})"
-            when decimal, float, integer
+            when decimal, float, integer, number
               "TO_NUMBER(doc.#{field_name})"
             when string, text, primary_key, binary
               "TO_STRING(JSON_STRINGIFY(doc.#{field_name}))"
@@ -308,14 +309,13 @@ module.exports = (Module)->
           db._query vsQuery
           yield return
 
-      @public customLocks: Function,
-        args: []
-        return: Object
+      @public customLocks: FuncG([], Object),
         default: -> {}
 
-      @public getLocks: Function,
-        args: []
-        return: Object
+      @public getLocks: FuncG([], StructG {
+        read: ListG String
+        write: ListG String
+      }),
         default: ->
           vrCollectionPrefix = new RegExp "^#{inflect.underscore @Module.name}_"
           vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->

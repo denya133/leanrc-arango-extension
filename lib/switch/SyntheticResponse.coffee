@@ -14,7 +14,9 @@ contentDisposition = require 'content-disposition'
 
 module.exports = (Module)->
   {
-    ANY
+    NilT
+    FuncG, UnionG
+    ContextInterface
     CoreObject
     Utils: { _, statuses }
   } = Module::
@@ -26,7 +28,7 @@ module.exports = (Module)->
     @inheritProtected()
     @module Module
 
-    @public body: [Buffer, String],
+    @public body: UnionG(Buffer, String),
       set: (data)->
         unless data?
           return undefined
@@ -59,11 +61,13 @@ module.exports = (Module)->
           @contentType = mimeTypes.lookup(filename) ? MIME_BINARY
         @set 'Content-Disposition', contentDisposition filename
         return @
+
     @public download: Function,
       default: (path, filename)->
         @attachment filename ? path
         @sendFile path
         return @
+
     @public sendFile: Function,
       default: (filename, opts)->
         if _.isBoolean opts
@@ -116,6 +120,7 @@ module.exports = (Module)->
             opts.httpOnly
           )
         return @
+
     @public getHeader: Function,
       default: (name)->
         name = name.toLowerCase()
@@ -140,6 +145,7 @@ module.exports = (Module)->
         else
           @body = JSON.stringify value
         return @
+
     @public redirect: Function,
       default: (status, path)->
         unless path
@@ -151,6 +157,7 @@ module.exports = (Module)->
           @statusCode = status ? 302
         @setHeader 'location', path
         return @
+
     @public send: Function,
       default: (body, type)->
         if body and body.isArangoResultSet
@@ -212,6 +219,7 @@ module.exports = (Module)->
         if contentType
           @contentType = contentType
         return @
+
     @public sendStatus: Function,
       default: (status)->
         if _.isString status
@@ -220,6 +228,7 @@ module.exports = (Module)->
         @statusCode = status
         @body = message
         return @
+
     @public set: Function,
       default: (name, value)->
         if name and _.isObjectLike name
@@ -227,6 +236,7 @@ module.exports = (Module)->
         else
           @setHeader name, value
         return @
+
     @public setHeader: Function,
       default: (name, value)->
         unless name
@@ -237,12 +247,14 @@ module.exports = (Module)->
         else
           @headers[name] = value
         return @
+
     @public status: Function,
       default: (status)->
         if _.isString status
           status = statuses status
         @statusCode = status
         return @
+
     @public throw: Function,
       default: (status, reason, options)->
         if _.isString status
@@ -265,11 +277,13 @@ module.exports = (Module)->
           {statusCode: status, status},
           options
         )
+
     @public type: Function,
       default: (type)->
         if type
           @contentType = mimeTypes.lookup(type) ? type
         @contentType
+
     @public vary: Function,
       default: (args...)->
         header = @getHeader('vary') ? ''
@@ -281,6 +295,7 @@ module.exports = (Module)->
           header = vary.append header, value
         @setHeader 'vary', header
         return @
+
     @public write: Function,
       default: (data)->
         bodyIsBuffer = _.isBuffer @body
@@ -327,7 +342,7 @@ module.exports = (Module)->
 
         res.cookies.push cookie
 
-    @public init: Function,
+    @public init: FuncG(ContextInterface, NilT),
       default: (context)->
         @super()
         @headers = {}
@@ -337,4 +352,4 @@ module.exports = (Module)->
         return
 
 
-  SyntheticResponse.initialize()
+    @initialize()

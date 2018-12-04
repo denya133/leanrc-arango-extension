@@ -3,7 +3,7 @@
 module.exports = (Module)->
   {
     AnyT
-    FuncG, SubsetG
+    FuncG, SubsetG, MaybeG
     RecordInterface
     Serializer, Mixin
   } = Module::
@@ -12,14 +12,14 @@ module.exports = (Module)->
     class extends BaseClass
       @inheritProtected()
 
-      @public @async normalize: FuncG([SubsetG(RecordInterface), AnyT], RecordInterface),
+      @public @async normalize: FuncG([SubsetG(RecordInterface), MaybeG AnyT], RecordInterface),
         default: (acRecord, ahPayload)->
           ahPayload.rev = ahPayload._rev
           ahPayload._rev = undefined
           delete ahPayload._rev
           return yield acRecord.normalize ahPayload, @collection
 
-      @public @async serialize: FuncG([RecordInterface, Object], AnyT),
+      @public @async serialize: FuncG([MaybeG(RecordInterface), MaybeG Object], MaybeG AnyT),
         default: (aoRecord, options = null)->
           vcRecord = aoRecord.constructor
           serialized = yield vcRecord.serialize aoRecord, options

@@ -44,10 +44,11 @@ module.exports = (Module)->
           vsQuery = voQuery.toAQL()
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::push vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
-          if voNativeCursor.hasNext()
-            return yield @normalize voNativeCursor.next()
-          else
-            yield return
+          return yield @normalize voNativeCursor.next()
+          # if voNativeCursor.hasNext()
+          #   return yield @normalize voNativeCursor.next()
+          # else
+          #   yield return
 
       @public @async remove: FuncG([UnionG String, Number], NilT),
         default: (id)->

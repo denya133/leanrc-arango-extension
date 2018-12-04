@@ -155,7 +155,7 @@ module.exports = (Module)->
           yield @close()
           throw err
 
-    @public init: FuncG([MaybeG(CollectionInterface), MaybeG UnionG Array, Object], NilT),
+    @public init: FuncG([MaybeG(CollectionInterface), MaybeG UnionG Array, Object]),
       default: (aoCollection = null, aoCursor = null)->
         @super arguments...
         @[ipoCursor] = aoCursor

@@ -4,15 +4,17 @@ createError   = require 'http-errors'
 
 module.exports = (Module)->
   {
-    ANY
     DEVELOPMENT
-
+    AnyT, NilT
+    FuncG, UnionG, MaybeG
+    RequestInterface, ResponseInterface, SwitchInterface, CookiesInterface
+    ContextInterface
     CoreObject
     # ContextInterface
-    RequestInterface
-    ResponseInterface
-    SwitchInterface
-    CookiesInterface
+    # RequestInterface
+    # ResponseInterface
+    # SwitchInterface
+    # CookiesInterface
     ArangoRequest
     ArangoResponse
     Cookies
@@ -21,32 +23,34 @@ module.exports = (Module)->
 
   class ArangoContext extends CoreObject
     @inheritProtected()
-    # @implements ContextInterface
+    @implements ContextInterface
     @module Module
 
     @public req: Object # native request object
     @public res: Object # native response object
-    @public request: RequestInterface
-    @public response: ResponseInterface
-    @public cookies: CookiesInterface
+    @public request: MaybeG RequestInterface
+    @public response: MaybeG ResponseInterface
+    @public cookies: MaybeG CookiesInterface
     @public accept: Object
-    @public state: Object
+    @public state: MaybeG Object
     @public switch: SwitchInterface
-    @public respond: Boolean
-    @public routePath: String
-    @public pathParams: Object
+    @public respond: MaybeG Boolean
+    @public routePath: MaybeG String
+    @public pathParams: MaybeG Object
+    @public transaction: MaybeG Object
+    @public session: MaybeG Object
     @public isPerformExecution: Boolean,
       default: no
 
     # @public database: String # возможно это тоже надо получать из метода из отдельного модуля
 
-    @public throw: Function,
+    @public throw: FuncG([UnionG(String, Number), MaybeG(String), MaybeG Object], NilT),
       default: (args...)-> throw createError args...
 
-    @public assert: Function,
+    @public assert: FuncG([AnyT, MaybeG(UnionG String, Number), MaybeG(String), MaybeG Object], NilT),
       default: assert
 
-    @public onerror: Function,
+    @public onerror: FuncG([MaybeG AnyT], NilT),
       default: (err)->
         return unless err?
         unless _.isError err
@@ -126,17 +130,17 @@ module.exports = (Module)->
       get: -> @request.ips
     @public subdomains: Array,
       get: -> @request.subdomains
-    @public is: Function,
+    @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
       default: (args...)-> @request.is args...
-    @public accepts: Function,
+    @public accepts: FuncG([MaybeG UnionG String, Array], UnionG String, Array, Boolean),
       default: (args...)-> @request.accepts args...
-    @public acceptsEncodings: Function,
+    @public acceptsEncodings: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @request.acceptsEncodings args...
-    @public acceptsCharsets: Function,
+    @public acceptsCharsets: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @request.acceptsCharsets args...
-    @public acceptsLanguages: Function,
+    @public acceptsLanguages: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @request.acceptsLanguages args...
-    @public get: Function,
+    @public get: FuncG(String, String),
       default: (args...)-> @request.get args...
 
     # Response aliases
@@ -159,26 +163,26 @@ module.exports = (Module)->
       set: (type)-> @response.type = type
     @public headerSent: Boolean,
       get: -> @response.headerSent
-    @public redirect: Function,
+    @public redirect: FuncG([String, MaybeG String], NilT),
       default: (args...)-> @response.redirect args...
-    @public attachment: Function,
+    @public attachment: FuncG(String, NilT),
       default: (args...)-> @response.attachment args...
-    @public set: Function,
+    @public set: FuncG([UnionG(String, Object), MaybeG AnyT], NilT),
       default: (args...)-> @response.set args...
-    @public append: Function,
+    @public append: FuncG([String, UnionG String, Array], NilT),
       default: (args...)-> @response.append args...
-    @public vary: Function,
+    @public vary: FuncG(String, NilT),
       default: (args...)-> @response.vary args...
     @public flushHeaders: Function,
       default: (args...)-> @response.flushHeaders args...
-    @public remove: Function,
+    @public remove: FuncG(String, NilT),
       default: (args...)-> @response.remove args...
-    @public lastModified: Date,
+    @public lastModified: MaybeG(Date),
       set: (date)-> @response.lastModified = date
     @public etag: String,
       set: (etag)-> @response.etag = etag
 
-    @public init: Function,
+    @public init: FuncG([Object, Object, SwitchInterface], NilT),
       default: (req, res, switchInstanse)->
         @super()
         @req = req
@@ -203,4 +207,4 @@ module.exports = (Module)->
         return
 
 
-  ArangoContext.initialize()
+    @initialize()
