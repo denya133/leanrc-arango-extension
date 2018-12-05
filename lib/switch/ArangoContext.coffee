@@ -144,10 +144,10 @@ module.exports = (Module)->
       default: (args...)-> @request.get args...
 
     # Response aliases
-    @public body: [String, Buffer, Object, Array, Number, Boolean],
+    @public body: MaybeG(UnionG String, Buffer, Object, Array, Number, Boolean, Stream),
       get: -> @response.body
       set: (body)-> @response.body = body
-    @public status: [String, Number],
+    @public status: MaybeG(Number),
       get: -> @response.status
       set: (status)-> @response.status = status
     @public message: String,
@@ -158,10 +158,10 @@ module.exports = (Module)->
       set: (length)-> @response.length = length
     @public writable: Boolean,
       get: -> @response.writable
-    @public type: String,
+    @public type: MaybeG(String),
       get: -> @response.type
       set: (type)-> @response.type = type
-    @public headerSent: Boolean,
+    @public headerSent: MaybeG(Boolean),
       get: -> @response.headerSent
     @public redirect: FuncG([String, MaybeG String], NilT),
       default: (args...)-> @response.redirect args...
@@ -181,6 +181,16 @@ module.exports = (Module)->
       set: (date)-> @response.lastModified = date
     @public etag: String,
       set: (etag)-> @response.etag = etag
+
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
 
     @public init: FuncG([Object, Object, SwitchInterface], NilT),
       default: (req, res, switchInstanse)->

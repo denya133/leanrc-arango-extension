@@ -174,10 +174,10 @@ module.exports = (Module)->
 
     @public accepts: FuncG([MaybeG UnionG String, Array], UnionG String, Array, Boolean),
       default: (args...)-> @ctx.accept.types args...
-    @public acceptsCharsets: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
-      default: (args...)-> @ctx.accept.charsets args...
     @public acceptsEncodings: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @ctx.accept.encodings args...
+    @public acceptsCharsets: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
+      default: (args...)-> @ctx.accept.charsets args...
     @public acceptsLanguages: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @ctx.accept.languages args...
 
@@ -198,6 +198,16 @@ module.exports = (Module)->
             @req.headers.referrer ? @req.headers.referer ? ''
           else
             @req.headers[field] ? ''
+
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
 
     @public init: FuncG(ContextInterface, NilT),
       default: (context)->

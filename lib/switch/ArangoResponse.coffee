@@ -17,7 +17,7 @@ module.exports = (Module)->
 
   class ArangoResponse extends CoreObject
     @inheritProtected()
-    # @implements ResponseInterface
+    @implements ResponseInterface
     @module Module
 
     @public res: Object, # native response object
@@ -36,7 +36,7 @@ module.exports = (Module)->
     @public headers: Object,
       get: -> @res.headers
 
-    @public status: Number,
+    @public status: MaybeG(Number),
       get: -> @res.statusCode
       set: (code)->
         assert _.isNumber(code), 'status code must be a number'
@@ -81,7 +81,7 @@ module.exports = (Module)->
         @type = 'json'
         return
 
-    @public length: Boolean,
+    @public length: Number,
       get: ->
         len = @headers['content-length']
         unless len?
@@ -202,6 +202,16 @@ module.exports = (Module)->
 
     @public writable: Boolean,
       get: -> yes
+
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
 
     @public init: FuncG(ContextInterface, NilT),
       default: (context)->

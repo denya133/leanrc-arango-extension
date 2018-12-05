@@ -16,7 +16,6 @@ module.exports = (Module)->
   {
     AnyT, NilT, PointerT
     FuncG, MaybeG, UnionG
-    ContextInterface
     CoreObject
     Utils: { _ }
   } = Module::
@@ -30,6 +29,7 @@ module.exports = (Module)->
       get: ->
         @[ipoUrlCache] ?= parseUrl @initialUrl
         return @[ipoUrlCache]
+
     @public initialUrl: String
     # @public arangoUser: String # not supported
     # @public arangoVersion: Number # not supported
@@ -88,7 +88,7 @@ module.exports = (Module)->
         accept = accepts @
         accept.languages args...
 
-    @public cookie: Function,
+    @public cookie: FuncG([String, UnionG String, Object], MaybeG String),
       default: (name, opts)->
         if _.isString opts
           opts = secret: opts
@@ -104,14 +104,14 @@ module.exports = (Module)->
             return undefined
         return value
 
-    @public get: FuncG(String, String),
+    @public get: FuncG(String, MaybeG String),
       default: (name)->
         lc = name.toLowerCase()
         if lc is 'referer' or lc is 'referrer'
           return @headers.referer ? @headers.referrer
         return @headers[lc]
 
-    @public header: Function,
+    @public header: FuncG(String, MaybeG String),
       default: (name)-> @get name
 
     @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
@@ -144,7 +144,7 @@ module.exports = (Module)->
             opts.query = query
         return formatUrl opts
 
-    @public param: FuncG(String, String),
+    @public param: FuncG(String, MaybeG String),
       default: (name)->
         {hasOwnProperty} = {}
         if hasOwnProperty.call @pathParams, name
@@ -161,8 +161,17 @@ module.exports = (Module)->
     # @public reverse: Function, # not supported
     #   default: (name, params)->
 
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
 
-    @public init: FuncG(ContextInterface, NilT),
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
+
+    @public init: Function,
       default: (context)->
         @super()
         @context = context
