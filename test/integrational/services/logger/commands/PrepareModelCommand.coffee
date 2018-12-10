@@ -2,6 +2,8 @@
 
 module.exports = (Module) ->
   {
+    FuncG
+    NotificationInterface
     SimpleCommand
     LoggerProxy
   } = Module::
@@ -10,9 +12,9 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public execute: Function,
+    @public execute: FuncG(NotificationInterface),
       default: ->
         @facade.registerProxy LoggerProxy.new()
 
 
-  PrepareModelCommand.initialize()
+    @initialize()

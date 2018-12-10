@@ -10,4 +10,4 @@ module.exports = (Module) ->
     @module Module
 
 
-  LoggerApplication.initialize()
+    @initialize()

@@ -11,8 +11,9 @@ Parser        = require 'mongo-parse' #mongo-parse@2.0.2
 module.exports = (Module)->
   {
     AnyT, NilT, MomentT
-    FuncG, UnionG, MaybeG, EnumG, ListG, StructG, DictG
+    FuncG, UnionG, MaybeG, EnumG, ListG, DictG, InterfaceG
     RecordInterface, CursorInterface, QueryInterface
+    Mixin
     Collection, Query
     ArangoCursor
     LogMessage: {
@@ -29,7 +30,7 @@ module.exports = (Module)->
 
       # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 
-      wrapReference = FuncG([UnionG String, Object], Object) (value)->
+      wrapReference = FuncG(AnyT, Object) (value)->
         if _.isString(value) and /^[@]/.test value
           qb.ref value.replace '@', ''
         else
@@ -265,12 +266,12 @@ module.exports = (Module)->
           $ly: (aoFirst, aoSecond)-> # last year
             buildIntervalQuery wrapReference(aoFirst), moment().subtract(1, 'years'), 'year', aoSecond
 
-      @public parseFilter: FuncG(StructG({
-        field: String
+      @public parseFilter: FuncG(InterfaceG({
+        field: MaybeG String
         parts: MaybeG ListG Object
-        operator: String
-        operand: AnyT
-        implicitField: Boolean
+        operator: MaybeG String
+        operand: MaybeG AnyT
+        implicitField: MaybeG Boolean
       }), Object),
         default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0

@@ -2,6 +2,16 @@
   "name": "test",
   "version": "1.0.0",
   "configuration": {
+    "trustProxy": {
+      "description": "trustProxy for test switch server",
+      "type": "boolean",
+      "default": true
+    },
+    "subdomainOffset": {
+      "description": "subdomainOffset for start tomatos server",
+      "type": "number",
+      "default": 1
+    },
     "test1": {
       "description": "test1 description",
       "type": "string",
@@ -16,6 +26,11 @@
       "description": "test3 description",
       "type": "boolean",
       "default": true
+    },
+    "cookieKey": {
+      "description": "Secret key for sign cookies.",
+      "type": "string",
+      "default": "COOKIE_KEY"
     }
   }
 }

@@ -5,7 +5,8 @@ module.exports = (Module) ->
     DELAYED_JOBS_SCRIPT
     MIGRATE
     ROLLBACK
-
+    FuncG
+    NotificationInterface
     SimpleCommand
     DelayedJobScript
     MigrateCommand
@@ -16,7 +17,7 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public execute: Function,
+    @public execute: FuncG(NotificationInterface),
       default: ->
         @facade.registerCommand DELAYED_JOBS_SCRIPT, DelayedJobScript
         @facade.registerCommand MIGRATE, MigrateCommand
@@ -30,4 +31,4 @@ module.exports = (Module) ->
         @facade.registerCommand 'ItselfResource', Module::ItselfResource
 
 
-  PrepareControllerCommand.initialize()
+    @initialize()

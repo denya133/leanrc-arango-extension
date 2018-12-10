@@ -71,7 +71,9 @@ module.exports = (Module)->
 
     @public query: Object,
       get: -> qs.parse @querystring
-      set: (obj)-> @querystring = qs.stringify obj
+      set: (obj)->
+        @querystring = qs.stringify obj
+        obj
 
     @public querystring: String,
       get: ->

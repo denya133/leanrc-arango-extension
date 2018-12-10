@@ -42,7 +42,7 @@ module.exports = (Module)->
           return String data
     @public context: Object
     @public headers: Object
-    @public cookies: Array
+    @public cookies: Array,
       set: (headers)->
         unless headers
           return {}

@@ -262,9 +262,9 @@ module.exports = (Module)->
         action: String
         tag: String
         template: String
-        keyName: String
+        keyName: MaybeG String
         entityName: String
-        recordName: String
+        recordName: MaybeG String
       }], NilT),
         default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options, keyName, entityName, recordName})->
           voGateway = @facade.retrieveProxy APPLICATION_GATEWAY
@@ -321,9 +321,9 @@ module.exports = (Module)->
         action: String
         tag: String
         template: String
-        keyName: String
+        keyName: MaybeG String
         entityName: String
-        recordName: String
+        recordName: MaybeG String
       }], NilT),
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
@@ -353,9 +353,9 @@ module.exports = (Module)->
         action: String
         tag: String
         template: String
-        keyName: String
+        keyName: MaybeG String
         entityName: String
-        recordName: String
+        recordName: MaybeG String
       }], NilT),
         default: (opts)->
           {method, path} = opts

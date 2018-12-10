@@ -2,6 +2,10 @@
 
 module.exports = (Module)->
   {
+    NilT
+    FuncG, InterfaceG
+    GatewayInterface
+    EndpointInterface
     Endpoint
     CrudEndpointMixin
     Utils: { joi, statuses }
@@ -20,7 +24,7 @@ module.exports = (Module)->
         joi.object
           reason: joi.string().required()
 
-    @public init: Function,
+    @public init: FuncG(InterfaceG(gateway: GatewayInterface), NilT),
       default: (args...)->
         @super args...
         @pathParam   'v', @versionSchema, "
@@ -40,5 +44,7 @@ module.exports = (Module)->
         .description "
           An #{@itemEntityName} will been RemovedReport type
         "
+        return
+
 
     @initialize()

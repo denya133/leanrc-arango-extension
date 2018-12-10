@@ -4,7 +4,7 @@ module.exports = (Module)->
   {
     APPLICATION_RENDERER
     APPLICATION_ROUTER
-
+    ListG
     Switch
     ArangoSwitchMixin
     # Utils: {
@@ -26,10 +26,10 @@ module.exports = (Module)->
     @public jsonRendererName: String,
       default: APPLICATION_RENDERER
 
-    @public responseFormats: Array,
+    @public responseFormats: ListG(String),
       get: -> [
         'application/octet-stream', 'json', 'html', 'xml', 'atom', 'text'
       ]
 
 
-  MainSwitch.initialize()
+    @initialize()

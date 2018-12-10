@@ -38,7 +38,7 @@ module.exports = (Module)->
         while yield @hasNext()
           yield @next()
 
-    @public @async next: FuncG([], AnyT),
+    @public @async next: FuncG([], MaybeG AnyT),
       default: ->
         data = yield Module::Promise.resolve @[ipoCursor].next()
         switch
@@ -56,10 +56,11 @@ module.exports = (Module)->
       default: ->
         yield Module::Promise.resolve @[ipoCursor].dispose()
         @isClosed = yes
-        return
+        yield return
 
     @public @async count: FuncG([], Number),
-      default: -> yield Module::Promise.resolve @[ipoCursor].count arguments...
+      default: (args...)->
+        return yield Module::Promise.resolve @[ipoCursor].count args...
 
     @public @async forEach: FuncG(Function, NilT),
       default: (lambda)->
@@ -74,11 +75,14 @@ module.exports = (Module)->
 
     @public @async map: FuncG(Function, Array),
       default: (lambda)->
+        console.log '>???? ArangoCursor #map 444'
         index = 0
         try
-          while yield @hasNext()
+          while (yield @hasNext())
+            console.log '>???? ArangoCursor #map 555+'
             yield lambda (yield @next()), index++
         catch err
+          console.log '>???? ArangoCursor #map err', err, err.stack
           yield @close()
           throw err
 
@@ -96,7 +100,7 @@ module.exports = (Module)->
           yield @close()
           throw err
 
-    @public @async find: FuncG(Function, AnyT),
+    @public @async find: FuncG(Function, MaybeG AnyT),
       default: (lambda)->
         index = 0
         _record = null
@@ -145,21 +149,33 @@ module.exports = (Module)->
     @public @async first: FuncG([], MaybeG AnyT),
       default: ->
         try
+          console.log 'ArangoCursor::first'
           result = if yield @hasNext()
             yield @next()
           else
             null
-          yield @close()
+          # yield @close()
           yield return result
         catch err
+          console.error 'ArangoCursor::first err', err
           yield @close()
           throw err
 
-    @public init: FuncG([MaybeG(CollectionInterface), MaybeG UnionG Array, Object]),
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
+
+    @public init: FuncG([MaybeG(CollectionInterface), MaybeG Object]),
       default: (aoCollection = null, aoCursor = null)->
         @super arguments...
-        @[ipoCursor] = aoCursor
-        @[ipoCollection] = aoCollection
+        @[ipoCursor] = aoCursor if aoCursor?
+        @[ipoCollection] = aoCollection if aoCollection?
         return
 
 

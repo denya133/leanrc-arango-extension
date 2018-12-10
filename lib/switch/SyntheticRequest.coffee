@@ -48,7 +48,7 @@ module.exports = (Module)->
     @public path: String,
       get: -> @[ipoParsedUrl].pathname
     @public pathParams: Object
-    @public port: Number # copy from main request
+    @public port: Number, # copy from main request
       default: 80
     @public protocol: String,
       default: 'http'

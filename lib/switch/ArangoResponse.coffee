@@ -1,6 +1,7 @@
 typeis              = require('type-is').is
 assert              = require 'assert'
 getType             = require('mime-types').contentType
+Stream              = require 'stream'
 
 
 module.exports = (Module)->
@@ -46,13 +47,13 @@ module.exports = (Module)->
         @res.statusMessage = statuses[code]
         if Boolean(@body and statuses.empty[code])
           @body = null
-        return
+        return code
 
     @public message: String,
       get: -> @res.statusMessage ? statuses[@status]
       set: (msg)->
         @res.statusMessage = msg
-        return
+        return msg
 
     @public body: MaybeG(UnionG String, Buffer, Object, Array, Number, Boolean, Stream),
       get: -> @_body
@@ -94,7 +95,9 @@ module.exports = (Module)->
             return Buffer.byteLength JSON.stringify @body
           return 0
         ~~Number len
-      set: (n)-> @set 'Content-Length', n
+      set: (n)->
+        @set 'Content-Length', n
+        return n
 
     @public headerSent: MaybeG(Boolean),
       get: -> no
@@ -128,12 +131,14 @@ module.exports = (Module)->
         if _.isString val
           val = new Date val
         @set 'Last-Modified', val.toUTCString()
+        return val
 
     @public etag: String,
       get: -> @get 'ETag'
       set: (val)->
         val = "\"#{val}\"" unless /^(W\/)?"/.test val
         @set 'ETag', val
+        return val
 
     # @public type: String,
     #   get: ->
@@ -146,12 +151,13 @@ module.exports = (Module)->
         type = @get 'Content-Type'
         return '' unless type
         type.split(';')[0]
-      set: (type)->
-        type = getType type
+      set: (_type)->
+        type = getType _type
         if type
           @set 'Content-Type', type
         else
           @remove 'Content-Type'
+        return _type
 
     @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
       default: (args...)->

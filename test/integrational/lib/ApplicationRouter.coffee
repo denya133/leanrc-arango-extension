@@ -37,4 +37,4 @@ module.exports = (Module)->
             @put 'remove', at: 'member'
 
 
-  ApplicationRouter.initialize()
+    @initialize()

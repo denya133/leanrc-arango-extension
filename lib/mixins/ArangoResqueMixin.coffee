@@ -2,6 +2,8 @@
 
 { db }        = require '@arangodb'
 Queues        = require '@arangodb/foxx/queues'
+internal      = require 'internal'
+{ flatten }   = internal
 
 
 ###
@@ -61,8 +63,7 @@ module.exports = (Module)->
         default: (name)->
           name = @fullQueueName name
           try
-            Queues.get name
-            Queues.delete name
+            internal.deleteQueue name
           yield return
 
       @public @async allQueues: FuncG([], ListG StructG name: String, concurrency: Number),
@@ -88,17 +89,30 @@ module.exports = (Module)->
 
       @public @async deleteJob: FuncG([String, UnionG String, Number], Boolean),
         default: (queueName, jobId)->
-          queueName = @fullQueueName queueName
-          queue = Queues.get queueName
-          isDeleted = queue.delete jobId
+          # queueName = @fullQueueName queueName
+          # queue = Queues.get queueName
+          # isDeleted = queue.delete jobId
+          isDeleted = try
+            db._jobs.remove jobId
+            yes
+          catch err
+            no
           yield return isDeleted
 
       @public @async abortJob: FuncG([String, UnionG String, Number], NilT),
         default: (queueName, jobId)->
-          queueName = @fullQueueName queueName
-          queue = Queues.get queueName
-          job = queue.get jobId
-          job.abort()
+          # queueName = @fullQueueName queueName
+          # queue = Queues.get queueName
+          # job = queue.get jobId
+          # job.abort()
+          job = db._jobs.document jobId
+          if job.status isnt 'completed'
+            job.failures.push flatten new Error 'Job aborted.'
+            db._jobs.update job, {
+              status: 'failed'
+              modified: Date.now()
+              failures: job.failures
+            }
           yield return
 
       @public @async allJobs: FuncG([String, MaybeG String], ListG Object),
@@ -112,7 +126,7 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return allJobs
           else
-            yield return queue.all()
+            yield return queue.all().map (jobId) -> queue.get jobId
 
       @public @async pendingJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
@@ -125,7 +139,7 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return pendingJobs
           else
-            yield return queue.pending()
+            yield return queue.pending().map (jobId) -> queue.get jobId
 
       @public @async progressJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
@@ -138,7 +152,7 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return progressJobs
           else
-            yield return queue.progress()
+            yield return queue.progress().map (jobId) -> queue.get jobId
 
       @public @async completedJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
@@ -151,7 +165,7 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return completeJobs
           else
-            yield return queue.complete()
+            yield return queue.complete().map (jobId) -> queue.get jobId
 
       @public @async failedJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
@@ -164,7 +178,7 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return failedJobs
           else
-            yield return queue.failed()
+            yield return queue.failed().map (jobId) -> queue.get jobId
 
 
       @initializeMixin()

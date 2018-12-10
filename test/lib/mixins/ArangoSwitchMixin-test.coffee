@@ -8,7 +8,11 @@ mimeTypes = require 'mime-types'
 LeanRC = require 'LeanRC'
 
 ArangoExtension = require '../../..'
-{ co } = LeanRC::Utils
+
+{
+  FuncG, TupleG
+  Utils: { co }
+} = LeanRC::
 
 PREFIX = module.context.collectionPrefix
 
@@ -68,22 +72,22 @@ describe 'ArangoSwitchMixin', ->
   describe '#del', ->
     it 'should alias to #delete', ->
       co ->
-        spyDelete = sinon.spy ->
+        spyDelete = sinon.spy -> [{}, {}]
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root "#{__dirname}/config/root"
-        Test.initialize()
+          @initialize()
         class TestSwitch extends LeanRC::Switch
           @inheritProtected()
           @include Test::ArangoSwitchMixin
           @module Test
           @public routerName: String,
             default: 'TEST_SWITCH_ROUTER'
-          @public delete: Function, { default: spyDelete }
-        TestSwitch.initialize()
+          @public delete: FuncG([String, Function], TupleG Object, Object), { default: spyDelete }
+          @initialize()
         switchMediator = TestSwitch.new 'TEST_SWITCH_MEDIATOR'
-        switchMediator.del 'TEST'
+        switchMediator.del 'TEST', (->)
         assert.isTrue spyDelete.calledWith 'TEST'
         yield return
   describe '#respond', ->
@@ -98,26 +102,27 @@ describe 'ArangoSwitchMixin', ->
           @inheritProtected()
           @include ArangoExtension
           @root "#{__dirname}/config/root"
-        Test.initialize()
+          @initialize()
         class TestConfiguration extends Test::Configuration
           @inheritProtected()
           @include Test::ArangoConfigurationMixin
           @module Test
-        TestConfiguration.initialize()
+          @initialize()
         class TestSwitch extends LeanRC::Switch
           @inheritProtected()
           @include Test::ArangoSwitchMixin
           @module Test
           @public routerName: String,
             default: 'TEST_SWITCH_ROUTER'
-        TestSwitch.initialize()
+          @initialize()
         class TestContext extends Test::ArangoContext
           @inheritProtected()
           @module Test
-        TestContext.initialize()
+          @initialize()
         configs = TestConfiguration.new Test::CONFIGURATION, Test::ROOT
         facade.registerProxy configs
         req =
+          method: 'GET'
           url: 'http://localhost:8888'
           headers: 'x-forwarded-for': '192.168.0.1'
         res =
@@ -163,18 +168,18 @@ describe 'ArangoSwitchMixin', ->
           @inheritProtected()
           @include ArangoExtension
           @root "#{__dirname}/config/root"
-        Test.initialize()
+          @initialize()
         class TestConfiguration extends Test::Configuration
           @inheritProtected()
           @include Test::ArangoConfigurationMixin
           @module Test
-        TestConfiguration.initialize()
+          @initialize()
         configs = TestConfiguration.new LeanRC::CONFIGURATION, Test::ROOT
         facade.registerProxy configs
         class TestRouter extends LeanRC::Router
           @inheritProtected()
           @module Test
-        TestRouter.initialize()
+          @initialize()
         facade.registerProxy TestRouter.new 'TEST_SWITCH_ROUTER'
         class TestSwitch extends LeanRC::Switch
           @inheritProtected()
@@ -182,14 +187,15 @@ describe 'ArangoSwitchMixin', ->
           @module Test
           @public routerName: String,
             default: 'TEST_SWITCH_ROUTER'
-        TestSwitch.initialize()
+          @initialize()
         class TestContext extends Test::ArangoContext
           @inheritProtected()
           @module Test
-        TestContext.initialize()
+          @initialize()
         configs = TestConfiguration.new Test::CONFIGURATION, Test::ROOT
         facade.registerProxy configs
         req =
+          method: 'GET'
           url: 'http://localhost:8888'
           headers: 'x-forwarded-for': '192.168.0.1'
         res =
@@ -223,6 +229,11 @@ describe 'ArangoSwitchMixin', ->
           path: '/test'
           resource: 'test'
           action: 'list'
+          tag: ''
+          template: 'test/list'
+          keyName: null
+          entityName: 'test'
+          recordName: 'test'
         switchMediator.sender 'test', vhParams, vhOptions
         assert.isTrue spySwitchSendNotification.called, 'Notification not sent'
         assert.deepEqual spySwitchSendNotification.args[0], [
@@ -294,7 +305,9 @@ describe 'ArangoSwitchMixin', ->
   describe '#onRemove', ->
     facade = null
     KEY = 'TEST_ARANGO_SWITCH_MIXIN_004'
-    after -> facade?.remove?()
+    after ->
+      facade?.remove?()
+      console.log 'ArangoSwitchMixin TESTS END'
     it 'should run on-remove flow', ->
       co ->
         facade = LeanRC::Facade.getInstance KEY

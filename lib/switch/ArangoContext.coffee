@@ -1,5 +1,6 @@
 assert        = require 'assert'
 createError   = require 'http-errors'
+Stream        = require 'stream'
 
 
 module.exports = (Module)->
@@ -55,19 +56,29 @@ module.exports = (Module)->
         return unless err?
         unless _.isError err
           err = new Error "non-error thrown: #{err}"
+        console.log '>???? 111'
         headerSent = no
         if @headerSent or not @writable
           headerSent = err.headerSent = yes
+        console.log '>???? 222'
         @switch.getViewComponent().emit 'error', err, @
+        console.log '>???? 333'
         return if headerSent
+        console.log '>???? 444'
         if _.isFunction @res.getHeaderNames
           @res.getHeaderNames().forEach (name)=> @res.removeHeader name
+        console.log '>???? 555'
         if (vlHeaderNames = Object.keys @res.headers ? {}).length > 0
           vlHeaderNames.forEach (name)=> @res.removeHeader name
-        @response.set err.headers
+        console.log '>???? 666'
+        @response.set err.headers ? {}
+        console.log '>???? 777'
         @response.type = 'text'
+        console.log '>???? 888'
         err.status = 404 if 'ENOENT' is err.code
+        console.log '>???? 999'
         err.status = 500 if not _.isNumber(err.status) or not statuses[err.status]
+        console.log '>???? 000'
         code = statuses[err.status]
         msg = if err.expose
            err.message
@@ -78,11 +89,15 @@ module.exports = (Module)->
           errorNum: err.status
           errorMessage: msg
           code: err.code ? code
+        console.log '>???? +111'
         if @switch.configs.environment is DEVELOPMENT
           message.exception = "#{err.name ? 'Error'}: #{msg}"
           message.stacktrace = err.stack.split '\n'
+        console.log '>???? +222'
         @res.status err.status
+        console.log '>???? +333'
         @res.send message
+        console.log '>???? +444'
         return
 
     # Request aliases
@@ -118,7 +133,7 @@ module.exports = (Module)->
       get: -> @request.fresh
     @public stale: Boolean,
       get: -> @request.stale
-    @public socket: Object,
+    @public socket: MaybeG(Object),
       get: -> @request.socket
     @public protocol: String,
       get: -> @request.protocol

@@ -18,4 +18,4 @@ module.exports = (Module) ->
         @addSubCommand PrepareModelCommand
         @addSubCommand PrepareViewCommand
 
-  StartupCommand.initialize()
+    @initialize()

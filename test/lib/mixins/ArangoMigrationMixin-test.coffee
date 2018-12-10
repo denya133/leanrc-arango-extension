@@ -8,7 +8,7 @@ LeanRC = require 'LeanRC'
 ArangoExtension = require '../../..'
 { co } = LeanRC::Utils
 
-PREFIX = module.context.collectionPrefix
+PREFIX = 'test_'
 
 
 describe 'ArangoMigrationMixin', ->
@@ -17,148 +17,187 @@ describe 'ArangoMigrationMixin', ->
   after ->
     db._truncate "#{PREFIX}migrations"
   describe '.new', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should create migration instance', ->
       co ->
-        class Test extends LeanRC
-          @inheritProtected()
-          @include ArangoExtension
-          @root __dirname
-        Test.initialize()
-        class BaseMigration extends LeanRC::Migration
-          @inheritProtected()
-          @include Test::ArangoMigrationMixin
-          @module Test
-        BaseMigration.initialize()
-        migration = BaseMigration.new()
-        yield return
-  describe '#createCollection', ->
-    after ->
-      db._drop "#{PREFIX}TestCollection"
-    it 'should apply step for create collection', ->
-      co ->
-        class Test extends LeanRC
-          @inheritProtected()
-          @include ArangoExtension
-          @root __dirname
-        Test.initialize()
-        class ArangoMigrationCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableCollectionMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoMigrationCollection.initialize()
-        class BaseMigration extends LeanRC::Migration
-          @inheritProtected()
-          @include Test::ArangoMigrationMixin
-          @module Test
-          @createCollection 'TestCollection'
-        BaseMigration.initialize()
-        collection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        collection.initializeNotifier 'TEST'
-        migration = collection.build {}
-        spyCreateCollection = sinon.spy migration, 'createCollection'
-        yield migration.up()
-        assert.isTrue spyCreateCollection.calledWith 'TestCollection'
-        collectionFullName = collection.collectionFullName 'TestCollection'
-        assert.isNotNull db._collection collectionFullName
-        yield return
-  describe '#createEdgeCollection', ->
-    after ->
-      db._drop "#{PREFIX}TestCollection1_TestCollection2"
-    it 'should apply step for create edge collection', ->
-      co ->
-        class Test extends LeanRC
-          @inheritProtected()
-          @include ArangoExtension
-          @root __dirname
-        Test.initialize()
-        class ArangoMigrationCollection extends Test::Collection
-          @inheritProtected()
-          @include Test::QueryableCollectionMixin
-          @include Test::ArangoCollectionMixin
-          @module Test
-        ArangoMigrationCollection.initialize()
-        class BaseMigration extends LeanRC::Migration
-          @inheritProtected()
-          @include Test::ArangoMigrationMixin
-          @module Test
-          @createEdgeCollection 'TestCollection1', 'TestCollection2'
-        BaseMigration.initialize()
-        collection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        collection.initializeNotifier 'TEST'
-        migration = collection.build {}
-        spyCreateCollection = sinon.spy migration, 'createEdgeCollection'
-        yield migration.up()
-        assert.isTrue spyCreateCollection.calledWith 'TestCollection1', 'TestCollection2'
-        collectionFullName = collection.collectionFullName 'TestCollection1_TestCollection2'
-        assert.isNotNull db._collection collectionFullName
-        yield return
-  describe '#addField', ->
-    after ->
-      db._drop "#{PREFIX}tests"
-    it 'should apply step to add field in record at collection', ->
-      co ->
-        KEY = 'TEST_ARANGO_MIGRATION_MIXIN_001'
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_001'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class TestRecord extends LeanRC::Record
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
+          @include Test::QueryableCollectionMixin
+          @include Test::ArangoCollectionMixin
           @module Test
-          @attr 'test': String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::TestRecord'
-        TestRecord.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-        BaseMigration.initialize()
+          @initialize()
+        collection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
+        facade.registerProxy collection
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, collection
+        yield return
+  describe '#createCollection', ->
+    after ->
+      db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
+    it 'should apply step for create collection', ->
+      co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_002'
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
+          @inheritProtected()
+          @include Test::QueryableCollectionMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+          @initialize()
+        class BaseMigration extends LeanRC::Migration
+          @inheritProtected()
+          @include Test::ArangoMigrationMixin
+          @module Test
+          @change ->
+            @createCollection 'tests'
+          @initialize()
+        collection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
+        facade.registerProxy collection
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, collection
+        # collection.initializeNotifier 'TEST'
+        # migration = collection.build {}
+        spyCreateCollection = sinon.spy migration, 'createCollection'
+        yield migration.up()
+        assert.isTrue spyCreateCollection.calledWith 'tests'
+        collectionFullName = collection.collectionFullName 'tests'
+        assert.isNotNull db._collection collectionFullName
+        yield return
+  describe '#createEdgeCollection', ->
+    after ->
+      db._drop "#{PREFIX}cucumber_tomatos"
+    facade = null
+    afterEach ->
+      facade?.remove?()
+    it 'should apply step for create edge collection', ->
+      co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_003'
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
+          @inheritProtected()
+          @include Test::QueryableCollectionMixin
+          @include Test::ArangoCollectionMixin
+          @module Test
+          @initialize()
+        class BaseMigration extends LeanRC::Migration
+          @inheritProtected()
+          @include Test::ArangoMigrationMixin
+          @module Test
+          @change ->
+            @createEdgeCollection 'cucumber', 'tomatos'
+          @initialize()
+        collection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
+        facade.registerProxy collection
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, collection
+        # collection.initializeNotifier 'TEST'
+        # migration = collection.build {}
+        spyCreateCollection = sinon.spy migration, 'createEdgeCollection'
+        yield migration.up()
+        assert.isTrue spyCreateCollection.calledWith 'cucumber', 'tomatos'
+        # collectionFullName = collection.collectionFullName "#{PREFIX}cucumber_tomatos"
+        assert.isNotNull db._collection "#{PREFIX}cucumber_tomatos"#collectionFullName
+        yield return
+  describe '#addField', ->
+    after ->
+      db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
+    it 'should apply step to add field in record at collection', ->
+      co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_004'
+        facade = LeanRC::Facade.getInstance KEY
+        class Test extends LeanRC
+          @inheritProtected()
+          @include ArangoExtension
+          @root __dirname
+          @initialize()
+        class TestRecord extends LeanRC::Record
+          @inheritProtected()
+          @module Test
+          @attr 'test': String
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::TestRecord'
+          @initialize()
+        class BaseMigration extends LeanRC::Migration
+          @inheritProtected()
+          @include Test::ArangoMigrationMixin
+          @module Test
+          @initialize()
         class Migration1 extends BaseMigration
           @inheritProtected()
           @module Test
-          @createCollection 'tests'
-        Migration1.initialize()
+          @change ->
+            @createCollection 'tests'
+          @initialize()
         class Migration2 extends BaseMigration
           @inheritProtected()
           @module Test
-          @addField 'tests', 'test',
-            default: 'Test1'
-        Migration2.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @addField 'tests', 'test',
+              type: 'string'
+              default: 'Test1'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
+          @initialize()
+        class ArangoTestCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoTestCollection.initialize()
+          @initialize()
         # facade.registerProxy ArangoTestCollection.new 'TestCollection',
         #   delegate: TestRecord
-        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
+        migrationsCollection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
         facade.registerProxy migrationsCollection
-        migration1 = Migration1.new {}, migrationsCollection
+        migration1 = Migration1.new {type: 'Test::Migration1'}, migrationsCollection
         yield migration1.up()
-        facade.registerProxy ArangoTestCollection.new 'TestCollection',
-          delegate: TestRecord
-          serializer: LeanRC::Serializer
-        collection = facade.retrieveProxy 'TestCollection'
-        yield collection.create id: 1
-        yield collection.create id: 2
-        yield collection.create id: 3
-        migration2 = Migration2.new {}, migrationsCollection
+        testsCollection = ArangoTestCollection.new 'TestsCollection',
+          delegate: 'TestRecord'
+        facade.registerProxy testsCollection
+        yield testsCollection.create id: 1
+        yield testsCollection.create id: 2
+        yield testsCollection.create id: 3
+        migration2 = Migration2.new {type: 'Test::Migration2'}, migrationsCollection
         yield migration2.up()
         for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.propertyVal doc, 'test', 'Test1'
@@ -168,31 +207,39 @@ describe 'ArangoMigrationMixin', ->
       db._createDocumentCollection "#{PREFIX}tests"
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to add index in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_005'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         fields = [ 'test' ]
-        options = unique: yes, sparse: yes
+        options = type: 'hash', unique: yes, sparse: yes
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @addIndex 'tests', fields, options
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @addIndex 'tests', fields, options
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
-        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST'
-        migration = BaseMigration.new {}, migrationsCollection
+          @initialize()
+        migrationsCollection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         spyAddIndex = sinon.spy migration, 'addIndex'
         yield migration.up()
         assert.isTrue spyAddIndex.calledWith 'tests', fields, options
@@ -209,42 +256,45 @@ describe 'ArangoMigrationMixin', ->
       collection.save {}
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to add timesteps in collection', ->
       co ->
-        KEY = 'TEST_ARANGO_MIGRATION_MIXIN_002'
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_006'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @addTimestamps 'tests'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @addTimestamps 'tests'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
-        class ArangoTestCollection extends Test::Collection
+          @initialize()
+        class ArangoTestCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoTestCollection.initialize()
-        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
+          @initialize()
+        migrationsCollection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
         facade.registerProxy migrationsCollection
-        migration = BaseMigration.new {}, migrationsCollection
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
+        spyAddTimestamps = sinon.spy migration, 'addTimestamps'
         yield migration.up()
-        for doc in db._collection("#{PREFIX}tests").all().toArray()
-          assert.property doc, 'createdAt'
-          assert.property doc, 'updatedAt'
-          assert.property doc, 'updatedAt'
+        assert.isTrue spyAddTimestamps.calledWith 'tests'
         yield return
   describe '#changeCollection', ->
     before ->
@@ -252,31 +302,39 @@ describe 'ArangoMigrationMixin', ->
         waitForSync: no
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to change collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_007'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         options =
           waitForSync: yes
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @changeCollection 'tests', options
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @changeCollection 'tests', options
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
-        migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          @initialize()
+        migrationsCollection = ArangoMigrationCollection.new collectionName,
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         spyChangeCollection = sinon.spy migration, 'changeCollection'
         assert.propertyVal db._collection("#{PREFIX}tests").properties(), 'waitForSync', no
         yield migration.up()
@@ -292,29 +350,37 @@ describe 'ArangoMigrationMixin', ->
       collection.save test: '42'
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to change field in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_008'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @changeField 'tests', 'test', type: LeanRC::Migration::SUPPORTED_TYPES.integer
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @changeField 'tests', 'test', type: LeanRC::Migration::SUPPORTED_TYPES.integer
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         yield migration.up()
         for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.propertyVal doc, 'test', 42
@@ -328,57 +394,73 @@ describe 'ArangoMigrationMixin', ->
       collection.save test: '42'
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to rename field in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_009'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @renameField 'tests', 'test', 'test1'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @renameField 'tests', 'test', 'test1'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         yield migration.up()
         for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.notProperty doc, 'test'
           assert.property doc, 'test1'
         yield return
   describe '#renameIndex', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to rename index in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_010'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @renameIndex 'ARG_1', 'ARG_2', 'ARG_3'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @renameIndex 'ARG_1', 'ARG_2', 'ARG_3'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         spyRenameIndex = sinon.spy migration, 'renameIndex'
         yield migration.up()
         assert.isTrue spyRenameIndex.calledWith 'ARG_1', 'ARG_2', 'ARG_3'
@@ -389,33 +471,41 @@ describe 'ArangoMigrationMixin', ->
     after ->
       try db._drop "#{PREFIX}tests"
       try db._drop "#{PREFIX}new_tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to rename collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_011'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @renameCollection 'tests', 'tests', 'new_tests'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @renameCollection 'tests', 'new_tests'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         spyRenameCollection = sinon.spy migration, 'renameCollection'
         assert.isNotNull db._collection "#{PREFIX}tests"
         yield migration.up()
-        assert.isTrue spyRenameCollection.calledWith 'tests', 'tests', 'new_tests'
+        assert.isTrue spyRenameCollection.calledWith 'tests', 'new_tests'
         assert.isNull db._collection "#{PREFIX}tests"
         assert.isNotNull db._collection "#{PREFIX}new_tests"
         yield return
@@ -428,29 +518,37 @@ describe 'ArangoMigrationMixin', ->
       collection.save test: '42'
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to drop collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_012'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @dropCollection 'tests'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @dropCollection 'tests'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         yield migration.up()
         assert.isNull db._collection "#{PREFIX}tests"
         yield return
@@ -459,29 +557,37 @@ describe 'ArangoMigrationMixin', ->
       db._createEdgeCollection "#{PREFIX}tests_tests"
     after ->
       db._drop "#{PREFIX}tests_tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to drop edge collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_013'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @dropEdgeCollection 'tests', 'tests'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @dropEdgeCollection 'tests', 'tests'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         yield migration.up()
         assert.isNull db._collection "#{PREFIX}tests_tests"
         yield return
@@ -494,13 +600,19 @@ describe 'ArangoMigrationMixin', ->
       collection.save test: '42'
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to remove field in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_014'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class TestRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
@@ -509,23 +621,25 @@ describe 'ArangoMigrationMixin', ->
             default: ->
               @super arguments...
               @type = 'TestRecord'
-        TestRecord.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @removeField 'tests', 'test'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @removeField 'tests', 'test'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         yield migration.up()
         for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.notProperty doc, 'test'
@@ -537,31 +651,39 @@ describe 'ArangoMigrationMixin', ->
       collection.ensureIndex type: 'hash', fields: [ 'test' ], unique: yes,  sparse: yes
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should apply step to remove index in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_015'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         fields = [ 'test' ]
         options = type: 'hash', unique: yes,  sparse: yes
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @removeIndex 'tests', fields, options
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @removeIndex 'tests', fields, options
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         spyRemoveIndex = sinon.spy migration, 'removeIndex'
         indexes = db["#{PREFIX}tests"].getIndexes()
         assert.isTrue indexes.some ({ type, fields, unique, sparse }) ->
@@ -582,29 +704,38 @@ describe 'ArangoMigrationMixin', ->
       collection.save test: '42', createdAt: DATE, updatedAt: DATE, deletedAt: null
     after ->
       db._drop "#{PREFIX}tests"
+    facade = null
+    afterEach ->
+      facade?.remove?()
+      console.log 'ArangoMigrationMixin TESTS END'
     it 'should apply step to remove timestamps in collection', ->
       co ->
+        collectionName = 'MigrationsCollection'
+        KEY = 'TEST_ARANGO_MIGRATION_016'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
+          @initialize()
         class BaseMigration extends LeanRC::Migration
           @inheritProtected()
           @include Test::ArangoMigrationMixin
           @module Test
-          @removeTimestamps 'tests'
-        BaseMigration.initialize()
-        class ArangoMigrationCollection extends Test::Collection
+          @change ->
+            @removeTimestamps 'tests'
+          @initialize()
+        class ArangoMigrationCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoMigrationCollection.initialize()
+          @initialize()
         migrationsCollection = ArangoMigrationCollection.new 'MIGRATIONS',
-          delegate: BaseMigration
-        migrationsCollection.initializeNotifier 'TEST_MIGRATION'
-        migration = BaseMigration.new {}, migrationsCollection
+          delegate: 'BaseMigration'
+        facade.registerProxy migrationsCollection
+        # migrationsCollection.initializeNotifier 'TEST_MIGRATION'
+        migration = BaseMigration.new {type: 'Test::BaseMigration'}, migrationsCollection
         for doc in db._collection("#{PREFIX}tests").all().toArray()
           assert.property doc, 'createdAt'
           assert.property doc, 'updatedAt'
