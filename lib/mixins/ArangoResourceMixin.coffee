@@ -38,7 +38,7 @@ module.exports = (Module)->
             alResults
           , []
           write = vlCollectionNames.concat ['_jobs']
-          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_queues', '_jobs']
+          read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_aqlfunctions', '_queues', '_jobs']
           return {read, write}
 
       @public listNonTransactionables: FuncG([], ListG String),
