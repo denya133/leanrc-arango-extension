@@ -22,3 +22,10 @@ $ npm install -g gulp coffee-script mocha gulp scaffolt forever
 ```
 $ npm test
 ```
+
+## ArangoDB upgrading
+это надо выполнять после добавления репозитория в список (см. на офиц сайте как)
+```
+apt-get update
+apt-get install arangodb3=3.3.20
+```

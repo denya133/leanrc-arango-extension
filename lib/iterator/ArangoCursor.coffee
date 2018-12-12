@@ -17,13 +17,13 @@ module.exports = (Module)->
 
     @module Module
 
-    ipoCursor = PointerT @private cursor: AnyT
-    ipoCollection = PointerT @private collection: CollectionInterface
+    ipoCursor = PointerT @private cursor: MaybeG Object
+    ipoCollection = PointerT @private collection: MaybeG CollectionInterface
 
     @public isClosed: Boolean,
       default: no
 
-    @public setIterable: FuncG(AnyT, CursorInterface),
+    @public setIterable: FuncG(Object, CursorInterface),
       default: (aoCursor)->
         @[ipoCursor] = aoCursor
         return @
@@ -40,6 +40,8 @@ module.exports = (Module)->
 
     @public @async next: FuncG([], MaybeG AnyT),
       default: ->
+        unless @[ipoCursor]?
+          yield return
         data = yield Module::Promise.resolve @[ipoCursor].next()
         switch
           when not data?
@@ -54,12 +56,14 @@ module.exports = (Module)->
 
     @public @async close: Function,
       default: ->
-        yield Module::Promise.resolve @[ipoCursor].dispose()
+        yield Module::Promise.resolve @[ipoCursor]?.dispose()
         @isClosed = yes
         yield return
 
     @public @async count: FuncG([], Number),
       default: (args...)->
+        unless @[ipoCursor]?
+          yield return 0
         return yield Module::Promise.resolve @[ipoCursor].count args...
 
     @public @async forEach: FuncG(Function, NilT),
@@ -75,14 +79,11 @@ module.exports = (Module)->
 
     @public @async map: FuncG(Function, Array),
       default: (lambda)->
-        console.log '>???? ArangoCursor #map 444'
         index = 0
         try
           while (yield @hasNext())
-            console.log '>???? ArangoCursor #map 555+'
             yield lambda (yield @next()), index++
         catch err
-          console.log '>???? ArangoCursor #map err', err, err.stack
           yield @close()
           throw err
 
@@ -117,6 +118,8 @@ module.exports = (Module)->
 
     @public @async compact: FuncG([], Array),
       default: ->
+        unless @[ipoCursor]?
+          yield return []
         index = 0
         results = []
         try
@@ -149,15 +152,12 @@ module.exports = (Module)->
     @public @async first: FuncG([], MaybeG AnyT),
       default: ->
         try
-          console.log 'ArangoCursor::first'
           result = if yield @hasNext()
             yield @next()
           else
             null
-          # yield @close()
           yield return result
         catch err
-          console.error 'ArangoCursor::first err', err
           yield @close()
           throw err
 
