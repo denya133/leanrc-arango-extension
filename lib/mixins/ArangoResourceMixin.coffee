@@ -16,7 +16,7 @@ module.exports = (Module)->
     ContextInterface
     Resource, Mixin
     LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
-    Utils: { _, inflect, extend, statuses }
+    Utils: { _, inflect, assign, statuses }
   } = Module::
 
   HTTP_NOT_FOUND    = statuses 'not found'
@@ -51,7 +51,7 @@ module.exports = (Module)->
         default: (action, context)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
-          {read, write} = extend(
+          {read, write} = assign(
             {}
           ,
             @getLocks()
