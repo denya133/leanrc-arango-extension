@@ -10,7 +10,7 @@ Parser        = require 'mongo-parse' #mongo-parse@2.0.2
 
 module.exports = (Module)->
   {
-    AnyT, NilT, MomentT
+    AnyT, MomentT
     FuncG, UnionG, MaybeG, EnumG, ListG, DictG, InterfaceG
     RecordInterface, CursorInterface, QueryInterface
     Mixin
@@ -51,7 +51,7 @@ module.exports = (Module)->
           # else
           #   yield return
 
-      @public @async remove: FuncG([UnionG String, Number], NilT),
+      @public @async remove: FuncG([UnionG String, Number]),
         default: (id)->
           voQuery = qb.for 'doc'
             .in @collectionFullName()

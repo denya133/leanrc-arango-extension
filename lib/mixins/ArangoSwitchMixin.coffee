@@ -35,7 +35,7 @@ module.exports = (Module)->
 module.exports = (Module)->
   {
     APPLICATION_GATEWAY
-    AnyT, NilT, PointerT, AsyncFunctionT, LambdaT
+    AnyT, PointerT, AsyncFunctionT, LambdaT
     FuncG, ListG, MaybeG, InterfaceG, StructG, TupleG, DictG, EnumG
     SwitchInterface, ContextInterface, NotificationInterface
     Mixin
@@ -77,7 +77,7 @@ module.exports = (Module)->
 
       ################
 
-      @public @static createMethod: FuncG([MaybeG String], NilT),
+      @public @static createMethod: FuncG([MaybeG String]),
         default: (method)->
           originMethodName = method
           if method
@@ -238,7 +238,7 @@ module.exports = (Module)->
             yield return
           handleRequest
 
-      @public respond: FuncG(ContextInterface, NilT),
+      @public respond: FuncG(ContextInterface),
         default: (ctx)->
           return if ctx.respond is no
           return unless ctx.writable
@@ -265,7 +265,7 @@ module.exports = (Module)->
         keyName: MaybeG String
         entityName: String
         recordName: MaybeG String
-      }], NilT),
+      }]),
         default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options, keyName, entityName, recordName})->
           voGateway = @facade.retrieveProxy APPLICATION_GATEWAY
           unless voGateway?
@@ -324,7 +324,7 @@ module.exports = (Module)->
         keyName: MaybeG String
         entityName: String
         recordName: MaybeG String
-      }], NilT),
+      }]),
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
           try
@@ -356,7 +356,7 @@ module.exports = (Module)->
         keyName: MaybeG String
         entityName: String
         recordName: MaybeG String
-      }], NilT),
+      }]),
         default: (opts)->
           {method, path} = opts
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"

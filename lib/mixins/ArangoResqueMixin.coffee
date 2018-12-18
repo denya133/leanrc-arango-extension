@@ -22,7 +22,7 @@ module.exports = (Module)->
 
 module.exports = (Module)->
   {
-    AnyT, NilT
+    AnyT
     FuncG, ListG, StructG, MaybeG, UnionG
     Resque, Mixin
     Utils: { _, inflect }
@@ -59,7 +59,7 @@ module.exports = (Module)->
             console.log 'ERROR IN ArangoResqueMixin::getQueue', err.stack
             yield return
 
-      @public @async removeQueue: FuncG(String, NilT),
+      @public @async removeQueue: FuncG(String),
         default: (name)->
           name = @fullQueueName name
           try
@@ -99,7 +99,7 @@ module.exports = (Module)->
             no
           yield return isDeleted
 
-      @public @async abortJob: FuncG([String, UnionG String, Number], NilT),
+      @public @async abortJob: FuncG([String, UnionG String, Number]),
         default: (queueName, jobId)->
           # queueName = @fullQueueName queueName
           # queue = Queues.get queueName

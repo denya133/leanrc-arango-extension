@@ -15,7 +15,7 @@ module.exports = (Module)->
   {
     APPLICATION_SWITCH
     APPLICATION_MEDIATOR
-    AnyT, NilT, PointerT
+    AnyT, PointerT
     FuncG, UnionG, MaybeG, EnumG, ListG, StructG, DictG
     RecordInterface, CursorInterface, QueryInterface
     Mixin
@@ -68,7 +68,7 @@ module.exports = (Module)->
             "
           yield return voRecord
 
-      @public @async remove: FuncG([UnionG String, Number], NilT),
+      @public @async remove: FuncG([UnionG String, Number]),
         default: (id)->
           params = {}
           params.requestType = 'remove'

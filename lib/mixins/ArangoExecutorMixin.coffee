@@ -6,7 +6,6 @@ queues        = require '@arangodb/foxx/queues'
 module.exports = (Module)->
   {
     START_RESQUE
-    NilT
     FuncG
     NotificationInterface
     Mixin

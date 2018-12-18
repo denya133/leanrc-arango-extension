@@ -4,7 +4,7 @@
 
 module.exports = (Module)->
   {
-    AnyT, NilT, PointerT
+    AnyT, PointerT
     FuncG, MaybeG, UnionG
     CollectionInterface, CursorInterface
     CoreObject
@@ -66,7 +66,7 @@ module.exports = (Module)->
           yield return 0
         return yield Module::Promise.resolve @[ipoCursor].count args...
 
-    @public @async forEach: FuncG(Function, NilT),
+    @public @async forEach: FuncG(Function),
       default: (lambda)->
         index = 0
         try

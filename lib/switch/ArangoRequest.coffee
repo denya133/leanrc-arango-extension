@@ -211,7 +211,7 @@ module.exports = (Module)->
         throw new Error "replicateObject method not supported for #{@name}"
         yield return
 
-    @public init: FuncG(ContextInterface, NilT),
+    @public init: FuncG(ContextInterface),
       default: (context)->
         @super()
         @ctx = context

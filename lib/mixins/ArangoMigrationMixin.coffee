@@ -54,7 +54,7 @@ module.exports = (Module)->
 
 module.exports = (Module)->
   {
-    AnyT, NilT
+    AnyT
     FuncG, ListG, EnumG, MaybeG, UnionG, InterfaceG, StructG
     Migration
     Mixin
@@ -72,7 +72,7 @@ module.exports = (Module)->
 
       { UP, DOWN, SUPPORTED_TYPES } = @::
 
-      @public @async createCollection: FuncG([String, MaybeG Object], NilT),
+      @public @async createCollection: FuncG([String, MaybeG Object]),
         default: (name, options = {})->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
@@ -82,7 +82,7 @@ module.exports = (Module)->
             console.log '???>>???? after db._createDocumentCollection', db._collection qualifiedName
           yield return
 
-      @public @async createEdgeCollection: FuncG([String, String, MaybeG Object], NilT),
+      @public @async createEdgeCollection: FuncG([String, String, MaybeG Object]),
         default: (collection_1, collection_2, options = {})->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           unless db._collection qualifiedName
@@ -96,7 +96,7 @@ module.exports = (Module)->
           type: EnumG SUPPORTED_TYPES
           default: AnyT
         }
-      )], NilT),
+      )]),
         default: (collection_name, field_name, options)->
           qualifiedName = @collection.collectionFullName collection_name
           if _.isString options
@@ -129,7 +129,7 @@ module.exports = (Module)->
         type: EnumG 'hash', 'skiplist', 'persistent', 'geo', 'fulltext'
         unique: MaybeG Boolean
         sparse: MaybeG Boolean
-      }], NilT),
+      }]),
         default: (collection_name, field_names, options)->
           # TODO; fulltext индекс вызывает ошибку в аранге - надо дебажить
           qualifiedName = @collection.collectionFullName collection_name
@@ -145,12 +145,12 @@ module.exports = (Module)->
           db._collection(qualifiedName).ensureIndex opts
           yield return
 
-      @public @async addTimestamps: FuncG([String, MaybeG Object], NilT),
+      @public @async addTimestamps: FuncG([String, MaybeG Object]),
         default: (collection_name, options = {})->
           # NOTE: нет смысла выполнять запрос, т.к. в addField есть проверка if initial? и если null, то атрибут не добавляется
           yield return
 
-      @public @async changeCollection: FuncG([String, Object], NilT),
+      @public @async changeCollection: FuncG([String, Object]),
         default: (name, options)->
           qualifiedName = @collection.collectionFullName name
           @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::changeCollection qualifiedName = #{qualifiedName}, options = #{jsonStringify options}", LEVELS[DEBUG])
@@ -162,7 +162,7 @@ module.exports = (Module)->
         InterfaceG {
           type: EnumG SUPPORTED_TYPES
         }
-      )], NilT),
+      )]),
         default: (collection_name, field_name, options)->
           {
             json
@@ -212,7 +212,7 @@ module.exports = (Module)->
           db._query vsQuery
           yield return
 
-      @public @async renameField: FuncG([String, String, String], NilT),
+      @public @async renameField: FuncG([String, String, String]),
         default: (collection_name, field_name, new_field_name)->
           qualifiedName = @collection.collectionFullName collection_name
           vsQuery = "
@@ -227,12 +227,12 @@ module.exports = (Module)->
           db._query vsQuery
           yield return
 
-      @public @async renameIndex: FuncG([String, String, String], NilT),
+      @public @async renameIndex: FuncG([String, String, String]),
         default: (collection_name, old_name, new_name)->
           # not supported in ArangoDB because index has not name
           yield return
 
-      @public @async renameCollection: FuncG([String, String], NilT),
+      @public @async renameCollection: FuncG([String, String]),
         default: (collectionName, newCollectionName)->
           qualifiedName = @collection.collectionFullName collectionName
           newQualifiedName = @collection.collectionFullName newCollectionName
@@ -240,7 +240,7 @@ module.exports = (Module)->
           db._collection(qualifiedName).rename newQualifiedName
           yield return
 
-      @public @async dropCollection: FuncG(String, NilT),
+      @public @async dropCollection: FuncG(String),
         default: (name)->
           qualifiedName = @collection.collectionFullName name
           if db._collection(qualifiedName)?
@@ -248,7 +248,7 @@ module.exports = (Module)->
             db._drop qualifiedName
           yield return
 
-      @public @async dropEdgeCollection: FuncG([String, String], NilT),
+      @public @async dropEdgeCollection: FuncG([String, String]),
         default: (collection_1, collection_2)->
           qualifiedName = @collection.collectionFullName "#{collection_1}_#{collection_2}"
           if db._collection(qualifiedName)?
@@ -256,7 +256,7 @@ module.exports = (Module)->
             db._drop qualifiedName
           yield return
 
-      @public @async removeField: FuncG([String, String], NilT),
+      @public @async removeField: FuncG([String, String]),
         default: (collection_name, field_name)->
           qualifiedName = @collection.collectionFullName collection_name
           vsQuery = "
@@ -272,7 +272,7 @@ module.exports = (Module)->
         type: EnumG 'hash', 'skiplist', 'persistent', 'geo', 'fulltext'
         unique: MaybeG Boolean
         sparse: MaybeG Boolean
-      }], NilT),
+      }]),
         default: (collection_name, field_names, options)->
           qualifiedName = @collection.collectionFullName collection_name
           opts =
@@ -299,7 +299,7 @@ module.exports = (Module)->
             db._collection(qualifiedName).dropIndex index
           yield return
 
-      @public @async removeTimestamps: FuncG([String, MaybeG Object], NilT),
+      @public @async removeTimestamps: FuncG([String, MaybeG Object]),
         default: (collection_name, options = {})->
           qualifiedName = @collection.collectionFullName collection_name
           vsQuery = "

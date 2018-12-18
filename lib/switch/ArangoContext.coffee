@@ -45,13 +45,13 @@ module.exports = (Module)->
 
     # @public database: String # возможно это тоже надо получать из метода из отдельного модуля
 
-    @public throw: FuncG([UnionG(String, Number), MaybeG(String), MaybeG Object], NilT),
+    @public throw: FuncG([UnionG(String, Number), MaybeG(String), MaybeG Object]),
       default: (args...)-> throw createError args...
 
-    @public assert: FuncG([AnyT, MaybeG(UnionG String, Number), MaybeG(String), MaybeG Object], NilT),
+    @public assert: FuncG([AnyT, MaybeG(UnionG String, Number), MaybeG(String), MaybeG Object]),
       default: assert
 
-    @public onerror: FuncG([MaybeG AnyT], NilT),
+    @public onerror: FuncG([MaybeG AnyT]),
       default: (err)->
         return unless err?
         unless _.isError err
@@ -178,19 +178,19 @@ module.exports = (Module)->
       set: (type)-> @response.type = type
     @public headerSent: MaybeG(Boolean),
       get: -> @response.headerSent
-    @public redirect: FuncG([String, MaybeG String], NilT),
+    @public redirect: FuncG([String, MaybeG String]),
       default: (args...)-> @response.redirect args...
-    @public attachment: FuncG(String, NilT),
+    @public attachment: FuncG(String),
       default: (args...)-> @response.attachment args...
-    @public set: FuncG([UnionG(String, Object), MaybeG AnyT], NilT),
+    @public set: FuncG([UnionG(String, Object), MaybeG AnyT]),
       default: (args...)-> @response.set args...
-    @public append: FuncG([String, UnionG String, Array], NilT),
+    @public append: FuncG([String, UnionG String, Array]),
       default: (args...)-> @response.append args...
-    @public vary: FuncG(String, NilT),
+    @public vary: FuncG(String),
       default: (args...)-> @response.vary args...
     @public flushHeaders: Function,
       default: (args...)-> @response.flushHeaders args...
-    @public remove: FuncG(String, NilT),
+    @public remove: FuncG(String),
       default: (args...)-> @response.remove args...
     @public lastModified: MaybeG(Date),
       set: (date)-> @response.lastModified = date
@@ -207,7 +207,7 @@ module.exports = (Module)->
         throw new Error "replicateObject method not supported for #{@name}"
         yield return
 
-    @public init: FuncG([Object, Object, SwitchInterface], NilT),
+    @public init: FuncG([Object, Object, SwitchInterface]),
       default: (req, res, switchInstanse)->
         @super()
         @req = req

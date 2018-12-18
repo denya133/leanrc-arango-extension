@@ -14,7 +14,7 @@ contentDisposition = require 'content-disposition'
 
 module.exports = (Module)->
   {
-    AnyT, NilT
+    AnyT
     FuncG, MaybeG, UnionG, SampleG
     CoreObject
     Utils: { _, statuses }
@@ -254,7 +254,7 @@ module.exports = (Module)->
         @statusCode = status
         return @
 
-    @public throw: FuncG([UnionG(String, Number), MaybeG(UnionG Error, String, Object), MaybeG Object], NilT),
+    @public throw: FuncG([UnionG(String, Number), MaybeG(UnionG Error, String, Object), MaybeG Object]),
       default: (status, reason, options)->
         if _.isString status
           status = statuses status
