@@ -13,4 +13,4 @@ module.exports = (Module)->
     @module Module
 
 
-  MainResque.initialize()
+    @initialize()

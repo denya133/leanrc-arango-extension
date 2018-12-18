@@ -2,6 +2,7 @@
 
 module.exports = (Module)->
   {
+    ListG
     Record
     RelationsMixin
     RecordInterface
@@ -27,21 +28,25 @@ module.exports = (Module)->
     @attribute macAddress: String,
       validate: -> joi.string().required()
 
-    @hasMany reports: RecordInterface
     @attribute spaces: Array,
       validate: -> joi.array().items joi.string().empty(null).default(null)
-    @belongsTo creator: RecordInterface,
-      validate: -> joi.string().empty(null).default(null)
-      transform: -> @Module::UserRecord
-    @belongsTo editor: RecordInterface,
-      validate: -> joi.string().empty(null).default(null)
-      transform: -> @Module::UserRecord
-    @belongsTo remover: RecordInterface,
-      validate: -> joi.string().empty(null).default(null)
-      transform: -> @Module::UserRecord
-    @belongsTo owner: RecordInterface,
-      transform: -> @Module::UserRecord
+    @attribute creatorId: String
+    @attribute editorId: String
+    @attribute removerId: String
+    @attribute ownerId: String
+
+    @hasMany reports: ListG RecordInterface
+
+    @relatedTo creator: RecordInterface,
+      recordName: -> 'UserRecord'
+    @relatedTo editor: RecordInterface,
+      recordName: -> 'UserRecord'
+    @relatedTo remover: RecordInterface,
+      recordName: -> 'UserRecord'
+    @relatedTo owner: RecordInterface,
+      recordName: -> 'UserRecord'
+
     # business logic and before-, after- colbacks
 
 
-  ClientRecord.initialize()
+    @initialize()

@@ -6,7 +6,8 @@ module.exports = (Module) ->
     APPLICATION_MEDIATOR
     APPLICATION_SWITCH
     RESQUE_EXECUTOR
-
+    FuncG
+    NotificationInterface
     SimpleCommand
     ApplicationMediator
     LoggerModuleMediator
@@ -25,7 +26,7 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public execute: Function,
+    @public execute: FuncG(NotificationInterface),
       default: (aoNotification)->
         voApplication = aoNotification.getBody()
 
@@ -45,4 +46,4 @@ module.exports = (Module) ->
         return
 
 
-  PrepareViewCommand.initialize()
+    @initialize()

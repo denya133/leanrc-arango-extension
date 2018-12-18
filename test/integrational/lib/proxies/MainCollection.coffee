@@ -18,4 +18,4 @@ module.exports = (Module)->
     @module Module
 
 
-  MainCollection.initialize()
+    @initialize()

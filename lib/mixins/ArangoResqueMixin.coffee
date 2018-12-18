@@ -2,6 +2,8 @@
 
 { db }        = require '@arangodb'
 Queues        = require '@arangodb/foxx/queues'
+internal      = require 'internal'
+{ flatten }   = internal
 
 
 ###
@@ -20,17 +22,19 @@ module.exports = (Module)->
 
 module.exports = (Module)->
   {
-    Resque
+    AnyT
+    FuncG, ListG, StructG, MaybeG, UnionG
+    Resque, Mixin
     Utils: { _, inflect }
   } = Module::
 
   ARANGO_SCRIPT = 'resque_executor'
 
-  Module.defineMixin 'ArangoResqueMixin', (BaseClass = Resque) ->
+  Module.defineMixin Mixin 'ArangoResqueMixin', (BaseClass = Resque) ->
     class extends BaseClass
       @inheritProtected()
 
-      @public fullQueueName: Function,
+      @public fullQueueName: FuncG(String, String),
         default: (queueName)->
           unless /\_\_/.test queueName
             [ moduleName ] = @moduleName().split '|>'
@@ -39,13 +43,13 @@ module.exports = (Module)->
             queueName = queueName.replace '|>', '__'
           inflect.underscore queueName
 
-      @public @async ensureQueue: Function,
+      @public @async ensureQueue: FuncG([String, MaybeG Number], StructG name: String, concurrency: Number),
         default: (name, concurrency = 1)->
           name = @fullQueueName name
           Queues.create name, concurrency
           yield return {name, concurrency}
 
-      @public @async getQueue: Function,
+      @public @async getQueue: FuncG(String, MaybeG StructG name: String, concurrency: Number),
         default: (name)->
           name = @fullQueueName name
           try
@@ -55,21 +59,20 @@ module.exports = (Module)->
             console.log 'ERROR IN ArangoResqueMixin::getQueue', err.stack
             yield return
 
-      @public @async removeQueue: Function,
+      @public @async removeQueue: FuncG(String),
         default: (name)->
           name = @fullQueueName name
           try
-            Queues.get name
-            Queues.delete name
+            internal.deleteQueue name
           yield return
 
-      @public @async allQueues: Function,
+      @public @async allQueues: FuncG([], ListG StructG name: String, concurrency: Number),
         default: ->
           queues = for {_key:name, maxWorkers:concurrency} in db._queues.toArray()
             {name, concurrency}
           yield return queues
 
-      @public @async pushJob: Function,
+      @public @async pushJob: FuncG([String, String, AnyT, MaybeG Number], UnionG String, Number),
         default: (queueName, scriptName, data, delayUntil)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
@@ -77,29 +80,42 @@ module.exports = (Module)->
           jobID = queue.push {name: ARANGO_SCRIPT, mount}, {scriptName, data}, {delayUntil}
           yield return jobID
 
-      @public @async getJob: Function,
+      @public @async getJob: FuncG([String, UnionG String, Number], MaybeG Object),
         default: (queueName, jobId)->
           # queueName = @fullQueueName queueName
           # queue = Queues.get queueName
           try job = db._jobs.document jobId
           yield return job ? null
 
-      @public @async deleteJob: Function,
+      @public @async deleteJob: FuncG([String, UnionG String, Number], Boolean),
         default: (queueName, jobId)->
-          queueName = @fullQueueName queueName
-          queue = Queues.get queueName
-          isDeleted = queue.delete jobId
+          # queueName = @fullQueueName queueName
+          # queue = Queues.get queueName
+          # isDeleted = queue.delete jobId
+          isDeleted = try
+            db._jobs.remove jobId
+            yes
+          catch err
+            no
           yield return isDeleted
 
-      @public @async abortJob: Function,
+      @public @async abortJob: FuncG([String, UnionG String, Number]),
         default: (queueName, jobId)->
-          queueName = @fullQueueName queueName
-          queue = Queues.get queueName
-          job = queue.get jobId
-          job.abort()
+          # queueName = @fullQueueName queueName
+          # queue = Queues.get queueName
+          # job = queue.get jobId
+          # job.abort()
+          job = db._jobs.document jobId
+          if job.status isnt 'completed'
+            job.failures.push flatten new Error 'Job aborted.'
+            db._jobs.update job, {
+              status: 'failed'
+              modified: Date.now()
+              failures: job.failures
+            }
           yield return
 
-      @public @async allJobs: Function,
+      @public @async allJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
@@ -110,9 +126,9 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return allJobs
           else
-            yield return queue.all()
+            yield return queue.all().map (jobId) -> queue.get jobId
 
-      @public @async pendingJobs: Function,
+      @public @async pendingJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
@@ -123,9 +139,9 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return pendingJobs
           else
-            yield return queue.pending()
+            yield return queue.pending().map (jobId) -> queue.get jobId
 
-      @public @async progressJobs: Function,
+      @public @async progressJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
@@ -136,9 +152,9 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return progressJobs
           else
-            yield return queue.progress()
+            yield return queue.progress().map (jobId) -> queue.get jobId
 
-      @public @async completedJobs: Function,
+      @public @async completedJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
@@ -149,9 +165,9 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return completeJobs
           else
-            yield return queue.complete()
+            yield return queue.complete().map (jobId) -> queue.get jobId
 
-      @public @async failedJobs: Function,
+      @public @async failedJobs: FuncG([String, MaybeG String], ListG Object),
         default: (queueName, scriptName)->
           queueName = @fullQueueName queueName
           queue = Queues.get queueName
@@ -162,7 +178,7 @@ module.exports = (Module)->
               .filter (job) -> job.data.scriptName is scriptName
             yield return failedJobs
           else
-            yield return queue.failed()
+            yield return queue.failed().map (jobId) -> queue.get jobId
 
 
       @initializeMixin()

@@ -3,7 +3,9 @@
 module.exports = (Module) ->
   {
     STARTUP
-
+    PointerT
+    FuncG
+    FacadeInterface
     Facade
     StartupCommand
   } = Module::
@@ -12,9 +14,9 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    vpbIsInitialized = @private isInitialized: Boolean,
+    vpbIsInitialized = PointerT @private isInitialized: Boolean,
       default: no
-    cphInstanceMap  = Symbol.for '~instanceMap'
+    cphInstanceMap  = PointerT @classVariables['~instanceMap'].pointer
 
     @protected initializeController: Function,
       default: (args...)->
@@ -29,7 +31,7 @@ module.exports = (Module) ->
           @sendNotification STARTUP, aoApplication
         return
 
-    @public @static getInstance: Function,
+    @public @static getInstance: FuncG(String, FacadeInterface),
       default: (asKey)->
         vhInstanceMap = Facade[cphInstanceMap]
         unless vhInstanceMap[asKey]?
@@ -37,4 +39,4 @@ module.exports = (Module) ->
         vhInstanceMap[asKey]
 
 
-  ApplicationFacade.initialize()
+    @initialize()

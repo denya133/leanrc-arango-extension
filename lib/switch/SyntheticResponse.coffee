@@ -14,7 +14,8 @@ contentDisposition = require 'content-disposition'
 
 module.exports = (Module)->
   {
-    ANY
+    AnyT
+    FuncG, MaybeG, UnionG, SampleG
     CoreObject
     Utils: { _, statuses }
   } = Module::
@@ -26,14 +27,14 @@ module.exports = (Module)->
     @inheritProtected()
     @module Module
 
-    @public body: [Buffer, String],
+    @public body: UnionG(Buffer, String),
       set: (data)->
         unless data?
           return undefined
         if _.isString(data) or _.isBuffer data
           return data
         else if _.isObjectLike data
-          if @Module.context().isDevelopment
+          if @context.isDevelopment
             return JSON.stringify data, null, 2
           else
             return JSON.stringify data
@@ -41,7 +42,7 @@ module.exports = (Module)->
           return String data
     @public context: Object
     @public headers: Object
-    @public cookies: Array
+    @public cookies: Array,
       set: (headers)->
         unless headers
           return {}
@@ -49,22 +50,24 @@ module.exports = (Module)->
           if name.toLowerCase() is 'content-type'
             @contentType = value
         return headers
-    @public statusCode: Number
-    @public contentType: String
+    @public statusCode: MaybeG Number
+    @public contentType: MaybeG String
 
 
-    @public attachment: Function,
+    @public attachment: FuncG(String, SampleG SyntheticResponse),
       default: (filename)->
         if filename and not @contentType
           @contentType = mimeTypes.lookup(filename) ? MIME_BINARY
         @set 'Content-Disposition', contentDisposition filename
         return @
-    @public download: Function,
+
+    @public download: FuncG([String, MaybeG String], SampleG SyntheticResponse),
       default: (path, filename)->
         @attachment filename ? path
         @sendFile path
         return @
-    @public sendFile: Function,
+
+    @public sendFile: FuncG([String, MaybeG UnionG Object, Boolean], SampleG SyntheticResponse),
       default: (filename, opts)->
         if _.isBoolean opts
           opts = lastModified: opts
@@ -80,7 +83,7 @@ module.exports = (Module)->
           @contentType = mimeTypes.lookup(filename) ? MIME_BINARY
         return @
 
-    @public cookie: Function,
+    @public cookie: FuncG([String, String, MaybeG UnionG String, Number, Object], SampleG SyntheticResponse),
       default: (name, value, opts)->
         unless opts
           opts = {}
@@ -116,14 +119,15 @@ module.exports = (Module)->
             opts.httpOnly
           )
         return @
-    @public getHeader: Function,
+
+    @public getHeader: FuncG(String, MaybeG String),
       default: (name)->
         name = name.toLowerCase()
         if name is 'content-type'
           return @contentType
         return @headers[name]
 
-    @public removeHeader: Function,
+    @public removeHeader: FuncG(String, SampleG SyntheticResponse),
       default: (name)->
         name = name.toLowerCase()
         if name is 'content-type'
@@ -131,16 +135,17 @@ module.exports = (Module)->
         delete @headers[name]
         return @
 
-    @public json: Function,
+    @public json: FuncG(AnyT, SampleG SyntheticResponse),
       default: (value)->
         unless @contentType
           @contentType = MIME_JSON
-        if pretty or @Module.context().isDevelopment
+        if pretty or @context.isDevelopment
           @body = JSON.stringify value, null, 2
         else
           @body = JSON.stringify value
         return @
-    @public redirect: Function,
+
+    @public redirect: FuncG([UnionG(String, Number), MaybeG String], SampleG SyntheticResponse),
       default: (status, path)->
         unless path
           path = status
@@ -151,7 +156,8 @@ module.exports = (Module)->
           @statusCode = status ? 302
         @setHeader 'location', path
         return @
-    @public send: Function,
+
+    @public send: FuncG([AnyT, MaybeG String], SampleG SyntheticResponse),
       default: (body, type)->
         if body and body.isArangoResultSet
           body = body.toArray()
@@ -184,7 +190,7 @@ module.exports = (Module)->
         type = mimeTypes.lookup(type) ? type
 
         handler = null
-        for entry in @Module.context().service.types.entries()
+        for entry in @context.service.types.entries()
           key = entry[0]
           value = entry[1]
           if _.isRegExp key
@@ -212,7 +218,8 @@ module.exports = (Module)->
         if contentType
           @contentType = contentType
         return @
-    @public sendStatus: Function,
+
+    @public sendStatus: FuncG([UnionG String, Number], SampleG SyntheticResponse),
       default: (status)->
         if _.isString status
           status = statuses status
@@ -220,14 +227,16 @@ module.exports = (Module)->
         @statusCode = status
         @body = message
         return @
-    @public set: Function,
+
+    @public set: FuncG([UnionG(String, Object), MaybeG String], SampleG SyntheticResponse),
       default: (name, value)->
         if name and _.isObjectLike name
           _.each name, (v, k) => @set k, v
         else
           @setHeader name, value
         return @
-    @public setHeader: Function,
+
+    @public setHeader: FuncG([String, String], SampleG SyntheticResponse),
       default: (name, value)->
         unless name
           return @
@@ -237,13 +246,15 @@ module.exports = (Module)->
         else
           @headers[name] = value
         return @
-    @public status: Function,
+
+    @public status: FuncG([UnionG String, Number], SampleG SyntheticResponse),
       default: (status)->
         if _.isString status
           status = statuses status
         @statusCode = status
         return @
-    @public throw: Function,
+
+    @public throw: FuncG([UnionG(String, Number), MaybeG(UnionG Error, String, Object), MaybeG Object]),
       default: (status, reason, options)->
         if _.isString status
           status = statuses status
@@ -265,11 +276,13 @@ module.exports = (Module)->
           {statusCode: status, status},
           options
         )
-    @public type: Function,
+
+    @public type: FuncG([MaybeG String], MaybeG String),
       default: (type)->
         if type
           @contentType = mimeTypes.lookup(type) ? type
         @contentType
+
     @public vary: Function,
       default: (args...)->
         header = @getHeader('vary') ? ''
@@ -281,7 +294,8 @@ module.exports = (Module)->
           header = vary.append header, value
         @setHeader 'vary', header
         return @
-    @public write: Function,
+
+    @public write: FuncG(AnyT, SampleG SyntheticResponse),
       default: (data)->
         bodyIsBuffer = _.isBuffer @body
         dataIsBuffer = _.isBuffer data
@@ -289,7 +303,7 @@ module.exports = (Module)->
           return @
         unless dataIsBuffer
           if _.isObjectLike data
-            if @Module.context().isDevelopment
+            if @context.isDevelopment
               data = JSON.stringify data, null, 2
             else
               data = JSON.stringify data
@@ -326,6 +340,17 @@ module.exports = (Module)->
           cookie.httpOnly = if httpOnly then yes else no
 
         res.cookies.push cookie
+        return
+
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
 
     @public init: Function,
       default: (context)->
@@ -337,4 +362,4 @@ module.exports = (Module)->
         return
 
 
-  SyntheticResponse.initialize()
+    @initialize()

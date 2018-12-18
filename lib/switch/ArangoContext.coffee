@@ -1,18 +1,21 @@
 assert        = require 'assert'
 createError   = require 'http-errors'
+Stream        = require 'stream'
 
 
 module.exports = (Module)->
   {
-    ANY
     DEVELOPMENT
-
+    AnyT, NilT
+    FuncG, UnionG, MaybeG
+    RequestInterface, ResponseInterface, SwitchInterface, CookiesInterface
+    ContextInterface
     CoreObject
     # ContextInterface
-    RequestInterface
-    ResponseInterface
-    SwitchInterface
-    CookiesInterface
+    # RequestInterface
+    # ResponseInterface
+    # SwitchInterface
+    # CookiesInterface
     ArangoRequest
     ArangoResponse
     Cookies
@@ -21,49 +24,61 @@ module.exports = (Module)->
 
   class ArangoContext extends CoreObject
     @inheritProtected()
-    # @implements ContextInterface
+    @implements ContextInterface
     @module Module
 
     @public req: Object # native request object
     @public res: Object # native response object
-    @public request: RequestInterface
-    @public response: ResponseInterface
-    @public cookies: CookiesInterface
+    @public request: MaybeG RequestInterface
+    @public response: MaybeG ResponseInterface
+    @public cookies: MaybeG CookiesInterface
     @public accept: Object
-    @public state: Object
+    @public state: MaybeG Object
     @public switch: SwitchInterface
-    @public respond: Boolean
-    @public routePath: String
-    @public pathParams: Object
+    @public respond: MaybeG Boolean
+    @public routePath: MaybeG String
+    @public pathParams: MaybeG Object
+    @public transaction: MaybeG Object
+    @public session: MaybeG Object
     @public isPerformExecution: Boolean,
       default: no
 
     # @public database: String # возможно это тоже надо получать из метода из отдельного модуля
 
-    @public throw: Function,
+    @public throw: FuncG([UnionG(String, Number), MaybeG(String), MaybeG Object]),
       default: (args...)-> throw createError args...
 
-    @public assert: Function,
+    @public assert: FuncG([AnyT, MaybeG(UnionG String, Number), MaybeG(String), MaybeG Object]),
       default: assert
 
-    @public onerror: Function,
+    @public onerror: FuncG([MaybeG AnyT]),
       default: (err)->
         return unless err?
         unless _.isError err
           err = new Error "non-error thrown: #{err}"
+        console.log '>???? 111'
         headerSent = no
         if @headerSent or not @writable
           headerSent = err.headerSent = yes
+        console.log '>???? 222'
         @switch.getViewComponent().emit 'error', err, @
+        console.log '>???? 333'
         return if headerSent
+        console.log '>???? 444'
         if _.isFunction @res.getHeaderNames
           @res.getHeaderNames().forEach (name)=> @res.removeHeader name
+        console.log '>???? 555'
         if (vlHeaderNames = Object.keys @res.headers ? {}).length > 0
           vlHeaderNames.forEach (name)=> @res.removeHeader name
-        @response.set err.headers
+        console.log '>???? 666'
+        @response.set err.headers ? {}
+        console.log '>???? 777'
         @response.type = 'text'
+        console.log '>???? 888'
         err.status = 404 if 'ENOENT' is err.code
+        console.log '>???? 999'
         err.status = 500 if not _.isNumber(err.status) or not statuses[err.status]
+        console.log '>???? 000'
         code = statuses[err.status]
         msg = if err.expose
            err.message
@@ -74,11 +89,15 @@ module.exports = (Module)->
           errorNum: err.status
           errorMessage: msg
           code: err.code ? code
+        console.log '>???? +111'
         if @switch.configs.environment is DEVELOPMENT
           message.exception = "#{err.name ? 'Error'}: #{msg}"
           message.stacktrace = err.stack.split '\n'
+        console.log '>???? +222'
         @res.status err.status
+        console.log '>???? +333'
         @res.send message
+        console.log '>???? +444'
         return
 
     # Request aliases
@@ -114,7 +133,7 @@ module.exports = (Module)->
       get: -> @request.fresh
     @public stale: Boolean,
       get: -> @request.stale
-    @public socket: Object,
+    @public socket: MaybeG(Object),
       get: -> @request.socket
     @public protocol: String,
       get: -> @request.protocol
@@ -126,24 +145,24 @@ module.exports = (Module)->
       get: -> @request.ips
     @public subdomains: Array,
       get: -> @request.subdomains
-    @public is: Function,
+    @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
       default: (args...)-> @request.is args...
-    @public accepts: Function,
+    @public accepts: FuncG([MaybeG UnionG String, Array], UnionG String, Array, Boolean),
       default: (args...)-> @request.accepts args...
-    @public acceptsEncodings: Function,
+    @public acceptsEncodings: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @request.acceptsEncodings args...
-    @public acceptsCharsets: Function,
+    @public acceptsCharsets: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @request.acceptsCharsets args...
-    @public acceptsLanguages: Function,
+    @public acceptsLanguages: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @request.acceptsLanguages args...
-    @public get: Function,
+    @public get: FuncG(String, String),
       default: (args...)-> @request.get args...
 
     # Response aliases
-    @public body: [String, Buffer, Object, Array, Number, Boolean],
+    @public body: MaybeG(UnionG String, Buffer, Object, Array, Number, Boolean, Stream),
       get: -> @response.body
       set: (body)-> @response.body = body
-    @public status: [String, Number],
+    @public status: MaybeG(Number),
       get: -> @response.status
       set: (status)-> @response.status = status
     @public message: String,
@@ -154,31 +173,41 @@ module.exports = (Module)->
       set: (length)-> @response.length = length
     @public writable: Boolean,
       get: -> @response.writable
-    @public type: String,
+    @public type: MaybeG(String),
       get: -> @response.type
       set: (type)-> @response.type = type
-    @public headerSent: Boolean,
+    @public headerSent: MaybeG(Boolean),
       get: -> @response.headerSent
-    @public redirect: Function,
+    @public redirect: FuncG([String, MaybeG String]),
       default: (args...)-> @response.redirect args...
-    @public attachment: Function,
+    @public attachment: FuncG(String),
       default: (args...)-> @response.attachment args...
-    @public set: Function,
+    @public set: FuncG([UnionG(String, Object), MaybeG AnyT]),
       default: (args...)-> @response.set args...
-    @public append: Function,
+    @public append: FuncG([String, UnionG String, Array]),
       default: (args...)-> @response.append args...
-    @public vary: Function,
+    @public vary: FuncG(String),
       default: (args...)-> @response.vary args...
     @public flushHeaders: Function,
       default: (args...)-> @response.flushHeaders args...
-    @public remove: Function,
+    @public remove: FuncG(String),
       default: (args...)-> @response.remove args...
-    @public lastModified: Date,
+    @public lastModified: MaybeG(Date),
       set: (date)-> @response.lastModified = date
     @public etag: String,
       set: (etag)-> @response.etag = etag
 
-    @public init: Function,
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
+
+    @public init: FuncG([Object, Object, SwitchInterface]),
       default: (req, res, switchInstanse)->
         @super()
         @req = req
@@ -203,4 +232,4 @@ module.exports = (Module)->
         return
 
 
-  ArangoContext.initialize()
+    @initialize()

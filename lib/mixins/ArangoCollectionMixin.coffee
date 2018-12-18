@@ -10,11 +10,12 @@ Parser        = require 'mongo-parse' #mongo-parse@2.0.2
 
 module.exports = (Module)->
   {
-    ANY
-    Collection
-    # QueryableCollectionMixinInterface
+    AnyT, MomentT
+    FuncG, UnionG, MaybeG, EnumG, ListG, DictG, InterfaceG
+    RecordInterface, CursorInterface, QueryInterface
+    Mixin
+    Collection, Query
     ArangoCursor
-    Query
     LogMessage: {
       SEND_TO_LOG
       LEVELS
@@ -23,20 +24,19 @@ module.exports = (Module)->
     Utils: { _, moment }
   } = Module::
 
-  Module.defineMixin 'ArangoCollectionMixin', (BaseClass = Collection) ->
+  Module.defineMixin Mixin 'ArangoCollectionMixin', (BaseClass = Collection) ->
     class extends BaseClass
       @inheritProtected()
-      # @implements QueryableCollectionMixinInterface
 
       # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 
-      wrapReference = (value)->
+      wrapReference = FuncG(AnyT, Object) (value)->
         if _.isString(value) and /^[@]/.test value
           qb.ref value.replace '@', ''
         else
           qb value
 
-      @public @async push: Function,
+      @public @async push: FuncG(RecordInterface, RecordInterface),
         default: (aoRecord)->
           vhObjectForInsert = yield @serialize aoRecord
           voQuery = qb.insert qb vhObjectForInsert
@@ -45,12 +45,13 @@ module.exports = (Module)->
           vsQuery = voQuery.toAQL()
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::push vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
-          if voNativeCursor.hasNext()
-            return yield @normalize voNativeCursor.next()
-          else
-            yield return
+          return yield @normalize voNativeCursor.next()
+          # if voNativeCursor.hasNext()
+          #   return yield @normalize voNativeCursor.next()
+          # else
+          #   yield return
 
-      @public @async remove: Function,
+      @public @async remove: FuncG([UnionG String, Number]),
         default: (id)->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -62,7 +63,7 @@ module.exports = (Module)->
           db._query "#{vsQuery}"
           yield return
 
-      @public @async take: Function,
+      @public @async take: FuncG([UnionG String, Number], MaybeG RecordInterface),
         default: (id)->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -76,7 +77,7 @@ module.exports = (Module)->
           else
             yield return
 
-      @public @async takeBy: Function,
+      @public @async takeBy: FuncG([Object, MaybeG Object], CursorInterface),
         default: (query, options = {})->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -96,7 +97,7 @@ module.exports = (Module)->
           voNativeCursor = db._query "#{vsQuery}"
           yield return ArangoCursor.new @, voNativeCursor
 
-      @public @async takeMany: Function,
+      @public @async takeMany: FuncG([ListG UnionG String, Number], CursorInterface),
         default: (ids)->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -107,7 +108,7 @@ module.exports = (Module)->
           voNativeCursor = db._query "#{vsQuery}"
           yield return ArangoCursor.new @, voNativeCursor
 
-      @public @async takeAll: Function,
+      @public @async takeAll: FuncG([], CursorInterface),
         default: ->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -117,7 +118,7 @@ module.exports = (Module)->
           voNativeCursor = db._query "#{vsQuery}"
           yield return ArangoCursor.new @, voNativeCursor
 
-      @public @async override: Function,
+      @public @async override: FuncG([UnionG(String, Number), RecordInterface], RecordInterface),
         default: (id, aoRecord)->
           vhObjectForUpdate = _.omit (yield @serialize aoRecord), ['id', '_key']
           voQuery = qb.for 'doc'
@@ -130,12 +131,9 @@ module.exports = (Module)->
           vsQuery = voQuery.toAQL()
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::override vsQuery #{vsQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{vsQuery}"
-          if voNativeCursor.hasNext()
-            return yield @normalize voNativeCursor.next()
-          else
-            yield return
+          return yield @normalize voNativeCursor.next()
 
-      @public @async includes: Function,
+      @public @async includes: FuncG([UnionG String, Number], Boolean),
         default: (id)->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -147,7 +145,7 @@ module.exports = (Module)->
           voNativeCursor = db._query "#{vsQuery}"
           yield return voNativeCursor.hasNext()
 
-      @public @async exists: Function,
+      @public @async exists: FuncG(Object, Boolean),
         default: (query)->
           voQuery = qb.for 'doc'
             .in @collectionFullName()
@@ -159,7 +157,7 @@ module.exports = (Module)->
           voNativeCursor = db._query "#{vsQuery}"
           yield return voNativeCursor.hasNext()
 
-      @public @async length: Function,
+      @public @async length: FuncG([], Number),
         default: ->
           # voQuery = qb.for 'doc'
           #   .in @collectionFullName()
@@ -171,7 +169,10 @@ module.exports = (Module)->
           collection = db._collection @collectionFullName()
           yield return collection.count()
 
-      buildIntervalQuery = (aoKey, aoInterval, aoIntervalSize, aoDirect)->
+      buildIntervalQuery = FuncG(
+        [Object, MomentT, EnumG('day', 'week', 'month', 'year'), Boolean]
+        Object
+      ) (aoKey, aoInterval, aoIntervalSize, aoDirect)->
         aoInterval = aoInterval.utc()
         voIntervalStart = aoInterval.startOf(aoIntervalSize).toISOString()
         voIntervalEnd = aoInterval.clone().endOf(aoIntervalSize).toISOString()
@@ -186,7 +187,7 @@ module.exports = (Module)->
             qb.lt aoKey, qb voIntervalEnd
           ]...
 
-      @public operatorsMap: Object,
+      @public operatorsMap: DictG(String, Function),
         default:
           # Logical Query Operators
           $and: (items)-> qb.and _.castArray(items)...
@@ -265,9 +266,13 @@ module.exports = (Module)->
           $ly: (aoFirst, aoSecond)-> # last year
             buildIntervalQuery wrapReference(aoFirst), moment().subtract(1, 'years'), 'year', aoSecond
 
-      @public parseFilter: Function,
-        args: [Object]
-        return: ANY
+      @public parseFilter: FuncG(InterfaceG({
+        field: MaybeG String
+        parts: MaybeG ListG Object
+        operator: MaybeG String
+        operand: MaybeG AnyT
+        implicitField: MaybeG Boolean
+      }), Object),
         default: ({field, parts = [], operator, operand, implicitField})->
           if field? and operator isnt '$elemMatch' and parts.length is 0
             throw new Error '`$not` must be defined in field operand'  if field is '$not'
@@ -288,7 +293,10 @@ module.exports = (Module)->
           else
             @operatorsMap[operator ? '$and'] parts.map @parseFilter.bind @
 
-      @public @async parseQuery: Function,
+      @public @async parseQuery: FuncG(
+        [UnionG Object, QueryInterface]
+        UnionG Object, String, QueryInterface
+      ),
         default: (aoQuery)->
           voQuery = null
           intoUsed = intoPartial = finAggUsed = finAggPartial = null
@@ -471,7 +479,10 @@ module.exports = (Module)->
           Reflect.defineProperty vsQuery, 'isCustomReturn', value: isCustomReturn
           yield return vsQuery
 
-      @public @async executeQuery: Function,
+      @public @async executeQuery: FuncG(
+        [UnionG Object, String, QueryInterface]
+        CursorInterface
+      ),
         default: (asQuery, options)->
           @sendNotification(SEND_TO_LOG, "ArangoCollectionMixin::executeQuery asQuery #{asQuery}", LEVELS[DEBUG])
           voNativeCursor = db._query "#{asQuery}"

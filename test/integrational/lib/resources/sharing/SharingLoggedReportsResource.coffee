@@ -5,6 +5,7 @@
 
 module.exports = (Module)->
   {
+    CollectionInterface
     Resource
     BodyParseMixin
     CheckSessionsMixin
@@ -36,11 +37,11 @@ module.exports = (Module)->
     @public keyName: String,
       get: -> 'sharing_logged_report'
 
-    @public collection: Module::CollectionInterface,
+    @public collection: CollectionInterface,
       get: ->
         @facade.retrieveProxy 'ReportsCollection'
 
-    @public periodsCollection: Module::CollectionInterface,
+    @public periodsCollection: CollectionInterface,
       get: ->
         @facade.retrieveProxy 'PeriodsCollection'
 
@@ -158,5 +159,6 @@ module.exports = (Module)->
           'auth_space_users', 'auth_sections', 'auth_rules'
         ]
         write: ['auth_sessions']
+
 
     @initialize()

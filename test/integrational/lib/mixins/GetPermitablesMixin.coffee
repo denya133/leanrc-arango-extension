@@ -3,12 +3,12 @@
 module.exports = (Module)->
   {
     APPLICATION_ROUTER
-
+    Mixin
     Resource
     Utils: { _, inflect }
   } = Module::
 
-  Module.defineMixin 'GetPermitablesMixin', (BaseClass = Resource) ->
+  Module.defineMixin Mixin 'GetPermitablesMixin', (BaseClass = Resource) ->
     class extends BaseClass
       @inheritProtected()
 

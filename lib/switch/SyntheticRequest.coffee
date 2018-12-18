@@ -14,7 +14,8 @@ crypto        = require '@arangodb/crypto'
 
 module.exports = (Module)->
   {
-    ANY
+    AnyT, NilT, PointerT
+    FuncG, MaybeG, UnionG
     CoreObject
     Utils: { _ }
   } = Module::
@@ -23,17 +24,18 @@ module.exports = (Module)->
     @inheritProtected()
     @module Module
 
-    ipoUrlCache = @private urlCache: Object
-    ipoParsedUrl = @protected parsedUrl: Object,
+    ipoUrlCache = PointerT @private urlCache: MaybeG Object
+    ipoParsedUrl = PointerT @protected parsedUrl: Object,
       get: ->
         @[ipoUrlCache] ?= parseUrl @initialUrl
         return @[ipoUrlCache]
+
     @public initialUrl: String
     # @public arangoUser: String # not supported
     # @public arangoVersion: Number # not supported
     @public baseUrl: String,
       get: -> @context.baseUrl.replace @context.mount, ''
-    @public body: ANY
+    @public body: MaybeG AnyT
     @public context: Object
     @public database: String,
       get: -> @baseUrl.replace '/_db/', ''
@@ -46,7 +48,7 @@ module.exports = (Module)->
     @public path: String,
       get: -> @[ipoParsedUrl].pathname
     @public pathParams: Object
-    @public port: Number # copy from main request
+    @public port: Number, # copy from main request
       default: 80
     @public protocol: String,
       default: 'http'
@@ -69,24 +71,24 @@ module.exports = (Module)->
         "xmlhttprequest" is @headers['x-requested-with']?.toLowerCase()
 
 
-    @public accepts: Function,
+    @public accepts: FuncG([MaybeG UnionG String, Array], UnionG String, Array, Boolean),
       default: (args...)->
         accept = accepts @
         accept.types args...
-    @public acceptsEncodings: Function,
+    @public acceptsEncodings: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)->
         accept = accepts @
         accept.encodings args...
-    @public acceptsCharsets: Function,
+    @public acceptsCharsets: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)->
         accept = accepts @
         accept.charsets args...
-    @public acceptsLanguages: Function,
+    @public acceptsLanguages: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)->
         accept = accepts @
         accept.languages args...
 
-    @public cookie: Function,
+    @public cookie: FuncG([String, UnionG String, Object], MaybeG String),
       default: (name, opts)->
         if _.isString opts
           opts = secret: opts
@@ -101,15 +103,18 @@ module.exports = (Module)->
           unless valid
             return undefined
         return value
-    @public get: Function,
+
+    @public get: FuncG(String, MaybeG String),
       default: (name)->
         lc = name.toLowerCase()
         if lc is 'referer' or lc is 'referrer'
           return @headers.referer ? @headers.referrer
         return @headers[lc]
-    @public header: Function,
+
+    @public header: FuncG(String, MaybeG String),
       default: (name)-> @get name
-    @public is: Function,
+
+    @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
       default: (args...)->
         unless @headers['content-type']
           return no
@@ -118,11 +123,13 @@ module.exports = (Module)->
         else
           args
         typeIs.is @, types
-    @public json: Function,
+
+    @public json: FuncG([], Object),
       default: ->
         if not @rawBody or not @rawBody.length
           undefined
         JSON.parse @rawBody.toString 'utf8'
+
     @public makeAbsolute: Function,
       default: (path, query)->
         opts =
@@ -136,12 +143,14 @@ module.exports = (Module)->
           else
             opts.query = query
         return formatUrl opts
-    @public param: Function,
+
+    @public param: FuncG(String, MaybeG String),
       default: (name)->
         {hasOwnProperty} = {}
         if hasOwnProperty.call @pathParams, name
           return @pathParams[name]
         return @queryParams[name]
+
     @public range: Function,
       default: (size)->
         range = @headers.rang
@@ -152,6 +161,15 @@ module.exports = (Module)->
     # @public reverse: Function, # not supported
     #   default: (name, params)->
 
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
 
     @public init: Function,
       default: (context)->
@@ -161,4 +179,4 @@ module.exports = (Module)->
         return
 
 
-  SyntheticRequest.initialize()
+    @initialize()

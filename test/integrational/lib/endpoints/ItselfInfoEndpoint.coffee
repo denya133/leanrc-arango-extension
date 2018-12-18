@@ -2,6 +2,10 @@
 
 module.exports = (Module)->
   {
+    NilT
+    FuncG, InterfaceG
+    GatewayInterface
+    EndpointInterface
     Endpoint
     CrudEndpointMixin
     Utils: { joi }
@@ -12,7 +16,7 @@ module.exports = (Module)->
     @include CrudEndpointMixin
     @module Module
 
-    @public init: Function,
+    @public init: FuncG(InterfaceG(gateway: GatewayInterface), NilT),
       default: (args...)->
         @super args...
         @response joi.object(
@@ -26,6 +30,7 @@ module.exports = (Module)->
         ), 'Information'
           .summary 'Service info'
           .description 'Info about this service'
+        return
 
 
-  ItselfInfoEndpoint.initialize()
+    @initialize()

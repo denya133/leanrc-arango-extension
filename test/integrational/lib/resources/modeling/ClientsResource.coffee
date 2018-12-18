@@ -61,4 +61,4 @@ module.exports = (Module)->
         write: ['auth_sessions']
 
 
-  ClientsResource.initialize()
+    @initialize()

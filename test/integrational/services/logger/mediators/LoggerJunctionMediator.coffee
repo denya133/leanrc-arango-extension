@@ -3,11 +3,14 @@
 module.exports = (Module) ->
   {
     LOG_MSG
-
+    NilT
+    FuncG
+    NotificationInterface
     Pipes
     LogFilterMessage
   } = Module::
   {
+    PipeMessageInterface
     JunctionMediator
     Junction
     PipeAwareModule
@@ -38,11 +41,11 @@ module.exports = (Module) ->
     @public @static NAME: String,
       get: -> "#{@Module.name}JunctionMediator"
 
-    @public listNotificationInterests: Function,
+    @public listNotificationInterests: FuncG([], Array),
       default: (args...)->
         @super args...
 
-    @public handleNotification: Function,
+    @public handleNotification: FuncG(NotificationInterface, NilT),
       default: (aoNotification)->
         switch aoNotification.getName()
           when ACCEPT_INPUT_PIPE
@@ -55,8 +58,9 @@ module.exports = (Module) ->
               @super aoNotification
           else
             @super aoNotification
+        return
 
-    @public handlePipeMessage: Function,
+    @public handlePipeMessage: FuncG(PipeMessageInterface, NilT),
       default: (aoMessage)->
         @sendNotification LOG_MSG, aoMessage
         return
@@ -75,4 +79,4 @@ module.exports = (Module) ->
         @super LoggerJunctionMediator.NAME, Junction.new()
 
 
-  LoggerJunctionMediator.initialize()
+    @initialize()

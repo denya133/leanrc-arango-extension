@@ -2,10 +2,11 @@
 
 module.exports = (Module)->
   {
+    Mixin
     Resource
   } = Module::
 
-  Module.defineMixin 'ExtendReportFromClientsMixin', (BaseClass = Resource) ->
+  Module.defineMixin Mixin 'ExtendReportFromClientsMixin', (BaseClass = Resource) ->
     class extends BaseClass
       @inheritProtected()
 

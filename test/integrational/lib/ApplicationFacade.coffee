@@ -4,7 +4,9 @@ module.exports = (Module) ->
   {
     STARTUP
     START_RESQUE
-
+    PointerT
+    FuncG
+    FacadeInterface
     Facade
     StartupCommand
   } = Module::
@@ -13,9 +15,9 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    vpbIsInitialized = @private isInitialized: Boolean,
+    vpbIsInitialized = PointerT @private isInitialized: Boolean,
       default: no
-    cphInstanceMap  = Symbol.for '~instanceMap'
+    cphInstanceMap  = PointerT @classVariables['~instanceMap'].pointer
 
     @protected initializeController: Function,
       default: (args...)->
@@ -32,7 +34,7 @@ module.exports = (Module) ->
             @sendNotification START_RESQUE
         return
 
-    @public @static getInstance: Function,
+    @public @static getInstance: FuncG(String, FacadeInterface),
       default: (asKey)->
         vhInstanceMap = Facade[cphInstanceMap]
         unless vhInstanceMap[asKey]?
@@ -40,4 +42,4 @@ module.exports = (Module) ->
         vhInstanceMap[asKey]
 
 
-  ApplicationFacade.initialize()
+    @initialize()

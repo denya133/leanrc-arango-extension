@@ -3,7 +3,8 @@
 module.exports = (Module) ->
   {
     LOG_MSG
-
+    FuncG
+    NotificationInterface
     SimpleCommand
     LogMessageCommand
   } = Module::
@@ -12,9 +13,9 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public execute: Function,
+    @public execute: FuncG(NotificationInterface),
       default: ->
         @facade.registerCommand LOG_MSG, LogMessageCommand
 
 
-  PrepareControllerCommand.initialize()
+    @initialize()

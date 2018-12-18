@@ -4,6 +4,9 @@
 
 module.exports = (Module) ->
   {
+    NilT
+    FuncG
+    NotificationInterface
     LoggingJunctionMixin
     LogMessage
     Pipes
@@ -15,6 +18,7 @@ module.exports = (Module) ->
     CONNECT_SHELL_TO_LOGGER
   } = Application::
   {
+    PipeMessageInterface
     JunctionMediator
     PipeAwareModule
     Pipe
@@ -49,13 +53,13 @@ module.exports = (Module) ->
     @public @static NAME: String,
       get: -> "#{@Module.name}JunctionMediator"
 
-    @public listNotificationInterests: Function,
+    @public listNotificationInterests: FuncG([], Array),
       default: (args...)->
         interests = @super args...
         interests.push CONNECT_MODULE_TO_SHELL
         interests
 
-    @public handleNotification: Function,
+    @public handleNotification: FuncG(NotificationInterface, NilT),
       default: (aoNotification)->
         switch aoNotification.getName()
           when CONNECT_MODULE_TO_SHELL
@@ -77,8 +81,9 @@ module.exports = (Module) ->
           else
             @super aoNotification
 
-    @public handlePipeMessage: Function,
+    @public handlePipeMessage: FuncG(PipeMessageInterface, NilT),
       default: (aoMessage)->
+        return
 
     @public onRegister: Function,
       default: ->
@@ -98,4 +103,4 @@ module.exports = (Module) ->
         @super ShellJunctionMediator.NAME, Junction.new()
 
 
-  ShellJunctionMediator.initialize()
+    @initialize()
