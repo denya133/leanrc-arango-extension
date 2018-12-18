@@ -38,61 +38,74 @@ describe 'ArangoCollectionMixin', ->
   after ->
     try db._drop COL_NAME
   describe '.new', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should create ArangoDB collection instance', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_001'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          #
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         yield return
   describe '#operatorsMap', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should get full operators map', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_002'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         { operatorsMap } = collection
 
         assert.isFunction operatorsMap['$and']
@@ -208,93 +221,151 @@ describe 'ArangoCollectionMixin', ->
         assert.deepEqual queryOperator, qb.expr 'REGEX_TEST(a, "^beep", true)'
 
         date = new Date()
-
-        todayStart = moment().startOf('day').toISOString()
-        todayEnd = moment().endOf('day').toISOString()
+        todayInterval = moment().utc()
+        todayStart = todayInterval.startOf('day').toISOString()
+        todayEnd = todayInterval.clone().endOf('day').toISOString()
         queryOperator = operatorsMap['$td'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb todayStart), qb.lt(qb(date), qb todayEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb todayStart)
+          qb.lt(qb(date), qb todayEnd)
+        ]...
         queryOperator = operatorsMap['$td'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb todayStart), qb.lt(qb(date), qb todayEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb todayStart)
+          qb.lt(qb(date), qb todayEnd)
+        ]...
 
-        yesterdayStart = moment().subtract(1, 'days').startOf('day').toISOString()
-        yesterdayEnd = moment().subtract(1, 'days').endOf('day').toISOString()
+        yesterdayInterval = moment().subtract(1, 'days').utc()
+        yesterdayStart = yesterdayInterval.startOf('day').toISOString()
+        yesterdayEnd = yesterdayInterval.clone().endOf('day').toISOString()
         queryOperator = operatorsMap['$ld'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb yesterdayStart), qb.lt(qb(date), qb yesterdayEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb yesterdayStart)
+          qb.lt(qb(date), qb yesterdayEnd)
+        ]...
         queryOperator = operatorsMap['$ld'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb yesterdayStart), qb.lt(qb(date), qb yesterdayEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb yesterdayStart)
+          qb.lt(qb(date), qb yesterdayEnd)
+        ]...
 
-        weekStart = moment().startOf('week').toISOString()
-        weekEnd = moment().endOf('week').toISOString()
+        weekInterval = moment().utc()
+        weekStart = weekInterval.startOf('week').toISOString()
+        weekEnd = weekInterval.clone().endOf('week').toISOString()
         queryOperator = operatorsMap['$tw'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb weekStart)
+          qb.lt(qb(date), qb weekEnd)
+        ]...
         queryOperator = operatorsMap['$tw'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb weekStart)
+          qb.lt(qb(date), qb weekEnd)
+        ]...
 
-        weekStart = moment().subtract(1, 'weeks').startOf 'week'
-        weekEnd = weekStart.clone().endOf('week').toISOString()
-        weekStart = weekStart.toISOString()
+        lastweekInterval = moment().subtract(1, 'weeks').utc()
+        weekStart = lastweekInterval.startOf('week').toISOString()
+        weekEnd = lastweekInterval.clone().endOf('week').toISOString()
         queryOperator = operatorsMap['$lw'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb weekStart)
+          qb.lt(qb(date), qb weekEnd)
+        ]...
         queryOperator = operatorsMap['$lw'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb weekStart), qb.lt(qb(date), qb weekEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb weekStart)
+          qb.lt(qb(date), qb weekEnd)
+        ]...
 
-        firstDayStart = moment().startOf('month').toISOString()
-        lastDayEnd = moment().endOf('month').toISOString()
+        monthInterval = moment().utc()
+        firstDayStart = monthInterval.startOf('month').toISOString()
+        lastDayEnd = monthInterval.clone().endOf('month').toISOString()
         queryOperator = operatorsMap['$tm'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
         queryOperator = operatorsMap['$tm'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
 
-        firstDayStart = moment().subtract(1, 'months').startOf 'month'
-        lastDayEnd = firstDayStart.clone().endOf('month').toISOString()
-        firstDayStart = firstDayStart.toISOString()
+        lastmonthInterval = moment().subtract(1, 'months').utc()
+        firstDayStart = lastmonthInterval.startOf('month').toISOString()
+        lastDayEnd = lastmonthInterval.clone().endOf('month').toISOString()
         queryOperator = operatorsMap['$lm'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
         queryOperator = operatorsMap['$lm'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
 
-        firstDayStart = moment().startOf('year').toISOString()
-        lastDayEnd = moment().endOf('year').toISOString()
+        yearInterval = moment().utc()
+        firstDayStart = yearInterval.startOf('year').toISOString()
+        lastDayEnd = yearInterval.clone().endOf('year').toISOString()
         queryOperator = operatorsMap['$ty'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
         queryOperator = operatorsMap['$ty'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
 
-        firstDayStart = moment().subtract(1, 'years').startOf 'year'
-        lastDayEnd = firstDayStart.clone().endOf('year').toISOString()
-        firstDayStart = firstDayStart.toISOString()
+        lastyearInterval = moment().subtract(1, 'years').utc()
+        firstDayStart = lastyearInterval.startOf('year').toISOString()
+        lastDayEnd = lastyearInterval.clone().endOf('year').toISOString()
         queryOperator = operatorsMap['$ly'] date, yes
-        assert.deepEqual queryOperator, qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
         queryOperator = operatorsMap['$ly'] date, no
-        assert.deepEqual queryOperator, qb.not qb.and qb.gte(qb(date), qb firstDayStart), qb.lt(qb(date), qb lastDayEnd)
+        assert.deepEqual queryOperator, qb.not qb.and [
+          qb.gte(qb(date), qb firstDayStart)
+          qb.lt(qb(date), qb lastDayEnd)
+        ]...
         yield return
   describe '#parseFilter', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should get parse filter', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_003'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         result = collection.parseFilter
           field: 'a'
           operator: '$eq'
@@ -350,41 +421,48 @@ describe 'ArangoCollectionMixin', ->
         assert.deepEqual result, qb.gt qb.expr('LENGTH(a[* FILTER (CURRENT.b == "c")])'), qb 0
         yield return
   describe '#parseQuery', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should get parse query for `patch`', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_004'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
             'doc': COL_NAME
           '$into': COL_NAME
-          '$patch': SampleRecord.serialize SampleRecord.new
+          '$patch': yield SampleRecord.serialize SampleRecord.new
             createdAt: date
             updatedAt: date
             test: 'test'
+            type: 'Test::SampleRecord'
           , collection
           '$join':
             '$and': [
@@ -415,30 +493,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for `remove`', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_005'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -473,30 +554,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with distinct return', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_006'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -557,30 +641,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with count', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_007'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -608,30 +695,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with sum', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_008'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -659,30 +749,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with min', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_009'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -710,30 +803,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with max', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_010'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -761,30 +857,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with average', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_011'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -812,30 +911,33 @@ describe 'ArangoCollectionMixin', ->
         yield return
     it 'should get parse query for other with return', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_012'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         date = new Date
         result = yield collection.parseQuery
           '$forIn':
@@ -863,37 +965,43 @@ describe 'ArangoCollectionMixin', ->
         assert.equal "#{result}", 'FOR doc IN ' + COL_NAME + ' FILTER ((doc.tomatoId == tomato._key) && (tomato.active == true)) FILTER (((((("c" == "1")) || ((doc.b == "2")))) && (!(doc.b == "2")))) INTO ' + COL_NAME + ' RETURN {doc: doc}'
         yield return
   describe '#executeQuery', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should send query to ArangoDB', ->
       co ->
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_013'
+        facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute data: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        collection = ArangoCollection.new 'TEST_COLLECTION',
-          delegate: SampleRecord
-          serializer: Test::Serializer
-        collection.initializeNotifier 'TEST'
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         samples = yield collection.executeQuery '
           FOR doc IN ' + COL_NAME + ' ' + '
           SORT doc._key
-          RETURN doc
+          LET docWithType = MERGE({}, doc, {type: "Test::TestRecord", id: HASH(doc._key)})
+          RETURN docWithType
         '
         items = yield samples.toArray()
         assert.lengthOf items, 4
@@ -902,41 +1010,45 @@ describe 'ArangoCollectionMixin', ->
         items = yield collection.executeQuery '
           FOR doc IN ' + COL_NAME + ' ' + '
           FILTER doc.data == "a boat"
-          RETURN doc
+          LET docWithType = MERGE({}, doc, {type: "Test::TestRecord", id: HASH(doc._key)})
+          RETURN docWithType
         '
         item = yield items.first()
         assert.equal item.data, 'a boat'
         yield return
   describe '#push', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should put data into collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_002'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_014'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: Test::Serializer
-        collection = facade.retrieveProxy KEY
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+        facade.registerProxy collection
         spyPush = sinon.spy collection, 'push'
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
@@ -945,40 +1057,44 @@ describe 'ArangoCollectionMixin', ->
         assert.isNotNull testRecord
         yield return
   describe '#remove', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should remove data from collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_003'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_015'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         spyQuery = sinon.spy collection, 'query'
@@ -988,40 +1104,44 @@ describe 'ArangoCollectionMixin', ->
         assert.isNull testRecord
         yield return
   describe '#take', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should get data item by id from collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_004'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_016'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         recordDuplicate = yield collection.take record.id
@@ -1030,40 +1150,44 @@ describe 'ArangoCollectionMixin', ->
           assert.equal record[attribute], recordDuplicate[attribute]
         yield return
   describe '#takeMany', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should get data items by id list from collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_005'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_017'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         originalRecords = []
         for i in [ 1 .. 5 ]
@@ -1081,40 +1205,44 @@ describe 'ArangoCollectionMixin', ->
       db._create "#{PREFIX}items"
     after ->
       db._drop "#{PREFIX}items"
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should get all data items from collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_006'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_018'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class ItemRecord extends Test::Record
+          @initialize()
+        class ItemRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::ItemRecord'
-        ItemRecord.initialize()
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::ItemRecord'
+          @initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: ItemRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'ItemRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         originalRecords = []
         for i in [ 1 .. 5 ]
@@ -1128,43 +1256,47 @@ describe 'ArangoCollectionMixin', ->
             assert.equal originalRecords[i][attribute], recordDuplicates[i][attribute]
         yield return
   describe '#override', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should replace data item by id in collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_007'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_019'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
-        class SampleSerializer extends Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
+        class SampleSerializer extends LeanRC::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
-        updatedRecord = yield collection.override record.id, collection.build test: 'test2'
+        updatedRecord = yield collection.override record.id, yield collection.build test: 'test2', type: 'Test::SampleRecord'
         assert.isDefined updatedRecord
         assert.equal record.id, updatedRecord.id
         assert.propertyVal record, 'test', 'test1'
@@ -1174,38 +1306,39 @@ describe 'ArangoCollectionMixin', ->
   describe '#patch', ->
     it 'should update data item by id in collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_008'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_020'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         updatedRecord = yield collection.patch record.id, collection.build test: 'test2'
@@ -1216,40 +1349,44 @@ describe 'ArangoCollectionMixin', ->
         yield return
   ###
   describe '#includes', ->
+    facade = null
+    afterEach ->
+      facade?.remove?()
     it 'should test if item is included in the collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_009'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_021'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class SampleRecord extends Test::Record
+          @initialize()
+        class SampleRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::SampleRecord'
-        SampleRecord.initialize()
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::SampleRecord'
+          @initialize()
         class SampleSerializer extends Test::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        SampleSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: SampleRecord
-          serializer: SampleSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'SampleRecord'
+          serializer: 'SampleSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         record = yield collection.create test: 'test1'
         assert.isDefined record
@@ -1261,40 +1398,45 @@ describe 'ArangoCollectionMixin', ->
       db._create "#{PREFIX}items"
     after ->
       db._drop "#{PREFIX}items"
+    facade = null
+    afterEach ->
+      facade?.remove?()
+      console.log 'ArangoCollectionMixin TESTS END'
     it 'should count items in the collection', ->
       co ->
-        KEY = 'FACADE_TEST_ARANGO_COLLECTION_010'
+        collectionName = 'SamplesCollection'
+        KEY = 'TEST_ARANGO_COLLECTION_MIXIN_022'
         facade = LeanRC::Facade.getInstance KEY
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
           @root __dirname
-        Test.initialize()
-        class ArangoCollection extends Test::Collection
+          @initialize()
+        class ArangoCollection extends LeanRC::Collection
           @inheritProtected()
           @include Test::QueryableCollectionMixin
           @include Test::GenerateUuidIdMixin
           @include Test::ArangoCollectionMixin
           @module Test
-        ArangoCollection.initialize()
-        class ItemRecord extends Test::Record
+          @initialize()
+        class ItemRecord extends LeanRC::Record
           @inheritProtected()
           @module Test
           @attribute test: String
-          @public init: Function,
-            default: ->
-              @super arguments...
-              @type = 'Test::ItemRecord'
-        ItemRecord.initialize()
-        class ItemSerializer extends Test::Serializer
+          # @public init: Function,
+          #   default: ->
+          #     @super arguments...
+          #     @type = 'Test::ItemRecord'
+          @initialize()
+        class ItemSerializer extends LeanRC::Serializer
           @inheritProtected()
           @include Test::ArangoSerializerMixin
           @module Test
-        ItemSerializer.initialize()
-        facade.registerProxy ArangoCollection.new KEY,
-          delegate: ItemRecord
-          serializer: ItemSerializer
-        collection = facade.retrieveProxy KEY
+          @initialize()
+        collection = ArangoCollection.new collectionName,
+          delegate: 'ItemRecord'
+          serializer: 'ItemSerializer'
+        facade.registerProxy collection
         assert.instanceOf collection, ArangoCollection
         count = 11
         for i in [ 1 .. count ]

@@ -4,7 +4,8 @@
 module.exports = (Module) ->
   {
     LIGHTWEIGHT
-
+    FuncG
+    NotificationInterface
     Mediator
     Pipes
     Application
@@ -35,13 +36,13 @@ module.exports = (Module) ->
     @public onRemove: Function,
       default: -> @logger.finish()
 
-    @public listNotificationInterests: Function,
+    @public listNotificationInterests: FuncG([], Array),
       default: -> [
         CONNECT_MODULE_TO_LOGGER
         CONNECT_SHELL_TO_LOGGER
       ]
 
-    @public handleNotification: Function,
+    @public handleNotification: FuncG(NotificationInterface),
       default: (aoNotification)->
         switch aoNotification.getName()
           # Connect any Module's STDLOG to the logger's STDIN
@@ -72,4 +73,4 @@ module.exports = (Module) ->
         @super LoggerModuleMediator.name, LoggerApplication.new LIGHTWEIGHT
 
 
-  LoggerModuleMediator.initialize()
+    @initialize()

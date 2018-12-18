@@ -2,6 +2,8 @@
 
 module.exports = (Module) ->
   {
+    FuncG
+    NotificationInterface
     SimpleCommand
     LoggerJunctionMediator
   } = Module::
@@ -10,10 +12,10 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public execute: Function,
+    @public execute: FuncG(NotificationInterface),
       default: (aoNotification)->
         @facade.registerMediator LoggerJunctionMediator.new()
         return
 
 
-  PrepareViewCommand.initialize()
+    @initialize()

@@ -6,17 +6,19 @@ ArangoExtension = require '../../..'
 
 describe 'ArangoConfigurationMixin', ->
   describe '#defineConfigProperties', ->
+    after ->
+      console.log 'ArangoConfigurationMixin TESTS END'
     it 'should define configuration properties', ->
       co ->
         class Test extends LeanRC
           @inheritProtected()
           @include ArangoExtension
-        Test.initialize()
+          @initialize()
         class TestConfiguration extends Test::Configuration
           @inheritProtected()
           @include Test::ArangoConfigurationMixin
           @module Test
-        TestConfiguration.initialize()
+          @initialize()
         config = TestConfiguration.new 'TEST_CONFIG'
         config.defineConfigProperties()
         assert.propertyVal config, 'test1', 'Test1'

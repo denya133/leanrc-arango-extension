@@ -34,11 +34,11 @@ module.exports = (Module)->
 
 module.exports = (Module)->
   {
-    ANY
-    NILL
-    LAMBDA
     APPLICATION_GATEWAY
-
+    AnyT, PointerT, AsyncFunctionT, LambdaT
+    FuncG, ListG, MaybeG, InterfaceG, StructG, TupleG, DictG, EnumG
+    SwitchInterface, ContextInterface, NotificationInterface
+    Mixin
     Switch
     ArangoContext
     SyntheticRequest
@@ -56,23 +56,28 @@ module.exports = (Module)->
   HTTP_NOT_FOUND    = statuses 'not found'
   HTTP_CONFLICT     = statuses 'conflict'
 
-  Module.defineMixin 'ArangoSwitchMixin', (BaseClass = Switch) ->
+  Module.defineMixin Mixin 'ArangoSwitchMixin', (BaseClass = Switch) ->
     class extends BaseClass
       @inheritProtected()
-      iphEventNames = @private 'eventNames': Object
-      @public middlewaresHandler: LAMBDA
+
+      iphEventNames = PointerT @private eventNames: Object
+
+      @public middlewaresHandler: LambdaT
 
       # from https://github.com/koajs/route/blob/master/index.js ###############
-      decode = (val)-> # чистая функция
+      decode = FuncG([MaybeG String], MaybeG String) (val)-> # чистая функция
         decodeURIComponent val if val
-      matches = (ctx, method)->
+
+      matches = FuncG([ContextInterface, String], Boolean) (ctx, method)->
         return yes unless method
         return yes if ctx.method is method
         if method is 'GET' and ctx.method is 'HEAD'
           return yes
         return no
+
       ################
-      @public @static createMethod: Function,
+
+      @public @static createMethod: FuncG([MaybeG String]),
         default: (method)->
           originMethodName = method
           if method
@@ -80,9 +85,7 @@ module.exports = (Module)->
           else
             originMethodName = 'all'
 
-          @public "#{originMethodName}": Function,
-            args: [String, LAMBDA]
-            return: Array
+          @public "#{originMethodName}": FuncG([String, Function], TupleG Object, Object),
             default: (path, routeFunc)->
               voRouter = FoxxRouter()
               unless routeFunc
@@ -129,7 +132,20 @@ module.exports = (Module)->
       @createMethod() # create @public all:...
       ##########################################################################
 
-      @public @async perform: Function,
+      @public @async perform: FuncG(StructG({
+        method: String
+        url: String
+        options: InterfaceG {
+          json: EnumG [yes]
+          headers: DictG String, String
+          body: MaybeG Object
+        }
+      }), StructG {
+        body: MaybeG AnyT
+        headers: DictG String, String
+        status: Number
+        message: MaybeG String
+      }),
         default: (method, url, options)->
           @sendNotification SEND_TO_LOG, '>>>>>> START PERFORM-REQUEST HANDLING', LEVELS[DEBUG]
           req = SyntheticRequest.new @Module.context()
@@ -197,7 +213,7 @@ module.exports = (Module)->
           @middlewaresHandler = @constructor.compose @middlewares, @handlers
           return
 
-      @public callback: Function,
+      @public callback: FuncG([], AsyncFunctionT),
         default: (path, routeFunc)->
           self = @
           handleRequest = co.wrap (req, res)->
@@ -222,7 +238,7 @@ module.exports = (Module)->
             yield return
           handleRequest
 
-      @public respond: Function,
+      @public respond: FuncG(ContextInterface),
         default: (ctx)->
           return if ctx.respond is no
           return unless ctx.writable
@@ -239,9 +255,17 @@ module.exports = (Module)->
           ctx.res.send body
           return
 
-      @public defineSwaggerEndpoint: Function,
-        args: [Object, Object]
-        return: NILL
+      @public defineSwaggerEndpoint: FuncG([Object, InterfaceG {
+        method: String
+        path: String
+        resource: String
+        action: String
+        tag: String
+        template: String
+        keyName: MaybeG String
+        entityName: String
+        recordName: MaybeG String
+      }]),
         default: (aoSwaggerEndpoint, {resource, action, tag:resourceTag, options, keyName, entityName, recordName})->
           voGateway = @facade.retrieveProxy APPLICATION_GATEWAY
           unless voGateway?
@@ -287,7 +311,20 @@ module.exports = (Module)->
           aoSwaggerEndpoint.deprecated isDeprecated  if isDeprecated?
           return
 
-      @public sender: Function,
+      @public sender: FuncG([String, StructG({
+        context: ContextInterface
+        reverse: String
+      }), InterfaceG {
+        method: String
+        path: String
+        resource: String
+        action: String
+        tag: String
+        template: String
+        keyName: MaybeG String
+        entityName: String
+        recordName: MaybeG String
+      }]),
         default: (resourceName, aoMessage, {method, path, resource, action})->
           {context} = aoMessage
           try
@@ -309,7 +346,17 @@ module.exports = (Module)->
               return
           return
 
-      @public createNativeRoute: Function,
+      @public createNativeRoute: FuncG([InterfaceG {
+        method: String
+        path: String
+        resource: String
+        action: String
+        tag: String
+        template: String
+        keyName: MaybeG String
+        entityName: String
+        recordName: MaybeG String
+      }]),
         default: (opts)->
           {method, path} = opts
           resourceName = inflect.camelize inflect.underscore "#{opts.resource.replace /[/]/g, '_'}Resource"
@@ -343,5 +390,6 @@ module.exports = (Module)->
           @defineSwaggerEndpoint voEndpoint, opts
           @Module.context().use voRouter
           return
+
 
       @initializeMixin()

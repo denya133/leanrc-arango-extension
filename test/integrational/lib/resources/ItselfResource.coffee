@@ -57,4 +57,4 @@ module.exports = (Module)->
         }
 
 
-  ItselfResource.initialize()
+    @initialize()

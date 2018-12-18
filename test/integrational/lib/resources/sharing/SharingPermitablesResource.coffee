@@ -2,6 +2,7 @@
 
 module.exports = (Module)->
   {
+    FuncG, StructG, UnionG, EnumG, ListG
     Resource
     CheckSessionsMixin
     GetPermitablesMixin
@@ -26,10 +27,16 @@ module.exports = (Module)->
     @initialHook 'checkApiVersion'
     @initialHook 'checkSession'
 
-    @action @async list: Function,
+    @action @async list: FuncG([], StructG {
+      meta: StructG pagination: StructG {
+        limit: UnionG Number, EnumG ['not defined']
+        offset: UnionG Number, EnumG ['not defined']
+      }
+      items: ListG Object
+    }),
       default: ->
         sections = yield @getPermitablesFor 'sharing'
         yield return sections
 
 
-  SharingPermitablesResource.initialize()
+    @initialize()

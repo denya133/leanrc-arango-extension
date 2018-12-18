@@ -12,4 +12,4 @@ module.exports = (Module)->
     @module Module
 
 
-  ResqueExecutor.initialize()
+    @initialize()

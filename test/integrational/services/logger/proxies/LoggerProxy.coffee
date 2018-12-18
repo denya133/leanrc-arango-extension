@@ -2,8 +2,7 @@
 
 module.exports = (Module) ->
   {
-    NILL
-
+    FuncG
     SimpleCommand
     LogMessageCommand
     Application
@@ -17,9 +16,7 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public addLogEntry: Function,
-      args: [Object]
-      return: NILL
+    @public addLogEntry: FuncG(Object),
       default: (data)->
         {logLevel, sender, time, message} = data
         switch logLevel
@@ -41,4 +38,4 @@ module.exports = (Module) ->
         return
 
 
-  LoggerProxy.initialize()
+    @initialize()

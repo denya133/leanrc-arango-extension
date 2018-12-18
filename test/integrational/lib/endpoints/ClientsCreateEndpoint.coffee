@@ -2,6 +2,10 @@
 
 module.exports = (Module)->
   {
+    NilT
+    FuncG, InterfaceG
+    GatewayInterface
+    EndpointInterface
     Endpoint
     CrudEndpointMixin
     Utils: { joi, statuses }
@@ -16,7 +20,7 @@ module.exports = (Module)->
     @include CrudEndpointMixin
     @module Module
 
-    @public init: Function,
+    @public init: FuncG(InterfaceG(gateway: GatewayInterface), NilT),
       default: (args...)->
         @super args...
         @pathParam   'v', @versionSchema, "
@@ -42,6 +46,7 @@ module.exports = (Module)->
           from the request body and
           returns the saved document.
         "
+        return
 
 
-  ClientsCreateEndpoint.initialize()
+    @initialize()

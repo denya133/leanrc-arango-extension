@@ -16,4 +16,4 @@ module.exports = (Module)->
     # business logic and before-, after- colbacks
 
 
-  LoggedReportRecord.initialize()
+    @initialize()

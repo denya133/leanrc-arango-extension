@@ -11,21 +11,25 @@ ARANGO_CONFLICT   = errors.ERROR_ARANGO_CONFLICT.code
 
 module.exports = (Module)->
   {
-    Resource
+    AnyT
+    FuncG, StructG, ListG, MaybeG
+    ContextInterface
+    Resource, Mixin
     LogMessage: {  ERROR, DEBUG, LEVELS, SEND_TO_LOG }
-    Utils: { _, inflect, extend, statuses }
+    Utils: { _, inflect, assign, statuses }
   } = Module::
 
   HTTP_NOT_FOUND    = statuses 'not found'
   HTTP_CONFLICT     = statuses 'conflict'
 
-  Module.defineMixin 'ArangoResourceMixin', (BaseClass = Resource) ->
+  Module.defineMixin Mixin 'ArangoResourceMixin', (BaseClass = Resource) ->
     class extends BaseClass
       @inheritProtected()
 
-      @public getLocks: Function,
-        args: []
-        return: Object
+      @public getLocks: FuncG([], StructG {
+        read: ListG String
+        write: ListG String
+      }),
         default: ->
           vrCollectionPrefix = new RegExp "^#{inflect.underscore @Module.name}_"
           vlCollectionNames = db._collections().reduce (alResults, aoCollection) ->
@@ -37,17 +41,17 @@ module.exports = (Module)->
           read = vlCollectionNames.concat ["#{inflect.underscore @Module.name}_migrations", '_aqlfunctions', '_queues', '_jobs']
           return {read, write}
 
-      @public listNonTransactionables: Function,
+      @public listNonTransactionables: FuncG([], ListG String),
         default: -> ['list', 'detail']
 
-      @public nonPerformExecution: Function,
+      @public nonPerformExecution: FuncG(ContextInterface, Boolean),
         default: (context)-> not context.isPerformExecution
 
-      @public @async doAction: Function,
+      @public @async doAction: FuncG([String, ContextInterface], MaybeG AnyT),
         default: (action, context)->
           isTransactionables = action not in @listNonTransactionables()
           locksMethodName = "locksFor#{inflect.camelize action}"
-          {read, write} = extend(
+          {read, write} = assign(
             {}
           ,
             @getLocks()

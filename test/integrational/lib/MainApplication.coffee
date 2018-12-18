@@ -2,8 +2,8 @@
 
 module.exports = (Module) ->
   {
-    NILL
-
+    NilT
+    FuncG, MaybeG
     LogMessage
     LogFilterMessage
     Application
@@ -19,16 +19,14 @@ module.exports = (Module) ->
         yield return
 
     @public setLogLevelMethod: Function,
-      args: []
-      return: NILL
       default: (level)->
         @facade.sendNotification LogFilterMessage.SET_LOG_LEVEL, level
 
-    @public init: Function,
+    @public init: FuncG([MaybeG Symbol], NilT),
       default: (args...)->
         @super args...
         @setLogLevelMethod LogMessage.DEBUG
         return
 
 
-  MainApplication.initialize()
+    @initialize()

@@ -14,4 +14,4 @@ module.exports = (Module)->
     @module Module
 
 
-  MigrationsCollection.initialize()
+    @initialize()

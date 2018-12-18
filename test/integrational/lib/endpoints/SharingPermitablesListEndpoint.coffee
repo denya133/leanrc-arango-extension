@@ -2,6 +2,10 @@
 
 module.exports = (Module)->
   {
+    NilT
+    FuncG, InterfaceG
+    GatewayInterface
+    EndpointInterface
     Endpoint
     CrudEndpointMixin
     Utils: { joi }
@@ -12,7 +16,7 @@ module.exports = (Module)->
     @include CrudEndpointMixin
     @module Module
 
-    @public init: Function,
+    @public init: FuncG(InterfaceG(gateway: GatewayInterface), NilT),
       default: (args...)->
         @super args...
         sectionSchema = joi.object
@@ -23,6 +27,7 @@ module.exports = (Module)->
         ), 'Sections'
           .summary 'Sharing permitables info'
           .description 'Info about sharing permitables for this service'
+        return
 
 
-  SharingPermitablesListEndpoint.initialize()
+    @initialize()

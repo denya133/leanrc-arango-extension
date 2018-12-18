@@ -12,7 +12,8 @@ module.exports = (Module) ->
     SESSIONS
     ROLES
     MIGRATIONS
-
+    FuncG
+    NotificationInterface
     ApplicationSerializer
     HttpSerializer
     SimpleCommand
@@ -34,7 +35,7 @@ module.exports = (Module) ->
     @inheritProtected()
     @module Module
 
-    @public execute: Function,
+    @public execute: FuncG(NotificationInterface),
       default: (aoNotification)->
         voApplication = aoNotification.getBody()
 
@@ -73,4 +74,4 @@ module.exports = (Module) ->
           @facade.registerProxy MainRenderer.new APPLICATION_RENDERER
 
 
-  PrepareModelCommand.initialize()
+    @initialize()

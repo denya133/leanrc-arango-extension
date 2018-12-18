@@ -11,18 +11,19 @@ fresh       = require 'fresh'
 
 module.exports = (Module)->
   {
-    ANY
-
+    AnyT, NilT
+    FuncG, UnionG, MaybeG
+    RequestInterface, SwitchInterface, ContextInterface
     CoreObject
     # RequestInterface
-    SwitchInterface
-    ContextInterface
+    # SwitchInterface
+    # ContextInterface
     Utils: { _ }
   } = Module::
 
   class ArangoRequest extends CoreObject
     @inheritProtected()
-    # @implements RequestInterface
+    @implements RequestInterface
     @module Module
 
     @public req: Object, # native request object
@@ -33,7 +34,7 @@ module.exports = (Module)->
 
     @public ctx: ContextInterface
 
-    @public body: ANY # тело должен предоставлять миксин из отдельного модуля
+    @public body: MaybeG AnyT # тело должен предоставлять миксин из отдельного модуля
 
     @public header: Object,
       get: -> @headers
@@ -70,7 +71,9 @@ module.exports = (Module)->
 
     @public query: Object,
       get: -> qs.parse @querystring
-      set: (obj)-> @querystring = qs.stringify obj
+      set: (obj)->
+        @querystring = qs.stringify obj
+        obj
 
     @public querystring: String,
       get: ->
@@ -123,7 +126,7 @@ module.exports = (Module)->
         methods = ['GET', 'HEAD', 'PUT', 'DELETE', 'OPTIONS', 'TRACE']
         _.includes methods, @method
 
-    @public socket: Object,
+    @public socket: MaybeG(Object),
       get: ->
 
     @public charset: String,
@@ -171,16 +174,16 @@ module.exports = (Module)->
           .reverse()
           .slice offset ? 0
 
-    @public accepts: Function,
+    @public accepts: FuncG([MaybeG UnionG String, Array], UnionG String, Array, Boolean),
       default: (args...)-> @ctx.accept.types args...
-    @public acceptsCharsets: Function,
-      default: (args...)-> @ctx.accept.charsets args...
-    @public acceptsEncodings: Function,
+    @public acceptsEncodings: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @ctx.accept.encodings args...
-    @public acceptsLanguages: Function,
+    @public acceptsCharsets: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
+      default: (args...)-> @ctx.accept.charsets args...
+    @public acceptsLanguages: FuncG([MaybeG UnionG String, Array], UnionG String, Array),
       default: (args...)-> @ctx.accept.languages args...
 
-    @public 'is': Function,
+    @public 'is': FuncG([UnionG String, Array], UnionG String, Boolean, NilT),
       default: (args...)->
         @req.is args...
 
@@ -190,7 +193,7 @@ module.exports = (Module)->
         return '' unless type?
         type.split(';')[0]
 
-    @public get: Function,
+    @public get: FuncG(String, String),
       default: (field)->
         switch field = field.toLowerCase()
           when 'referer', 'referrer'
@@ -198,7 +201,17 @@ module.exports = (Module)->
           else
             @req.headers[field] ? ''
 
-    @public init: Function,
+    @public @static @async restoreObject: Function,
+      default: ->
+        throw new Error "restoreObject method not supported for #{@name}"
+        yield return
+
+    @public @static @async replicateObject: Function,
+      default: ->
+        throw new Error "replicateObject method not supported for #{@name}"
+        yield return
+
+    @public init: FuncG(ContextInterface),
       default: (context)->
         @super()
         @ctx = context
@@ -206,4 +219,4 @@ module.exports = (Module)->
         return
 
 
-  ArangoRequest.initialize()
+    @initialize()

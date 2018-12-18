@@ -2,14 +2,18 @@
 
 module.exports = (Module)->
   {
-    Resource
+    FuncG, StructG, ListG
+    Resource, Mixin
   } = Module::
 
-  Module.defineMixin 'CommonLocksResourceMixin', (BaseClass = Resource) ->
+  Module.defineMixin Mixin 'CommonLocksResourceMixin', (BaseClass = Resource) ->
     class extends BaseClass
       @inheritProtected()
 
-      @public locksForAny: Function,
+      @public locksForAny: FuncG([], StructG {
+        read: ListG String
+        write: ListG String
+      }),
         default: ->
           read: [
             'auth_migrations', 'auth_users', 'auth_sessions',
