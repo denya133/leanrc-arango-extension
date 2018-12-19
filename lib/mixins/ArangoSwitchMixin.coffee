@@ -172,10 +172,9 @@ module.exports = (Module)->
             statusMessage: message
             body
             headers
-            cookies
           } = res
           @sendNotification SEND_TO_LOG, '>>>>>> END PERFORM-REQUEST HANDLING', LEVELS[DEBUG]
-          yield return {status, message, headers, cookies, body}
+          yield return {status, message, headers, body}
 
       @public onRegister: Function,
         default: -> # super не вызываем
