@@ -487,7 +487,8 @@ module.exports = (Module)->
           foreignRes = yield foreignSwitch.perform method, url, options
           @sendNotification(SEND_TO_LOG, "ArangoForeignCollectionMixin::sendRequest <result> #{JSON.stringify foreignRes}", LEVELS[DEBUG])
           @sendNotification SEND_TO_LOG, '>>>>>>>>>>>>>>>>>>>>>>>>> FOREIGN END', LEVELS[DEBUG]
-          yield return foreignRes
+          {status, message, headers, body} = foreignRes
+          yield return {status, message, headers, body}
 
       @public requestToHash: FuncG(StructG({
         method: String
