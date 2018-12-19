@@ -16,7 +16,7 @@ module.exports = (Module)->
     APPLICATION_SWITCH
     APPLICATION_MEDIATOR
     AnyT, PointerT
-    FuncG, UnionG, MaybeG, EnumG, ListG, StructG, DictG
+    FuncG, UnionG, MaybeG, EnumG, ListG, StructG, DictG, InterfaceG
     RecordInterface, CursorInterface, QueryInterface
     Mixin
     Collection, Cursor
