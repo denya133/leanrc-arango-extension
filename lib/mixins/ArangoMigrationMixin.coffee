@@ -77,9 +77,7 @@ module.exports = (Module)->
           qualifiedName = @collection.collectionFullName name
           unless db._collection qualifiedName
             @collection.sendNotification(SEND_TO_LOG, "ArangoMigrationMixin::createCollection qualifiedName = #{qualifiedName}, options = #{jsonStringify options}", LEVELS[DEBUG])
-            console.log '???>>???? before db._createDocumentCollection', qualifiedName
             db._createDocumentCollection qualifiedName, options
-            console.log '???>>???? after db._createDocumentCollection', db._collection qualifiedName
           yield return
 
       @public @async createEdgeCollection: FuncG([String, String, MaybeG Object]),
