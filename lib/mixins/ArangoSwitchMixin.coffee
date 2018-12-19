@@ -330,7 +330,7 @@ module.exports = (Module)->
           try
             @sendNotification resourceName, aoMessage, action
           catch err
-            console.log '???????????????????!!', JSON.stringify err
+            console.error '???????????????????!!', JSON.stringify err
             if err.isArangoError and err.errorNum is ARANGO_NOT_FOUND
               context.throw HTTP_NOT_FOUND, err.message
               return
