@@ -47,17 +47,17 @@ module.exports = (Module)->
       get: -> "#{@baseUrl}/#{@path}#{@[ipoParsedUrl].search ? ''}"
     @public path: String,
       get: -> @[ipoParsedUrl].pathname
-    @public pathParams: Object
+    @public pathParams: MaybeG Object
     @public port: Number, # copy from main request
       default: 80
     @public protocol: String,
       default: 'http'
     @public queryParams: Object,
       get: -> querystring.decode @[ipoParsedUrl].query
-    @public rawBody: Buffer
-    @public remoteAddress: String # copy from main request
-    @public remoteAddresses: Array # copy from main request
-    @public remotePort: Number # copy from main request
+    @public rawBody: MaybeG Buffer
+    @public remoteAddress: MaybeG String # copy from main request
+    @public remoteAddresses: MaybeG Array # copy from main request
+    @public remotePort: MaybeG Number # copy from main request
     @public secure: Boolean,
       get: -> @protocol is 'https'
     # @public suffix: String # not supported
