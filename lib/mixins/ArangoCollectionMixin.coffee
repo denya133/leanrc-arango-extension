@@ -30,7 +30,7 @@ module.exports = (Module)->
 
       # TODO: generateId был удален отсюда, т.к. был объявлен миксин GenerateUuidIdMixin который дефайнит этот метод с uuid.v4(), а использование этого миксина должно быть таковым, чтобы дефолтный generateId из Collection использовался (не возвращающий ничего)
 
-      wrapReference = FuncG(AnyT, Object) (value)->
+      wrapReference = (value)->
         if _.isString(value) and /^[@]/.test value
           qb.ref value.replace '@', ''
         else
