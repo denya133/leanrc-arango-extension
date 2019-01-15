@@ -27,7 +27,7 @@ module.exports = (Module)->
     @inheritProtected()
     @module Module
 
-    @public body: UnionG(Buffer, String),
+    @public body: MaybeG(UnionG Buffer, String),
       set: (data)->
         unless data?
           return undefined
