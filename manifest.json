@@ -14,8 +14,7 @@
   "defaultDocument": "index.html",
 
   "contributors": [
-    { "name": "Evgeni Biryukov" },
-    { "name": "Sergey Zagorodnykh" }
+    { "name": "Evgeni Biryukov" }
   ],
 
   "keywords": [
