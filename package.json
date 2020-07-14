@@ -73,7 +73,7 @@
     "lodash": "4.17.4"
   },
   "dependencies": {
-    "LeanRC": "git+ssh://git@github.com:LeanPack/leanrc.git#v6.2.3",
+    "LeanRC": "git+ssh://git@github.com:LeanPack/leanrc.git#v6.2.4",
     "coffeescript": "2.3.1",
     "change-case": "3.0.0",
     "commander": "2.12.2",
